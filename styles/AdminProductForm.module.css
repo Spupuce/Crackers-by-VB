@@ -1,0 +1,262 @@
+/* styles/AdminProductForm.module.css */
+
+.pageTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.pageIntro {
+  font-size: 0.95rem;
+  color: var(--color-text-soft);
+}
+
+.wrapper {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 22px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldEmpty {
+  display: block;
+}
+
+.label,
+.smallLabel,
+.colorsTitle {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.label {
+  font-size: 0.9rem;
+}
+
+.smallLabel {
+  font-size: 0.8rem;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  background-color: var(--color-white);
+  color: var(--color-text);
+  border: 1px solid var(--color-gray-300);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+.textarea {
+  min-height: 98px;
+  resize: none;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--color-gray-400);
+}
+
+.input:focus,
+.textarea:focus,
+select.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.separator {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: 2px 0;
+}
+
+.stockHint {
+  color: #d27aa0;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.colorsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.colorsTitle {
+  font-size: 1rem;
+}
+
+.colorCard {
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.colorRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.colorActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.submitArea {
+  margin-top: 4px;
+}
+
+.primaryButton,
+.secondaryButton {
+  height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover {
+  background-color: var(--color-secondary);
+}
+
+.outlineButton {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--color-gray-700);
+  border-radius: 8px;
+  background-color: var(--color-white);
+  color: var(--color-gray-700);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.outlineButton:hover {
+  border-color: var(--color-gray-900);
+  color: var(--color-gray-900);
+  background-color: var(--color-gray-50);
+}
+
+.colorPreviewList {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.colorPreviewItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background-color: #ffe9d4; /* proche de ton fond pêche */
+  border: 1px solid #f4c9a2;
+}
+
+.colorPreviewImageWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--color-gray-100);
+  flex-shrink: 0;
+}
+
+.colorPreviewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.colorPreviewInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.colorPreviewName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.colorPreviewQuantity {
+  font-size: 0.8rem;
+  color: var(--color-text-soft);
+}
+
+.colorPreviewDelete {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: none;
+  background-color: var(--color-white);
+  color: var(--color-gray-700);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.colorPreviewDelete:hover {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-900);
+}
+
+@media (max-width: 900px) {
+  .row,
+  .colorRow {
+    grid-template-columns: 1fr;
+  }
+
+  .pageTopbar,
+  .colorsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .fieldEmpty {
+    display: none;
+  }
+
+  .input:disabled {
+  background-color: var(--color-gray-100);
+  color: var(--color-text-soft);
+  cursor: not-allowed;
+  }
+}

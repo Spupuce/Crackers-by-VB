@@ -1,0 +1,108 @@
+/* styles/Hero.module.css */
+.hero {
+  background: linear-gradient(
+    to bottom,
+    #fcf3ea 0%,
+    #fbf1e8 100%
+  );
+  padding: 68px 24px 82px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.content {
+  max-width: 760px;
+  text-align: center;
+}
+
+.title {
+  font-size: 3rem;
+  line-height: 1.12;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.subtitle {
+  max-width: 620px;
+  margin: 0 auto 24px;
+  font-size: 0.98rem;
+  line-height: 1.75;
+  color: var(--color-text-soft);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-width: 156px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.primaryButton {
+  background-color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  color: var(--color-white);
+  box-shadow: 0 6px 18px rgba(248, 184, 131, 0.35);
+}
+
+.primaryButton:hover {
+  background-color: var(--color-secondary-dark);
+}
+
+.secondaryButton {
+  background-color: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.secondaryButton:hover {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 80px 20px 90px;
+  }
+
+  .title {
+    font-size: 2.4rem;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 0.92rem;
+  }
+}

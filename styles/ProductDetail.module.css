@@ -1,0 +1,255 @@
+/* styles/ProductDetail.module.css */
+
+.page {
+  background-color: var(--color-white);
+  padding: 40px 24px 80px;
+}
+
+.container {
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 18px;
+  color: var(--color-text-soft);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.backLinkContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.gallery {
+  display: flex;
+  flex-direction: column;
+}
+
+.mainImageWrapper {
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: var(--color-gray-50);
+}
+
+.mainImage {
+  width: 100%;
+  height: 760px;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbnailRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.thumbnailButton {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  overflow: hidden;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.thumbnailButtonActive {
+  border-color: var(--color-primary);
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  display: block;
+}
+
+.emptyGallery {
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-gray-50);
+  color: var(--color-text-soft);
+  font-size: 1rem;
+  border-radius: 16px;
+}
+
+.purchasePanel {
+  padding-top: 8px;
+}
+
+.productTitle {
+  font-size: 3rem;
+  line-height: 1.1;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.productCategory {
+  font-size: 0.95rem;
+  color: var(--color-text-soft);
+  margin-bottom: 18px;
+}
+
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.productPrice {
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--color-secondary);
+}
+
+.stockBadge {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.separator {
+  height: 1px;
+  background-color: var(--color-border);
+  margin-bottom: 22px;
+}
+
+.description {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--color-text-soft);
+  margin-bottom: 26px;
+}
+
+.quantityBlock {
+  margin-bottom: 28px;
+}
+
+.quantityLabel {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+
+.quantityControls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.quantityButton {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-white);
+  color: var(--color-text-soft);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.quantityValue {
+  min-width: 18px;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--color-secondary);
+  font-weight: 500;
+}
+
+.stockInfo {
+  font-size: 0.84rem;
+  color: var(--color-primary-dark);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.addToCartButton,
+.favoriteButton {
+  width: 100%;
+  height: 54px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.addToCartButton {
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.favoriteButton {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-white);
+  color: var(--color-text);
+}
+
+.addToCartButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notFound {
+  font-size: 1rem;
+  color: var(--color-text-soft);
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .mainImage {
+    height: 620px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 32px 20px 64px;
+  }
+
+  .productTitle {
+    font-size: 2.2rem;
+  }
+
+  .mainImage {
+    height: 440px;
+  }
+
+  .thumbnailImage {
+    height: 90px;
+  }
+}

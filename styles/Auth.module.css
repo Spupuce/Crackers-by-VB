@@ -1,0 +1,140 @@
+/* styles/Auth.module.css */
+
+.page {
+  min-height: calc(100vh - 80px);
+  background: linear-gradient(90deg, #fcf8f3 0%, #fffdfb 50%, #fcf8f3 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px 80px;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background-color: var(--color-white);
+  border: 1px solid #f2dfd2;
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(66, 37, 13, 0.10);
+  padding: 28px 24px 24px;
+}
+
+.iconWrapper {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f6b29e 0%, #f48aac 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  font-size: 1.7rem;
+  color: var(--color-white);
+}
+
+.title {
+  text-align: center;
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--color-text-soft);
+  margin-bottom: 28px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #dddddf;
+  border-radius: 8px;
+  background-color: var(--color-white);
+  padding: 0 14px;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  outline: none;
+}
+
+.input::placeholder {
+  color: #adb3bb;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(248, 184, 131, 0.18);
+}
+
+.submitButton {
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 4px;
+  box-shadow: 0 8px 18px rgba(230, 159, 106, 0.28);
+}
+
+.secondaryAction {
+  text-align: center;
+  font-size: 0.95rem;
+  color: #e8c7a5;
+  margin-top: 18px;
+}
+
+.secondaryLink {
+  color: #e8c7a5;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.note {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-soft);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 32px 16px 56px;
+    align-items: flex-start;
+  }
+
+  .card {
+    padding: 24px 18px 20px;
+  }
+
+  .title {
+    font-size: 1.9rem;
+  }
+}
