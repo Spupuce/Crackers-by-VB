@@ -1,4 +1,5 @@
 // components/Hero.js
+import Link from 'next/link';
 import styles from '../styles/Hero.module.css';
 
 export default function Hero() {
@@ -13,13 +14,13 @@ export default function Hero() {
         </p>
 
         <div className={styles.actions}>
-          <button className={styles.primaryButton}>
-            Découvrir mes créations
-          </button>
+          <Link href="/boutique" legacyBehavior>
+            <a className={styles.primaryButton}>Découvrir mes créations</a>
+          </Link>
 
-          <button className={styles.secondaryButton}>
-            Me contacter
-          </button>
+          <Link href="/contact" legacyBehavior>
+            <a className={styles.secondaryButton}>Me contacter</a>
+          </Link>
         </div>
       </div>
     </section>

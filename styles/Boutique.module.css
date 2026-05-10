@@ -54,6 +54,11 @@
   margin-bottom: 18px;
 }
 
+.filterIcon {
+  color: var(--color-primary);
+  font-size: 1.1rem;
+}
+
 .filterBlock + .filterBlock {
   margin-top: 20px;
 }
@@ -142,6 +147,44 @@
 .emptyCta:hover {
   background-color: var(--color-primary-dark);
   transform: translateY(-1px);
+}
+
+.filterActions {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.applyButton {
+  width: 100%;
+  height: 40px;
+  border-radius: 999px;
+  border: none;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.applyButton:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.resetButton {
+  width: 100%;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-gray-50);
+  color: var(--color-text-soft);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.resetButton:hover {
+  background-color: var(--color-gray-100);
 }
 
 @media (max-width: 1100px) {

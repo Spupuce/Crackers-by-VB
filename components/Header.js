@@ -1,5 +1,4 @@
 // components/Header.js
-
 import { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -23,24 +22,28 @@ export default function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.container}>
-        <Link href="/" passHref>
+        <Link href="/" legacyBehavior>
           <a className={styles.logo}>Crackers by VB</a>
         </Link>
 
-        <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}>
-          <Link href="/" passHref>
+        <nav
+          id="header-navigation"
+          className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
+          aria-label="Navigation principale"
+        >
+          <Link href="/" legacyBehavior>
             <a onClick={closeMenu}>Accueil</a>
           </Link>
 
-          <Link href="/boutique" passHref>
+          <Link href="/boutique" legacyBehavior>
             <a onClick={closeMenu}>Boutique</a>
           </Link>
 
-          <Link href="/apropos" passHref>
+          <Link href="/apropos" legacyBehavior>
             <a onClick={closeMenu}>À propos</a>
           </Link>
 
-          <Link href="/contact" passHref>
+          <Link href="/contact" legacyBehavior>
             <a onClick={closeMenu}>Contact</a>
           </Link>
         </nav>
@@ -52,24 +55,29 @@ export default function Header() {
               aria-label="Rechercher"
               type="button"
             >
-              <FiSearch />
+              <FiSearch aria-hidden="true" />
             </button>
 
-            <Link href="/favoris" passHref>
+            <Link href="/favoris" legacyBehavior>
               <a
                 className={styles.iconButton}
                 aria-label="Mes favoris"
+                onClick={closeMenu}
               >
-                <FiHeart />
+                <FiHeart aria-hidden="true" />
                 {favoritesCount > 0 && (
                   <span className={styles.badge}>{favoritesCount}</span>
                 )}
               </a>
             </Link>
 
-            <Link href="/connexion" passHref>
-              <a className={styles.iconButton} aria-label="Mon compte">
-                <FiUser />
+            <Link href="/connexion" legacyBehavior>
+              <a
+                className={styles.iconButton}
+                aria-label="Mon compte"
+                onClick={closeMenu}
+              >
+                <FiUser aria-hidden="true" />
               </a>
             </Link>
 
@@ -78,7 +86,7 @@ export default function Header() {
               aria-label="Panier"
               type="button"
             >
-              <FiShoppingCart />
+              <FiShoppingCart aria-hidden="true" />
               <span className={styles.badge}>0</span>
             </button>
           </div>
@@ -87,9 +95,11 @@ export default function Header() {
             type="button"
             className={styles.menuButton}
             aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            aria-expanded={menuOpen}
+            aria-controls="header-navigation"
             onClick={() => setMenuOpen(!menuOpen)}
           >
-            {menuOpen ? <FiX /> : <FiMenu />}
+            {menuOpen ? <FiX aria-hidden="true" /> : <FiMenu aria-hidden="true" />}
           </button>
         </div>
       </div>

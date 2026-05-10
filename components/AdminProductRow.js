@@ -1,47 +1,128 @@
-// components/AdminProductRow.js
-
+import { useMemo, useState } from 'react';
 import { FiEdit2, FiTrash2, FiArchive } from 'react-icons/fi';
-import { getProductStatus, isSoldOut, isLowStock } from '../utils/product';
 import styles from '../styles/AdminStock.module.css';
+import { isSoldOut } from '../utils/product';
+
+function getSafeStock(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function getColorStock(color) {
+  if (!color || typeof color !== 'object') return 0;
+
+  if (color.stock !== undefined && color.stock !== null) {
+    return getSafeStock(color.stock);
+  }
+
+  if (color.quantity !== undefined && color.quantity !== null) {
+    return getSafeStock(color.quantity);
+  }
+
+  return 0;
+}
 
 export default function AdminProductRow({
   product,
-  onEdit,
   onArchive,
-  onUnarchive,
   onDelete,
+  onUnarchive,
+  onEdit,
+  onProductUpdated,
+  onProductRemoved,
 }) {
-  const status = getProductStatus(product);
   const soldOut = isSoldOut(product);
-  const lowStock = isLowStock(product);
   const isArchived = Boolean(product.isArchived);
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [feedback, setFeedback] = useState('');
 
-  function handleEdit() {
+  const hasPendingRequests = (product.pendingRequestsCount || 0) > 0;
+
+  const normalizedColors = useMemo(() => {
+    if (!Array.isArray(product.colors)) return [];
+
+    return product.colors.map((color, index) => ({
+      key: `${color?.name || 'couleur'}-${index}`,
+      name: color?.name || 'Couleur',
+      stock: getColorStock(color),
+    }));
+  }, [product.colors]);
+
+  const totalStock = useMemo(() => {
+    if (normalizedColors.length > 0) {
+      return normalizedColors.reduce((sum, color) => sum + color.stock, 0);
+    }
+
+    return getSafeStock(product.stock);
+  }, [normalizedColors, product.stock]);
+
+  const handleEdit = () => {
     if (typeof onEdit === 'function') {
       onEdit(product);
     }
-  }
+  };
 
-  function handleArchive() {
+  const handleArchive = async () => {
     if (typeof onArchive === 'function') {
-      onArchive(product);
+      await onArchive(product);
     }
-  }
+  };
 
-  function handleUnarchive() {
+  const handleUnarchive = async () => {
     if (typeof onUnarchive === 'function') {
-      onUnarchive(product);
+      await onUnarchive(product);
     }
-  }
+  };
 
-  function handleDelete() {
+  const handleDelete = async () => {
     if (typeof onDelete === 'function') {
-      onDelete(product);
+      const success = await onDelete(product);
+
+      if (success && typeof onProductRemoved === 'function') {
+        onProductRemoved(product._id);
+      }
     }
-  }
+  };
+
+  const handleNotifyAll = async () => {
+    setNotifyLoading(true);
+    setFeedback('');
+
+    try {
+      const res = await fetch(
+        `/api/admin/products/${product._id}/notify-restock`,
+        {
+          method: 'POST',
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data.message || 'Erreur lors de l’envoi des notifications.'
+        );
+      }
+
+      setFeedback(data.message || 'Notification envoyée.');
+
+      if (typeof onProductUpdated === 'function') {
+        onProductUpdated({
+          ...product,
+          pendingRequestsCount: 0,
+        });
+      }
+    } catch (error) {
+      setFeedback(
+        error.message || "Erreur lors de l’envoi des notifications."
+      );
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
 
   return (
-    <article className={styles.row}>
+    <div className={styles.row}>
       <div className={styles.left}>
         <img
           src={product.imageUrl}
@@ -50,27 +131,26 @@ export default function AdminProductRow({
         />
 
         <div className={styles.content}>
-          <h2 className={styles.name}>{product.name}</h2>
+          <h3 className={styles.name}>{product.name}</h3>
           <p className={styles.category}>{product.category}</p>
+          <p className={styles.description}>{product.description}</p>
 
-          <p className={styles.description}>
-            {product.shortDescription || product.description}
-          </p>
-
-          {!isArchived && product.pendingRequestsCount > 0 && (
+          {!isArchived && hasPendingRequests && (
             <p className={styles.pending}>
-              🔔 {product.pendingRequestsCount} demande(s) en attente
+              {product.pendingRequestsCount} demande
+              {product.pendingRequestsCount > 1 ? 's' : ''} en attente
             </p>
           )}
 
-          {!isArchived && product.variants?.length > 0 && (
+          {feedback && !isArchived && (
+            <p className={styles.restockFeedback}>{feedback}</p>
+          )}
+
+          {normalizedColors.length > 0 && (
             <div className={styles.variants}>
-              {product.variants.map((variant, index) => (
-                <span
-                  key={`${variant.value}-${index}`}
-                  className={styles.variantTag}
-                >
-                  {variant.value} ({variant.stock})
+              {normalizedColors.map((color) => (
+                <span key={color.key} className={styles.variantTag}>
+                  {color.name} ({color.stock})
                 </span>
               ))}
             </div>
@@ -79,33 +159,38 @@ export default function AdminProductRow({
       </div>
 
       <div className={styles.right}>
-        <p className={styles.price}>{product.price.toFixed(2)} €</p>
+        <p className={styles.price}>
+          {Number(product.price).toFixed(2)} €
+        </p>
 
-        {!isArchived && (
-          <div className={styles.badges}>
-            {soldOut && (
-              <span className={styles.badgeSoldOut}>{status.label}</span>
-            )}
+        <div className={styles.badges}>
+          {soldOut ? (
+            <span className={styles.badgeSoldOut}>Article épuisé</span>
+          ) : totalStock <= 3 ? (
+            <span className={styles.badgeLowStock}>
+              Stock faible : {totalStock}
+            </span>
+          ) : (
+            <span className={styles.badgeStock}>
+              Stock : {totalStock}
+            </span>
+          )}
 
-            {!soldOut && lowStock && (
-              <span className={styles.badgeLowStock}>
-                Stock faible : {product.stock}
-              </span>
-            )}
-
-            {!soldOut && !lowStock && (
-              <span className={styles.badgeStock}>
-                Stock : {product.stock}
-              </span>
-            )}
-          </div>
-        )}
-
-        {!isArchived && soldOut && product.pendingRequestsCount > 0 && (
-          <button type="button" className={styles.notifyButton}>
-            Notifier {product.pendingRequestsCount} personne(s)
-          </button>
-        )}
+          {!isArchived && hasPendingRequests && (
+            <button
+              type="button"
+              className={styles.notifyButton}
+              onClick={handleNotifyAll}
+              disabled={notifyLoading}
+            >
+              {notifyLoading
+                ? 'Notification en cours...'
+                : `Notifier ${product.pendingRequestsCount} personne${
+                    product.pendingRequestsCount > 1 ? 's' : ''
+                  }`}
+            </button>
+          )}
+        </div>
 
         <div className={styles.actions}>
           {!isArchived ? (
@@ -113,8 +198,8 @@ export default function AdminProductRow({
               <button
                 type="button"
                 className={styles.iconButton}
-                aria-label="Modifier le produit"
                 onClick={handleEdit}
+                aria-label={`Modifier ${product.name}`}
               >
                 <FiEdit2 />
               </button>
@@ -122,8 +207,8 @@ export default function AdminProductRow({
               <button
                 type="button"
                 className={styles.archiveButton}
-                aria-label="Archiver le produit"
                 onClick={handleArchive}
+                aria-label={`Archiver ${product.name}`}
               >
                 <FiArchive />
               </button>
@@ -134,6 +219,7 @@ export default function AdminProductRow({
                 type="button"
                 className={styles.unarchiveButton}
                 onClick={handleUnarchive}
+                aria-label={`Désarchiver ${product.name}`}
               >
                 Désarchiver
               </button>
@@ -141,8 +227,8 @@ export default function AdminProductRow({
               <button
                 type="button"
                 className={styles.deleteButton}
-                aria-label="Supprimer définitivement le produit"
                 onClick={handleDelete}
+                aria-label={`Supprimer définitivement ${product.name}`}
               >
                 <FiTrash2 />
               </button>
@@ -150,6 +236,6 @@ export default function AdminProductRow({
           )}
         </div>
       </div>
-    </article>
+    </div>
   );
 }

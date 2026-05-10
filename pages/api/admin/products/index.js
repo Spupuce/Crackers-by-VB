@@ -1,4 +1,4 @@
-// page/api/admin/products/index.js
+// pages/api/admin/products/index.js
 
 import { connectMongo } from '../../../../lib/mongodb';
 import Product from '../../../../models/Product';
@@ -28,7 +28,11 @@ function validateProductPayload(payload) {
     errors.push('La catégorie est obligatoire.');
   }
 
-  if (payload.price === undefined || payload.price === null || Number(payload.price) < 0) {
+  if (
+    payload.price === undefined ||
+    payload.price === null ||
+    Number(payload.price) < 0
+  ) {
     errors.push('Le prix du produit est invalide.');
   }
 
@@ -112,6 +116,7 @@ export default async function handler(req, res) {
         colors: stockData.colors,
         isArchived: false,
         archivedAt: null,
+        pendingRequestsCount: 0,
       });
 
       return res.status(201).json(product);

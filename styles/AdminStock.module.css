@@ -127,6 +127,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 6px;
 }
 
 .variantTag {
@@ -191,18 +192,6 @@
   color: var(--color-white);
 }
 
-.notifyButton {
-  min-height: 32px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 8px;
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
 .actions {
   display: flex;
   gap: 8px;
@@ -259,6 +248,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
 }
 
 .unarchiveButton:hover {
@@ -275,6 +266,58 @@
   line-height: 1.6;
   padding: 14px 16px;
 }
+
+/* Bloc réassort */
+
+.restockLine {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.restockInfo {
+  font-size: 0.85rem;
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.restockInfoIcon {
+  font-size: 0.95rem;
+}
+
+.restockNotifyButton {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  background-color: var(--color-secondary);
+  color: var(--color-white);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.restockNotifyButton:hover:enabled {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.restockNotifyButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.restockFeedback {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--color-text-soft);
+}
+
+/* Responsive */
 
 @media (max-width: 900px) {
   .topBar {

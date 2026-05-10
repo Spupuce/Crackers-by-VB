@@ -11,6 +11,12 @@ export default function ProductPurchasePanel({ product }) {
   const soldOut = isSoldOut(product);
   const [quantity, setQuantity] = useState(1);
 
+  const [showNotifyForm, setShowNotifyForm] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [notifySuccess, setNotifySuccess] = useState(false);
+  const [notifyError, setNotifyError] = useState('');
+
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite(product.slug);
 
@@ -26,6 +32,53 @@ export default function ProductPurchasePanel({ product }) {
     toggleFavorite(product.slug);
   };
 
+  const handleOpenNotifyForm = () => {
+    setShowNotifyForm(true);
+    setNotifyError('');
+  };
+
+  const handleCancelNotify = () => {
+    setShowNotifyForm(false);
+    setNotifyError('');
+  };
+
+  const handleSubmitNotify = async () => {
+    setNotifyError('');
+
+    if (!notifyEmail || !notifyEmail.includes('@')) {
+      setNotifyError('Merci de renseigner une adresse e-mail valide.');
+      return;
+    }
+
+    try {
+      setNotifyLoading(true);
+
+      const response = await fetch(
+        `/api/products/${product._id}/restock-requests`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: notifyEmail }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la demande.');
+      }
+
+      setNotifySuccess(true);
+      setShowNotifyForm(false);
+    } catch (error) {
+      setNotifyError(
+        "Une erreur s'est produite. Merci de réessayer dans quelques instants."
+      );
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
+
   return (
     <div className={styles.purchasePanel}>
       <h1 className={styles.productTitle}>{product.name}</h1>
@@ -36,6 +89,10 @@ export default function ProductPurchasePanel({ product }) {
           {product.price.toFixed(2)} €
         </span>
 
+        {soldOut && (
+          <span className={styles.soldOutBadge}>Article épuisé</span>
+        )}
+
         {!soldOut && (
           <span className={styles.stockBadge}>En stock</span>
         )}
@@ -45,7 +102,64 @@ export default function ProductPurchasePanel({ product }) {
 
       <p className={styles.description}>{product.description}</p>
 
-      {!soldOut && (
+      {soldOut ? (
+        <div className={styles.notifyBlock}>
+          <p className={styles.notifyText}>
+            Cet article est actuellement en rupture de stock. Vous pouvez me
+            signaler votre intérêt et je vous contacterai dès qu&apos;il sera à
+            nouveau disponible.
+          </p>
+
+          {notifySuccess && (
+            <p className={styles.notifySuccess}>
+              Votre demande a bien été enregistrée. Merci !
+            </p>
+          )}
+
+          {notifyError && (
+            <p className={styles.notifyError}>{notifyError}</p>
+          )}
+
+          {!showNotifyForm ? (
+            <button
+              type="button"
+              className={styles.notifyButton}
+              onClick={handleOpenNotifyForm}
+            >
+              Me prévenir quand disponible
+            </button>
+          ) : (
+            <div className={styles.notifyForm}>
+              <div className={styles.notifyFormControls}>
+                <button
+                  type="button"
+                  className={styles.notifyCancel}
+                  onClick={handleCancelNotify}
+                >
+                  Annuler
+                </button>
+
+                <input
+                  type="email"
+                  className={styles.notifyInput}
+                  placeholder="Votre adresse e-mail"
+                  value={notifyEmail}
+                  onChange={(e) => setNotifyEmail(e.target.value)}
+                />
+
+                <button
+                  type="button"
+                  className={styles.notifySubmit}
+                  onClick={handleSubmitNotify}
+                  disabled={notifyLoading}
+                >
+                  {notifyLoading ? 'Envoi en cours...' : 'Envoyer la demande'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
         <div className={styles.quantityBlock}>
           <p className={styles.quantityLabel}>Quantité</p>
 
@@ -82,7 +196,9 @@ export default function ProductPurchasePanel({ product }) {
           disabled={soldOut}
         >
           <FiShoppingCart />
-          <span>{soldOut ? 'Article indisponible' : 'Ajouter au panier'}</span>
+          <span>
+            {soldOut ? 'Article indisponible' : 'Ajouter au panier'}
+          </span>
         </button>
 
         <button
