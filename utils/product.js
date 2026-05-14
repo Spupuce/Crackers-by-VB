@@ -1,5 +1,17 @@
 /* utils/product.js */
 
+export function isDisplayableProduct(product) {
+  if (!product) {
+    return false;
+  }
+
+  if (typeof product.isArchived === 'boolean') {
+    return !product.isArchived;
+  }
+
+  return Boolean(product.isActive);
+}
+
 export function isSoldOut(product) {
   return product.stock <= 0;
 }

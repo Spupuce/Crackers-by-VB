@@ -1,0 +1,311 @@
+/* styles/AccountPage.module.css */
+
+.page {
+  min-height: calc(100vh - 80px);
+  background: linear-gradient(180deg, #fffdfa 0%, #fdf6ef 100%);
+  padding: 48px 24px 80px;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.pageTitle {
+  font-size: 2.8rem;
+  line-height: 1.1;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.logoutButton {
+  border: none;
+  background: transparent;
+  color: var(--color-text-soft);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.logoutButton:hover {
+  color: var(--color-primary-dark);
+}
+
+.card {
+  background-color: var(--color-white);
+  border: 1px solid #f1e2d6;
+  border-radius: 18px;
+  padding: 20px 20px 22px;
+  box-shadow: 0 10px 24px rgba(66, 37, 13, 0.1);
+}
+
+.card + .card {
+  margin-top: 18px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.cardEyebrow {
+  font-size: 0.95rem;
+  color: var(--color-text-soft);
+}
+
+.editButton {
+  border: none;
+  background: transparent;
+  color: #e9b889;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.editButton:hover {
+  color: var(--color-primary-dark);
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.infoLabel {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-text-soft);
+}
+
+.infoValue {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 8px;
+  background-color: #f6f7f8;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroupFull {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-soft);
+}
+
+.input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #e2e2e6;
+  border-radius: 8px;
+  background-color: var(--color-white);
+  padding: 0 14px;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(248, 184, 131, 0.16);
+}
+
+.input:disabled {
+  background-color: #f9f9fa;
+  cursor: not-allowed;
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: 46px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.primaryButton {
+  border: none;
+  background-color: #e9b07b;
+  color: var(--color-white);
+  padding: 0 18px;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background-color: #df9f63;
+}
+
+.secondaryButton {
+  border: 1px solid #ead8ca;
+  background-color: var(--color-white);
+  color: var(--color-text);
+  padding: 0 18px;
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background-color: #faf6f2;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.passwordBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ordersEmpty {
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: 1rem;
+  color: var(--color-text-soft);
+  margin-bottom: 8px;
+}
+
+.emptyText {
+  font-size: 0.92rem;
+  color: #9aa1aa;
+}
+
+.errorMessage {
+  font-size: 0.92rem;
+  color: #b42318;
+}
+
+.successMessage {
+  font-size: 0.92rem;
+  color: #1f7a3d;
+}
+
+.dangerZone {
+  margin-top: 18px;
+  background-color: var(--color-white);
+  border: 1px solid #f3c7c7;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 10px 24px rgba(66, 37, 13, 0.08);
+}
+
+.dangerTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #d14343;
+  margin-bottom: 10px;
+}
+
+.dangerText {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--color-text-soft);
+  margin-bottom: 16px;
+}
+
+.dangerButton {
+  border: none;
+  background-color: #ff4d4f;
+  color: var(--color-white);
+  padding: 0 18px;
+}
+
+.dangerButton:hover:not(:disabled) {
+  background-color: #eb3b3d;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 36px 16px 64px;
+  }
+
+  .topBar {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 22px;
+  }
+
+  .pageTitle {
+    font-size: 2.2rem;
+  }
+
+  .infoGrid,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .formActions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .dangerButton {
+    width: 100%;
+  }
+}

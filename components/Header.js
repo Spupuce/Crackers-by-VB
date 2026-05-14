@@ -1,4 +1,5 @@
 // components/Header.js
+
 import { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -9,15 +10,17 @@ import {
   FiMenu,
   FiX,
 } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import styles from '../styles/Header.module.css';
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { favorites } = useFavorites();
+  const { isAuthenticated } = useAuth();
+  const { favoritesCount } = useFavorites();
 
   const closeMenu = () => setMenuOpen(false);
-  const favoritesCount = favorites.length;
+  const accountHref = isAuthenticated ? '/mon-compte' : '/connexion';
 
   return (
     <header className={styles.header}>
@@ -71,7 +74,7 @@ export default function Header() {
               </a>
             </Link>
 
-            <Link href="/connexion" legacyBehavior>
+            <Link href={accountHref} legacyBehavior>
               <a
                 className={styles.iconButton}
                 aria-label="Mon compte"

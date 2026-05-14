@@ -1,21 +1,48 @@
 // pages/favoris.js
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import { useFavorites } from '../context/FavoritesContext';
 import { products as fallbackProducts } from '../data/products';
+import { isDisplayableProduct } from '../utils/product';
 import styles from '../styles/Boutique.module.css';
-import Link from 'next/link';
 
 export default function FavorisPage({ products }) {
-  const { favorites } = useFavorites();
+  const { favorites, syncWithActiveProductSlugs } = useFavorites();
+
+  const safeProducts = useMemo(
+    () => (Array.isArray(products) ? products : []),
+    [products]
+  );
+
+  const activeProducts = useMemo(
+    () =>
+      safeProducts.filter((product) => {
+        if (!product || !product.slug) {
+          return false;
+        }
+
+        return isDisplayableProduct(product);
+      }),
+    [safeProducts]
+  );
+
+  const activeFavoriteSlugs = useMemo(
+    () => activeProducts.map((product) => product.slug),
+    [activeProducts]
+  );
+
+  useEffect(() => {
+    syncWithActiveProductSlugs(activeFavoriteSlugs);
+  }, [activeFavoriteSlugs, syncWithActiveProductSlugs]);
 
   const favoriteProducts = useMemo(
-    () => products.filter((product) => favorites.includes(product.slug)),
-    [products, favorites]
+    () => activeProducts.filter((product) => favorites.includes(product.slug)),
+    [activeProducts, favorites]
   );
 
   const count = favoriteProducts.length;
@@ -35,7 +62,7 @@ export default function FavorisPage({ products }) {
       <main className={styles.page}>
         <div className={styles.container}>
           <div className={styles.intro}>
-            <h1 className={styles.title}>Mes Favoris</h1>
+            <h1 className={styles.title}>Mes favoris</h1>
             <p className={styles.subtitle}>
               {count === 0
                 ? 'Aucun produit dans vos favoris pour le moment'
@@ -45,7 +72,6 @@ export default function FavorisPage({ products }) {
 
           {count > 0 ? (
             <section className={styles.productsSection}>
-              {/* Pas de sidebar sur cette page, on garde l’espace pour la grille */}
               <div className={styles.grid}>
                 {favoriteProducts.map((product) => (
                   <ProductCard
@@ -97,7 +123,9 @@ export async function getServerSideProps(context) {
   } catch (error) {
     return {
       props: {
-        products: fallbackProducts.filter((product) => product.isActive),
+        products: fallbackProducts.filter((product) =>
+          isDisplayableProduct(product)
+        ),
       },
     };
   }

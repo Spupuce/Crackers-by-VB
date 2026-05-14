@@ -7,120 +7,146 @@ import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import ShopSidebar from '../components/ShopSidebar';
 import { products as fallbackProducts } from '../data/products';
+import { isDisplayableProduct } from '../utils/product';
 import styles from '../styles/Boutique.module.css';
 
-const PRICE_RANGE_OPTIONS = [
-  { key: 'all', label: 'Tous' },
-  { key: 'lt30', label: 'Moins de 30€', min: 0, max: 30 },
-  { key: '30-50', label: '30€ - 50€', min: 30, max: 50 },
-  { key: '50-100', label: '50€ - 100€', min: 50, max: 100 },
-  { key: 'gt100', label: 'Plus de 100€', min: 100, max: Infinity },
-];
+const PRICE_RANGE_OPTIONS = {
+  all: { min: null, max: null },
+  lt30: { min: null, max: 30 },
+  '30-50': { min: 30, max: 50 },
+  '50-100': { min: 50, max: 100 },
+  gt100: { min: 100, max: null },
+};
 
-// Normalisation pour éviter les soucis de libellé exact
+function normalizeValue(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function matchesCategory(productCategory, selectedCategory) {
   if (!selectedCategory || selectedCategory === 'Tous') {
     return true;
   }
 
-  // On compare de façon tolérante (insensible à la casse, espaces)
-  const normalize = (value) =>
-    String(value || '')
-      .toLowerCase()
-      .replace(/\s+/g, ' ')
-      .trim();
+  const normalizedProductCategory = normalizeValue(productCategory);
+  const normalizedSelectedCategory = normalizeValue(selectedCategory);
 
-  const pc = normalize(productCategory);
-  const sc = normalize(selectedCategory);
+  if (normalizedProductCategory === normalizedSelectedCategory) {
+    return true;
+  }
 
-  return pc === sc;
+  if (
+    normalizedSelectedCategory === 'creations enfants' &&
+    normalizedProductCategory === 'creations enfant'
+  ) {
+    return true;
+  }
+
+  if (
+    normalizedSelectedCategory === 'creations enfant' &&
+    normalizedProductCategory === 'creations enfants'
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function matchesPriceRange(productPrice, priceRangeKey, minPrice, maxPrice) {
+  const price = Number(productPrice);
+
+  if (Number.isNaN(price)) {
+    return false;
+  }
+
+  const hasCustomMin = minPrice !== '' && !Number.isNaN(Number(minPrice));
+  const hasCustomMax = maxPrice !== '' && !Number.isNaN(Number(maxPrice));
+
+  if (hasCustomMin || hasCustomMax) {
+    const customMin = hasCustomMin ? Number(minPrice) : null;
+    const customMax = hasCustomMax ? Number(maxPrice) : null;
+
+    if (customMin !== null && price < customMin) {
+      return false;
+    }
+
+    if (customMax !== null && price > customMax) {
+      return false;
+    }
+
+    return true;
+  }
+
+  const selectedRange = PRICE_RANGE_OPTIONS[priceRangeKey] || PRICE_RANGE_OPTIONS.all;
+
+  if (selectedRange.min !== null && price < selectedRange.min) {
+    return false;
+  }
+
+  if (selectedRange.max !== null && price > selectedRange.max) {
+    return false;
+  }
+
+  return true;
 }
 
 export default function BoutiquePage({ products }) {
   const safeProducts = Array.isArray(products) ? products : [];
 
-  const activeProducts = safeProducts.filter((product) =>
-    typeof product.isArchived === 'boolean'
-      ? !product.isArchived
-      : product.isActive
+  const activeProducts = useMemo(
+    () => safeProducts.filter((product) => isDisplayableProduct(product)),
+    [safeProducts]
   );
 
-  const [pendingCategory, setPendingCategory] = useState('Tous');
-  const [pendingPriceRangeKey, setPendingPriceRangeKey] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('Tous');
+  const [selectedPriceRangeKey, setSelectedPriceRangeKey] = useState('all');
   const [pendingMinPrice, setPendingMinPrice] = useState('');
   const [pendingMaxPrice, setPendingMaxPrice] = useState('');
-
-  const [appliedCategory, setAppliedCategory] = useState('Tous');
-  const [appliedPriceRangeKey, setAppliedPriceRangeKey] = useState('all');
   const [appliedMinPrice, setAppliedMinPrice] = useState('');
   const [appliedMaxPrice, setAppliedMaxPrice] = useState('');
 
+  function handleCategoryChange(nextCategory) {
+    setSelectedCategory(nextCategory);
+  }
+
+  function handlePriceRangeChange(nextPriceRangeKey) {
+    setSelectedPriceRangeKey(nextPriceRangeKey);
+  }
+
   function handleApplyFilters() {
-    setAppliedCategory(pendingCategory);
-    setAppliedPriceRangeKey(pendingPriceRangeKey);
     setAppliedMinPrice(pendingMinPrice);
     setAppliedMaxPrice(pendingMaxPrice);
   }
 
   function handleResetFilters() {
-    setPendingCategory('Tous');
-    setPendingPriceRangeKey('all');
+    setSelectedCategory('Tous');
+    setSelectedPriceRangeKey('all');
     setPendingMinPrice('');
     setPendingMaxPrice('');
-    setAppliedCategory('Tous');
-    setAppliedPriceRangeKey('all');
     setAppliedMinPrice('');
     setAppliedMaxPrice('');
   }
 
   const filteredProducts = useMemo(() => {
     return activeProducts.filter((product) => {
-      // 1. Filtre catégorie
-      if (!matchesCategory(product.category, appliedCategory)) {
-        return false;
-      }
-
-      // 2. Base de la tranche de prix
-      const range = PRICE_RANGE_OPTIONS.find(
-        (r) => r.key === appliedPriceRangeKey
+      const categoryOk = matchesCategory(product.category, selectedCategory);
+      const priceOk = matchesPriceRange(
+        product.price,
+        selectedPriceRangeKey,
+        appliedMinPrice,
+        appliedMaxPrice
       );
 
-      let min = 0;
-      let max = Infinity;
-
-      if (range && range.key !== 'all') {
-        min = range.min ?? 0;
-        max = range.max ?? Infinity;
-      }
-
-      // 3. Overrides personnalisés
-      const customMin =
-        appliedMinPrice !== '' ? Number(appliedMinPrice) : null;
-      const customMax =
-        appliedMaxPrice !== '' ? Number(appliedMaxPrice) : null;
-
-      if (customMin !== null && !Number.isNaN(customMin)) {
-        min = customMin;
-      }
-      if (customMax !== null && !Number.isNaN(customMax)) {
-        max = customMax;
-      }
-
-      const price = Number(product.price);
-      if (Number.isNaN(price)) {
-        return false;
-      }
-
-      if (price < min || price > max) {
-        return false;
-      }
-
-      return true;
+      return categoryOk && priceOk;
     });
   }, [
     activeProducts,
-    appliedCategory,
-    appliedPriceRangeKey,
+    selectedCategory,
+    selectedPriceRangeKey,
     appliedMinPrice,
     appliedMaxPrice,
   ]);
@@ -148,10 +174,10 @@ export default function BoutiquePage({ products }) {
 
           <div className={styles.layout}>
             <ShopSidebar
-              category={pendingCategory}
-              onCategoryChange={setPendingCategory}
-              priceRangeKey={pendingPriceRangeKey}
-              onPriceRangeKeyChange={setPendingPriceRangeKey}
+              category={selectedCategory}
+              onCategoryChange={handleCategoryChange}
+              priceRangeKey={selectedPriceRangeKey}
+              onPriceRangeKeyChange={handlePriceRangeChange}
               minPrice={pendingMinPrice}
               maxPrice={pendingMaxPrice}
               onMinPriceChange={setPendingMinPrice}
@@ -181,4 +207,34 @@ export default function BoutiquePage({ products }) {
       <Footer />
     </>
   );
+}
+
+export async function getServerSideProps(context) {
+  const protocol =
+    process.env.NODE_ENV === 'development' ? 'http' : 'https';
+
+  const host = context.req.headers.host;
+  const baseUrl = `${protocol}://${host}`;
+
+  try {
+    const response = await fetch(`${baseUrl}/api/products`);
+
+    if (!response.ok) {
+      throw new Error('API products error');
+    }
+
+    const products = await response.json();
+
+    return {
+      props: {
+        products,
+      },
+    };
+  } catch (error) {
+    return {
+      props: {
+        products: fallbackProducts,
+      },
+    };
+  }
 }

@@ -69,13 +69,17 @@
   color: var(--color-text);
 }
 
+.inputWrapper {
+  position: relative;
+}
+
 .input {
   width: 100%;
   height: 48px;
   border: 1px solid #dddddf;
   border-radius: 8px;
   background-color: var(--color-white);
-  padding: 0 14px;
+  padding: 0 52px 0 14px;
   font-size: 0.95rem;
   color: var(--color-text);
   outline: none;
@@ -88,6 +92,39 @@
 .input:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(248, 184, 131, 0.18);
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.passwordToggleIcon {
+  font-size: 1.1rem;
+}
+
+.errorMessage {
+  margin: -6px 0 0;
+  font-size: 0.9rem;
+  color: #b42318;
+  line-height: 1.5;
+}
+
+.successMessage {
+  margin: -6px 0 0;
+  font-size: 0.9rem;
+  color: #1f7a3d;
+  line-height: 1.5;
 }
 
 .submitButton {
