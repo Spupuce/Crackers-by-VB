@@ -58,6 +58,10 @@ const userSchema = new mongoose.Schema(
       enum: ['customer', 'admin'],
       default: 'customer',
     },
+    favorites: {
+      type: [String],
+      default: [],
+    },
     passwordHash: {
       type: String,
       required: [true, 'Le mot de passe est obligatoire.'],

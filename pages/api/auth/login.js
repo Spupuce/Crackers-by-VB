@@ -2,6 +2,7 @@
 
 import bcrypt from 'bcryptjs';
 import { connectMongo } from '../../../lib/mongodb';
+import { setSessionCookie } from '../../../lib/session';
 import User from '../../../models/User';
 
 export default async function handler(req, res) {
@@ -52,6 +53,13 @@ export default async function handler(req, res) {
       });
     }
 
+    const userRole = user.role === 'admin' ? 'admin' : 'customer';
+
+    setSessionCookie(res, {
+      userId: String(user._id),
+      role: userRole,
+    });
+
     return res.status(200).json({
       message: 'Connexion réussie.',
       user: {
@@ -65,7 +73,7 @@ export default async function handler(req, res) {
         postalCode: user.postalCode || '',
         city: user.city || '',
         country: user.country || 'France',
-        role: user.role || 'customer',
+        role: userRole,
       },
     });
   } catch (error) {

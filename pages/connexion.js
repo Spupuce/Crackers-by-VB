@@ -57,8 +57,16 @@ export default function ConnexionPage() {
 
       setSuccessMessage('Connexion réussie. Redirection en cours...');
 
+      const redirectTarget =
+        typeof router.query.redirect === 'string' &&
+        router.query.redirect.startsWith('/')
+          ? router.query.redirect
+          : data.user?.role === 'admin'
+            ? '/administration/stock'
+            : '/';
+
       setTimeout(() => {
-        router.push('/');
+        router.push(redirectTarget);
       }, 800);
     } catch (error) {
       setErrorMessage('Une erreur est survenue lors de la connexion.');

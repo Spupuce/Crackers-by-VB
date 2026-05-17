@@ -1,13 +1,16 @@
 // components/ProductPurchasePanel.js
 
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { FiHeart, FiShoppingCart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
 import { isSoldOut } from '../utils/product';
+import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import styles from '../styles/ProductDetail.module.css';
 
 export default function ProductPurchasePanel({ product }) {
+  const router = useRouter();
   const soldOut = isSoldOut(product);
   const [quantity, setQuantity] = useState(1);
 
@@ -17,7 +20,8 @@ export default function ProductPurchasePanel({ product }) {
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [notifyError, setNotifyError] = useState('');
 
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isAuthenticated, isAuthReady } = useAuth();
+  const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
   const favorite = isFavorite(product.slug);
 
   const decreaseQuantity = () => {
@@ -28,8 +32,17 @@ export default function ProductPurchasePanel({ product }) {
     setQuantity((prev) => Math.min(product.stock || 1, prev + 1));
   };
 
-  const handleToggleFavorite = () => {
-    toggleFavorite(product.slug);
+  const handleToggleFavorite = async () => {
+    if (!isAuthReady) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.push('/connexion');
+      return;
+    }
+
+    await toggleFavorite(product.slug);
   };
 
   const handleOpenNotifyForm = () => {
@@ -207,6 +220,8 @@ export default function ProductPurchasePanel({ product }) {
             favorite ? styles.favoriteButtonActive : ''
           }`}
           onClick={handleToggleFavorite}
+          aria-pressed={favorite}
+          disabled={!isAuthReady || isSyncingFavorites}
         >
           {favorite ? <FaHeart /> : <FiHeart />}
           <span>

@@ -1,23 +1,37 @@
 // components/ProductCard.js
 
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { FiHeart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
 import { getProductStatus, isSoldOut } from '../utils/product';
+import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import styles from '../styles/ProductCard.module.css';
 
 export default function ProductCard({ product }) {
+  const router = useRouter();
   const status = getProductStatus(product);
   const soldOut = isSoldOut(product);
 
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isAuthenticated, isAuthReady } = useAuth();
+  const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
   const favorite = isFavorite(product.slug);
 
-  function handleToggleFavorite(event) {
+  async function handleToggleFavorite(event) {
     event.preventDefault();
     event.stopPropagation();
-    toggleFavorite(product.slug);
+
+    if (!isAuthReady) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.push('/connexion');
+      return;
+    }
+
+    await toggleFavorite(product.slug);
   }
 
   function handleAddToCart(event) {
@@ -50,7 +64,9 @@ export default function ProductCard({ product }) {
                   aria-label={
                     favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'
                   }
+                  aria-pressed={favorite}
                   onClick={handleToggleFavorite}
+                  disabled={!isAuthReady || isSyncingFavorites}
                 >
                   {favorite ? <FaHeart /> : <FiHeart />}
                 </button>

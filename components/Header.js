@@ -1,6 +1,4 @@
-// components/Header.js
-
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   FiSearch,
@@ -14,13 +12,103 @@ import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import styles from '../styles/Header.module.css';
 
-export default function Header() {
+function normalizeValue(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export default function Header({ products = [] }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const searchContainerRef = useRef(null);
+  const searchInputRef = useRef(null);
+
   const { isAuthenticated } = useAuth();
-  const { favoritesCount } = useFavorites();
+  const { favoritesCount, isFavoritesReady } = useFavorites();
+
+  const safeProducts = Array.isArray(products) ? products : [];
 
   const closeMenu = () => setMenuOpen(false);
   const accountHref = isAuthenticated ? '/mon-compte' : '/connexion';
+  const displayedFavoritesCount =
+    isAuthenticated && isFavoritesReady ? favoritesCount : 0;
+
+  function handleToggleSearch() {
+    setSearchOpen((prev) => !prev);
+    setMenuOpen(false);
+  }
+
+  function handleCloseSearch() {
+    setSearchOpen(false);
+    setSearchTerm('');
+  }
+
+  useEffect(() => {
+    if (!searchOpen) {
+      return;
+    }
+
+    searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        searchOpen &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target)
+      ) {
+        handleCloseSearch();
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        handleCloseSearch();
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [searchOpen]);
+
+  const filteredResults = useMemo(() => {
+    const normalizedSearch = normalizeValue(searchTerm);
+
+    if (!normalizedSearch) {
+      return [];
+    }
+
+    return safeProducts
+      .filter((product) => {
+        if (!product || typeof product !== 'object') {
+          return false;
+        }
+
+        const searchFields = [
+          product.name,
+          product.category,
+          product.slug,
+          product.description,
+        ]
+          .map((field) => normalizeValue(field))
+          .filter(Boolean);
+
+        return searchFields.some((field) => field.includes(normalizedSearch));
+      })
+      .slice(0, 6);
+  }, [safeProducts, searchTerm]);
 
   return (
     <header className={styles.header}>
@@ -53,13 +141,100 @@ export default function Header() {
 
         <div className={styles.rightBlock}>
           <div className={styles.actions}>
-            <button
-              className={styles.iconButton}
-              aria-label="Rechercher"
-              type="button"
-            >
-              <FiSearch aria-hidden="true" />
-            </button>
+            <div ref={searchContainerRef} className={styles.searchContainer}>
+              <button
+                className={`${styles.iconButton} ${
+                  searchOpen ? styles.iconButtonActive : ''
+                }`}
+                aria-label="Rechercher"
+                aria-expanded={searchOpen}
+                aria-controls="header-search-panel"
+                type="button"
+                onClick={handleToggleSearch}
+              >
+                <FiSearch aria-hidden="true" />
+              </button>
+
+              {searchOpen && (
+                <>
+                  <button
+                    type="button"
+                    className={styles.searchBackdrop}
+                    aria-label="Fermer la recherche"
+                    onClick={handleCloseSearch}
+                  />
+
+                  <div
+                    id="header-search-panel"
+                    className={styles.searchPanel}
+                    role="dialog"
+                    aria-label="Recherche de produits"
+                  >
+                    <div className={styles.searchInputRow}>
+                      <FiSearch
+                        aria-hidden="true"
+                        className={styles.searchInputIcon}
+                      />
+
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        placeholder="Rechercher une création..."
+                        className={styles.searchInput}
+                      />
+                    </div>
+
+                    <div className={styles.searchResults}>
+                      {!searchTerm.trim() ? (
+                        <p className={styles.searchMessage}>
+                          Tape un nom de produit ou une catégorie.
+                        </p>
+                      ) : filteredResults.length === 0 ? (
+                        <p className={styles.searchMessage}>
+                          Aucun produit trouvé.
+                        </p>
+                      ) : (
+                        filteredResults.map((product) => (
+                          <Link
+                            key={product._id || product.slug}
+                            href={`/boutique/${product.slug}`}
+                            legacyBehavior
+                          >
+                            <a
+                              className={styles.searchResultItem}
+                              onClick={handleCloseSearch}
+                            >
+                              <div className={styles.searchResultImageWrapper}>
+                                <img
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  className={styles.searchResultImage}
+                                />
+                              </div>
+
+                              <div className={styles.searchResultContent}>
+                                <span className={styles.searchResultName}>
+                                  {product.name}
+                                </span>
+                                <span className={styles.searchResultCategory}>
+                                  {product.category}
+                                </span>
+                              </div>
+
+                              <span className={styles.searchResultPrice}>
+                                {Number(product.price).toFixed(2)} €
+                              </span>
+                            </a>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
             <Link href="/favoris" legacyBehavior>
               <a
@@ -68,8 +243,8 @@ export default function Header() {
                 onClick={closeMenu}
               >
                 <FiHeart aria-hidden="true" />
-                {favoritesCount > 0 && (
-                  <span className={styles.badge}>{favoritesCount}</span>
+                {displayedFavoritesCount > 0 && (
+                  <span className={styles.badge}>{displayedFavoritesCount}</span>
                 )}
               </a>
             </Link>
