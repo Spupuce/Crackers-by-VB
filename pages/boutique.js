@@ -79,7 +79,8 @@ function matchesPriceRange(productPrice, priceRangeKey, minPrice, maxPrice) {
     return true;
   }
 
-  const selectedRange = PRICE_RANGE_OPTIONS[priceRangeKey] || PRICE_RANGE_OPTIONS.all;
+  const selectedRange =
+    PRICE_RANGE_OPTIONS[priceRangeKey] || PRICE_RANGE_OPTIONS.all;
 
   if (selectedRange.min !== null && price < selectedRange.min) {
     return false;
@@ -218,7 +219,7 @@ export async function getServerSideProps(context) {
     const response = await fetch(`${baseUrl}/api/products`);
 
     if (!response.ok) {
-      throw new Error('API products error');
+      throw new Error(`API products error: ${response.status}`);
     }
 
     const products = await response.json();
@@ -229,6 +230,8 @@ export async function getServerSideProps(context) {
       },
     };
   } catch (error) {
+    console.error('Boutique getServerSideProps fallback:', error);
+
     return {
       props: {
         products: fallbackProducts,

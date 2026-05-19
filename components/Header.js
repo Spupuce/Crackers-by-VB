@@ -96,16 +96,17 @@ export default function Header({ products = [] }) {
           return false;
         }
 
-        const searchFields = [
-          product.name,
-          product.category,
-          product.slug,
-          product.description,
-        ]
-          .map((field) => normalizeValue(field))
-          .filter(Boolean);
+        const normalizedName = normalizeValue(product.name);
+        const normalizedCategory = normalizeValue(product.category);
+        const normalizedSlug = normalizeValue(product.slug);
+        const normalizedDescription = normalizeValue(product.description);
 
-        return searchFields.some((field) => field.includes(normalizedSearch));
+        return (
+          normalizedName.includes(normalizedSearch) ||
+          normalizedCategory.includes(normalizedSearch) ||
+          normalizedSlug.includes(normalizedSearch) ||
+          normalizedDescription.includes(normalizedSearch)
+        );
       })
       .slice(0, 6);
   }, [safeProducts, searchTerm]);
