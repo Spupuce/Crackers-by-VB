@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { useAuth } from './AuthContext';
 
 const FavoritesContext = createContext(null);
 
@@ -16,7 +17,10 @@ function sanitizeFavorites(value) {
 
   return [
     ...new Set(
-      value.filter((item) => typeof item === 'string' && item.trim())
+      value
+        .filter((item) => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean)
     ),
   ];
 }
@@ -29,89 +33,173 @@ function areSameSlugs(a, b) {
   return a.every((item, index) => item === b[index]);
 }
 
-function getStoredFavorites() {
-  if (typeof window === 'undefined') return [];
+async function fetchFavorites() {
+  const response = await fetch('/api/account/favorites', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 
-  try {
-    const stored = window.localStorage.getItem('crackers-favorites');
-
-    if (!stored) return [];
-
-    return sanitizeFavorites(JSON.parse(stored));
-  } catch {
-    return [];
+  if (!response.ok) {
+    throw new Error('Impossible de charger les favoris.');
   }
+
+  const data = await response.json();
+  return sanitizeFavorites(data?.favorites);
+}
+
+async function updateFavorites(nextFavorites) {
+  const response = await fetch('/api/account/favorites', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      favorites: sanitizeFavorites(nextFavorites),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Impossible de mettre à jour les favoris.');
+  }
+
+  const data = await response.json();
+  return sanitizeFavorites(data?.favorites);
 }
 
 export function FavoritesProvider({ children }) {
+  const { isAuthenticated, isAuthReady } = useAuth();
   const [favorites, setFavorites] = useState([]);
   const [activeFavoriteSlugs, setActiveFavoriteSlugs] = useState([]);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [isFavoritesReady, setIsFavoritesReady] = useState(false);
+  const [isSyncingFavorites, setIsSyncingFavorites] = useState(false);
 
   useEffect(() => {
-    const storedFavorites = getStoredFavorites();
+    let isMounted = true;
 
-    setFavorites(storedFavorites);
-    setActiveFavoriteSlugs(storedFavorites);
-    setIsHydrated(true);
-  }, []);
+    async function syncFavoritesFromAccount() {
+      if (!isAuthReady) return;
 
-  useEffect(() => {
-    if (!isHydrated || typeof window === 'undefined') return;
+      if (!isAuthenticated) {
+        if (!isMounted) return;
+        setFavorites([]);
+        setActiveFavoriteSlugs([]);
+        setIsFavoritesReady(true);
+        return;
+      }
 
-    window.localStorage.setItem(
-      'crackers-favorites',
-      JSON.stringify(sanitizeFavorites(favorites))
-    );
-  }, [favorites, isHydrated]);
+      setIsSyncingFavorites(true);
+
+      try {
+        const nextFavorites = await fetchFavorites();
+
+        if (!isMounted) return;
+
+        setFavorites(nextFavorites);
+        setActiveFavoriteSlugs(nextFavorites);
+      } catch {
+        if (!isMounted) return;
+
+        setFavorites([]);
+        setActiveFavoriteSlugs([]);
+      } finally {
+        if (!isMounted) return;
+
+        setIsSyncingFavorites(false);
+        setIsFavoritesReady(true);
+      }
+    }
+
+    syncFavoritesFromAccount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, isAuthReady]);
 
   const isFavorite = useCallback(
     (slug) => favorites.includes(slug),
     [favorites]
   );
 
-  const addFavorite = useCallback((slug) => {
-    if (!slug || typeof slug !== 'string') return;
+  const persistFavorites = useCallback(
+    async (nextFavorites) => {
+      if (!isAuthenticated) {
+        return [];
+      }
 
-    setFavorites((prev) => {
-      const next = sanitizeFavorites([...prev, slug]);
-      return areSameSlugs(prev, next) ? prev : next;
-    });
+      setIsSyncingFavorites(true);
 
-    setActiveFavoriteSlugs((prevActive) => {
-      const nextActive = sanitizeFavorites([...prevActive, slug]);
-      return areSameSlugs(prevActive, nextActive) ? prevActive : nextActive;
-    });
-  }, []);
+      try {
+        const savedFavorites = await updateFavorites(nextFavorites);
+        setFavorites(savedFavorites);
 
-  const removeFavorite = useCallback((slug) => {
-    if (!slug || typeof slug !== 'string') return;
+        setActiveFavoriteSlugs((prevActive) => {
+          const nextActive = savedFavorites.filter((slug) =>
+            prevActive.includes(slug)
+          );
 
-    setFavorites((prev) => prev.filter((item) => item !== slug));
-    setActiveFavoriteSlugs((prev) => prev.filter((item) => item !== slug));
-  }, []);
+          return areSameSlugs(prevActive, nextActive) ? prevActive : nextActive;
+        });
 
-  const toggleFavorite = useCallback((slug) => {
-    if (!slug || typeof slug !== 'string') return;
+        return savedFavorites;
+      } finally {
+        setIsSyncingFavorites(false);
+      }
+    },
+    [isAuthenticated]
+  );
 
-    setFavorites((prev) => {
-      const exists = prev.includes(slug);
-      const next = exists
-        ? prev.filter((item) => item !== slug)
-        : sanitizeFavorites([...prev, slug]);
+  const addFavorite = useCallback(
+    async (slug) => {
+      if (!isAuthenticated || !slug || typeof slug !== 'string') return;
 
-      return areSameSlugs(prev, next) ? prev : next;
-    });
+      const nextFavorites = sanitizeFavorites([...favorites, slug]);
+      await persistFavorites(nextFavorites);
 
-    setActiveFavoriteSlugs((prevActive) => {
-      const exists = prevActive.includes(slug);
-      const nextActive = exists
-        ? prevActive.filter((item) => item !== slug)
-        : sanitizeFavorites([...prevActive, slug]);
+      setActiveFavoriteSlugs((prevActive) => {
+        const nextActive = sanitizeFavorites([...prevActive, slug]);
+        return areSameSlugs(prevActive, nextActive) ? prevActive : nextActive;
+      });
+    },
+    [favorites, isAuthenticated, persistFavorites]
+  );
 
-      return areSameSlugs(prevActive, nextActive) ? prevActive : nextActive;
-    });
-  }, []);
+  const removeFavorite = useCallback(
+    async (slug) => {
+      if (!isAuthenticated || !slug || typeof slug !== 'string') return;
+
+      const nextFavorites = favorites.filter((item) => item !== slug);
+      await persistFavorites(nextFavorites);
+
+      setActiveFavoriteSlugs((prev) => prev.filter((item) => item !== slug));
+    },
+    [favorites, isAuthenticated, persistFavorites]
+  );
+
+  const toggleFavorite = useCallback(
+    async (slug) => {
+      if (!isAuthenticated || !slug || typeof slug !== 'string') return;
+
+      const exists = favorites.includes(slug);
+      const nextFavorites = exists
+        ? favorites.filter((item) => item !== slug)
+        : sanitizeFavorites([...favorites, slug]);
+
+      await persistFavorites(nextFavorites);
+
+      setActiveFavoriteSlugs((prevActive) => {
+        const isCurrentlyActive = prevActive.includes(slug);
+        const nextActive = isCurrentlyActive
+          ? prevActive.filter((item) => item !== slug)
+          : sanitizeFavorites([...prevActive, slug]);
+
+        return areSameSlugs(prevActive, nextActive) ? prevActive : nextActive;
+      });
+    },
+    [favorites, isAuthenticated, persistFavorites]
+  );
 
   const syncWithActiveProductSlugs = useCallback(
     (activeSlugs) => {
@@ -127,14 +215,16 @@ export function FavoritesProvider({ children }) {
     [favorites]
   );
 
-  const clearFavorites = useCallback(() => {
-    setFavorites([]);
-    setActiveFavoriteSlugs([]);
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('crackers-favorites', JSON.stringify([]));
+  const clearFavorites = useCallback(async () => {
+    if (!isAuthenticated) {
+      setFavorites([]);
+      setActiveFavoriteSlugs([]);
+      return;
     }
-  }, []);
+
+    await persistFavorites([]);
+    setActiveFavoriteSlugs([]);
+  }, [isAuthenticated, persistFavorites]);
 
   const favoritesCount = activeFavoriteSlugs.length;
 
@@ -142,6 +232,8 @@ export function FavoritesProvider({ children }) {
     () => ({
       favorites,
       favoritesCount,
+      isFavoritesReady,
+      isSyncingFavorites,
       isFavorite,
       addFavorite,
       removeFavorite,
@@ -152,6 +244,8 @@ export function FavoritesProvider({ children }) {
     [
       favorites,
       favoritesCount,
+      isFavoritesReady,
+      isSyncingFavorites,
       isFavorite,
       addFavorite,
       removeFavorite,

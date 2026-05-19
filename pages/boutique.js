@@ -1,5 +1,3 @@
-// pages/boutique.js
-
 import { useMemo, useState } from 'react';
 import Head from 'next/head';
 import Header from '../components/Header';
@@ -161,7 +159,7 @@ export default function BoutiquePage({ products }) {
         />
       </Head>
 
-      <Header />
+      <Header products={activeProducts} />
 
       <main className={styles.page}>
         <div className={styles.container}>

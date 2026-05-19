@@ -29,10 +29,6 @@ export default function Footer() {
               <Link href="/contact" passHref>
                 <a>Contact</a>
               </Link>
-
-              <Link href="/administration" passHref>
-                <a>Administration</a>
-              </Link>
             </nav>
           </div>
 

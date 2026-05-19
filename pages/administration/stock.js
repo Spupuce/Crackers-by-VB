@@ -6,10 +6,12 @@ import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import AdminProductRow from '../../components/AdminProductRow';
+import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/AdminStock.module.css';
 
 export default function AdminStockPage() {
   const router = useRouter();
+  const { isAuthenticated, isAdmin, isAuthReady } = useAuth();
 
   const [activeProducts, setActiveProducts] = useState([]);
   const [archivedProducts, setArchivedProducts] = useState([]);
@@ -46,8 +48,22 @@ export default function AdminStockPage() {
   }
 
   useEffect(() => {
+    if (!isAuthReady) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.replace('/connexion?redirect=/administration/stock');
+      return;
+    }
+
+    if (!isAdmin) {
+      router.replace('/');
+      return;
+    }
+
     fetchProducts();
-  }, []);
+  }, [isAuthReady, isAuthenticated, isAdmin, router]);
 
   function handleAddProduct() {
     router.push('/administration/produit/nouveau');
@@ -131,6 +147,46 @@ export default function AdminStockPage() {
     } catch (error) {
       // tu pourras afficher une erreur UI ici ensuite
     }
+  }
+
+  if (!isAuthReady) {
+    return (
+      <>
+        <Head>
+          <title>Gestion de stock - Crackers by VB</title>
+        </Head>
+
+        <Header />
+
+        <main className={styles.page}>
+          <div className={styles.container}>
+            <div className={styles.infoBox}>Vérification de la session...</div>
+          </div>
+        </main>
+
+        <Footer />
+      </>
+    );
+  }
+
+  if (!isAuthenticated || !isAdmin) {
+    return (
+      <>
+        <Head>
+          <title>Gestion de stock - Crackers by VB</title>
+        </Head>
+
+        <Header />
+
+        <main className={styles.page}>
+          <div className={styles.container}>
+            <div className={styles.infoBox}>Redirection en cours...</div>
+          </div>
+        </main>
+
+        <Footer />
+      </>
+    );
   }
 
   return (

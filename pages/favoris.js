@@ -6,13 +6,16 @@ import Link from 'next/link';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
+import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { products as fallbackProducts } from '../data/products';
 import { isDisplayableProduct } from '../utils/product';
 import styles from '../styles/Boutique.module.css';
 
 export default function FavorisPage({ products }) {
-  const { favorites, syncWithActiveProductSlugs } = useFavorites();
+  const { isAuthenticated, isAuthReady } = useAuth();
+  const { favorites, syncWithActiveProductSlugs, isFavoritesReady } =
+    useFavorites();
 
   const safeProducts = useMemo(
     () => (Array.isArray(products) ? products : []),
@@ -37,8 +40,9 @@ export default function FavorisPage({ products }) {
   );
 
   useEffect(() => {
+    if (!isFavoritesReady) return;
     syncWithActiveProductSlugs(activeFavoriteSlugs);
-  }, [activeFavoriteSlugs, syncWithActiveProductSlugs]);
+  }, [activeFavoriteSlugs, isFavoritesReady, syncWithActiveProductSlugs]);
 
   const favoriteProducts = useMemo(
     () => activeProducts.filter((product) => favorites.includes(product.slug)),
@@ -46,6 +50,7 @@ export default function FavorisPage({ products }) {
   );
 
   const count = favoriteProducts.length;
+  const isPageReady = isAuthReady && (!isAuthenticated || isFavoritesReady);
 
   return (
     <>
@@ -64,13 +69,30 @@ export default function FavorisPage({ products }) {
           <div className={styles.intro}>
             <h1 className={styles.title}>Mes favoris</h1>
             <p className={styles.subtitle}>
-              {count === 0
+              {!isPageReady
+                ? 'Chargement de vos favoris...'
+                : !isAuthenticated
+                ? 'Connectez-vous pour retrouver vos favoris'
+                : count === 0
                 ? 'Aucun produit dans vos favoris pour le moment'
                 : `${count} produit${count > 1 ? 's' : ''} dans vos favoris`}
             </p>
           </div>
 
-          {count > 0 ? (
+          {!isPageReady ? (
+            <section className={styles.productsSection}>
+              <p className={styles.results}>Chargement de vos favoris...</p>
+            </section>
+          ) : !isAuthenticated ? (
+            <section className={styles.productsSection}>
+              <p className={styles.results}>
+                Vous devez être connectée pour accéder à vos favoris.
+              </p>
+              <Link href="/connexion" passHref>
+                <a className={styles.emptyCta}>Se connecter</a>
+              </Link>
+            </section>
+          ) : count > 0 ? (
             <section className={styles.productsSection}>
               <div className={styles.grid}>
                 {favoriteProducts.map((product) => (

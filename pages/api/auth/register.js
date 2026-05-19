@@ -87,6 +87,7 @@ export default async function handler(req, res) {
       lastName: normalizedLastName,
       email: normalizedEmail,
       passwordHash,
+      favorites: [],
     });
 
     return res.status(201).json({
@@ -96,6 +97,7 @@ export default async function handler(req, res) {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        favorites: user.favorites || [],
       },
     });
   } catch (error) {
