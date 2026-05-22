@@ -73,6 +73,31 @@ export default function AdminStockPage() {
     router.push(`/administration/produit/${product._id}`);
   }
 
+  function handleProductUpdated(updatedProduct) {
+    if (!updatedProduct?._id) {
+      return;
+    }
+
+    if (updatedProduct.isArchived) {
+      setArchivedProducts((prev) =>
+        prev.map((product) =>
+          product._id === updatedProduct._id
+            ? { ...product, ...updatedProduct }
+            : product
+        )
+      );
+      return;
+    }
+
+    setActiveProducts((prev) =>
+      prev.map((product) =>
+        product._id === updatedProduct._id
+          ? { ...product, ...updatedProduct }
+          : product
+      )
+    );
+  }
+
   async function handleArchive(product) {
     try {
       const response = await fetch(`/api/admin/products/${product._id}/archive`, {
@@ -129,7 +154,7 @@ export default function AdminStockPage() {
     );
 
     if (!confirmed) {
-      return;
+      return false;
     }
 
     try {
@@ -138,14 +163,16 @@ export default function AdminStockPage() {
       });
 
       if (!response.ok) {
-        return;
+        return false;
       }
 
       setArchivedProducts((prev) =>
         prev.filter((item) => item._id !== product._id)
       );
+
+      return true;
     } catch (error) {
-      // tu pourras afficher une erreur UI ici ensuite
+      return false;
     }
   }
 
@@ -247,6 +274,7 @@ export default function AdminStockPage() {
                       product={product}
                       onEdit={handleEdit}
                       onArchive={handleArchive}
+                      onProductUpdated={handleProductUpdated}
                     />
                   ))}
                 </div>
@@ -272,6 +300,7 @@ export default function AdminStockPage() {
                       product={product}
                       onUnarchive={handleUnarchive}
                       onDelete={handleDelete}
+                      onProductUpdated={handleProductUpdated}
                     />
                   ))}
                 </div>

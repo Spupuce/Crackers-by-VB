@@ -1,6 +1,6 @@
 // components/ProductPurchasePanel.js
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { FiHeart, FiShoppingCart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
@@ -20,9 +20,15 @@ export default function ProductPurchasePanel({ product }) {
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [notifyError, setNotifyError] = useState('');
 
-  const { isAuthenticated, isAuthReady } = useAuth();
+  const { user, isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
   const favorite = isFavorite(product.slug);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      setNotifyEmail(user.email);
+    }
+  }, [isAuthenticated, user]);
 
   const decreaseQuantity = () => {
     setQuantity((prev) => Math.max(1, prev - 1));
@@ -47,6 +53,7 @@ export default function ProductPurchasePanel({ product }) {
 
   const handleOpenNotifyForm = () => {
     setShowNotifyForm(true);
+    setNotifySuccess(false);
     setNotifyError('');
   };
 
@@ -57,6 +64,14 @@ export default function ProductPurchasePanel({ product }) {
 
   const handleSubmitNotify = async () => {
     setNotifyError('');
+    setNotifySuccess(false);
+
+    if (!product?.slug) {
+      setNotifyError(
+        "Impossible d'envoyer la demande pour ce produit pour le moment."
+      );
+      return;
+    }
 
     if (!notifyEmail || !notifyEmail.includes('@')) {
       setNotifyError('Merci de renseigner une adresse e-mail valide.');
@@ -67,7 +82,7 @@ export default function ProductPurchasePanel({ product }) {
       setNotifyLoading(true);
 
       const response = await fetch(
-        `/api/products/${product._id}/restock-requests`,
+        `/api/products/${product.slug}/restock-requests`,
         {
           method: 'POST',
           headers: {
@@ -77,15 +92,19 @@ export default function ProductPurchasePanel({ product }) {
         }
       );
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Erreur lors de la demande.');
+        throw new Error(data?.message || 'Erreur lors de la demande.');
       }
 
       setNotifySuccess(true);
       setShowNotifyForm(false);
+      setNotifyError('');
     } catch (error) {
       setNotifyError(
-        "Une erreur s'est produite. Merci de réessayer dans quelques instants."
+        error.message ||
+          "Une erreur s'est produite. Merci de réessayer dans quelques instants."
       );
     } finally {
       setNotifyLoading(false);
@@ -102,11 +121,9 @@ export default function ProductPurchasePanel({ product }) {
           {product.price.toFixed(2)} €
         </span>
 
-        {soldOut && (
+        {soldOut ? (
           <span className={styles.soldOutBadge}>Article épuisé</span>
-        )}
-
-        {!soldOut && (
+        ) : (
           <span className={styles.stockBadge}>En stock</span>
         )}
       </div>
@@ -157,7 +174,7 @@ export default function ProductPurchasePanel({ product }) {
                   className={styles.notifyInput}
                   placeholder="Votre adresse e-mail"
                   value={notifyEmail}
-                  onChange={(e) => setNotifyEmail(e.target.value)}
+                  onChange={(event) => setNotifyEmail(event.target.value)}
                 />
 
                 <button

@@ -5,27 +5,72 @@ import Product from '../../../../../models/Product';
 import RestockRequest from '../../../../../models/RestockRequest';
 import nodemailer from 'nodemailer';
 
-async function createTransport() {
+function getTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!host || !port || !user || !pass) {
+    throw new Error('Configuration SMTP incomplète.');
+  }
+
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: false,
+    host,
+    port,
+    secure: port === 465,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user,
+      pass,
     },
   });
 }
 
-export default async function handler(req, res) {
-  await connectMongo();
-  const { id } = req.query;
+function getProductUrl(product) {
+  const baseUrl = process.env.SITE_BASE_URL || '';
 
+  if (!product?.slug) {
+    return baseUrl || '';
+  }
+
+  return baseUrl
+    ? `${baseUrl}/boutique/${product.slug}`
+    : `/boutique/${product.slug}`;
+}
+
+function buildMailText(product) {
+  const shopName = process.env.MAIL_FROM_NAME || 'Crackers by VB';
+  const productUrl = getProductUrl(product);
+
+  return `Bonjour,
+
+Le produit "${product.name}" est de nouveau disponible sur la boutique.
+
+Vous pouvez le retrouver ici :
+${productUrl}
+
+Attention : cet e-mail vous informe uniquement du retour en stock. Il ne garantit pas la réservation du produit, qui peut redevenir indisponible entre-temps.
+
+À bientôt,
+${shopName}`;
+}
+
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Méthode non autorisée.' });
   }
 
   try {
+    await connectMongo();
+
+    const { id } = req.query;
+    const mailFromAddress = process.env.MAIL_FROM_ADDRESS;
+    const mailFromName = process.env.MAIL_FROM_NAME || 'Crackers by VB';
+
+    if (!mailFromAddress) {
+      throw new Error("MAIL_FROM_ADDRESS est manquant.");
+    }
+
     const product = await Product.findById(id);
 
     if (!product) {
@@ -40,38 +85,43 @@ export default async function handler(req, res) {
     if (requests.length === 0) {
       return res.status(200).json({
         message: 'Aucune demande en attente pour ce produit.',
+        sentCount: 0,
       });
     }
 
-    const transporter = await createTransport();
+    const transporter = getTransporter();
 
-    const sendPromises = requests.map((request) =>
-      transporter.sendMail({
-        from: `"${process.env.MAIL_FROM_NAME || 'Votre boutique'}" <${process.env.MAIL_FROM_ADDRESS}>`,
-        to: request.email,
-        subject: `${product.name} est de nouveau disponible`,
-        text: `Bonjour,\n\nLe produit "${product.name}" est à nouveau disponible sur la boutique.\n\nVous pouvez le retrouver ici : ${process.env.SITE_BASE_URL}/boutique/${product.slug}\n\nÀ bientôt,\n${process.env.MAIL_FROM_NAME || 'La boutique'}`,
-      })
+    await Promise.all(
+      requests.map((request) =>
+        transporter.sendMail({
+          from: `"${mailFromName}" <${mailFromAddress}>`,
+          to: request.email,
+          subject: `${product.name} est de nouveau disponible`,
+          text: buildMailText(product),
+        })
+      )
     );
-
-    await Promise.all(sendPromises);
 
     const now = new Date();
 
     await RestockRequest.updateMany(
-      { _id: { $in: requests.map((r) => r._id) } },
-      { $set: { notifiedAt: now } }
+      {
+        _id: { $in: requests.map((request) => request._id) },
+      },
+      {
+        $set: { notifiedAt: now },
+      }
     );
-
-    product.pendingRequestsCount = 0;
-    await product.save();
 
     return res.status(200).json({
       message: `${requests.length} notification(s) envoyée(s).`,
+      sentCount: requests.length,
     });
   } catch (error) {
+    console.error('NOTIFY_RESTOCK_ERROR:', error);
+
     return res.status(500).json({
-      message: 'Erreur lors de l’envoi des notifications.',
+      message: "Erreur lors de l'envoi des notifications.",
     });
   }
 }

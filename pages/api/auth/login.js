@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       message: 'Connexion réussie.',
       user: {
-        id: user._id,
+        id: String(user._id),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -77,8 +77,13 @@ export default async function handler(req, res) {
       },
     });
   } catch (error) {
+    console.error('LOGIN API ERROR:', error);
+
     return res.status(500).json({
-      message: 'Une erreur est survenue lors de la connexion.',
+      message:
+        process.env.NODE_ENV === 'development'
+          ? error?.message || 'Erreur inconnue lors de la connexion.'
+          : 'Une erreur est survenue lors de la connexion.',
     });
   }
 }
