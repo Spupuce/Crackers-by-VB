@@ -1,6 +1,6 @@
 // components/AuthCard.js
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import styles from '../styles/Auth.module.css';
@@ -20,13 +20,18 @@ export default function AuthCard({
   onSubmit,
   isSubmitting = false,
 }) {
-  const defaultValues = fields.reduce((accumulator, field) => {
-    accumulator[field.name] = initialValues?.[field.name] ?? '';
-    return accumulator;
-  }, {});
+  const buildDefaultValues = () =>
+    fields.reduce((accumulator, field) => {
+      accumulator[field.name] = initialValues?.[field.name] ?? '';
+      return accumulator;
+    }, {});
 
-  const [formValues, setFormValues] = useState(defaultValues);
+  const [formValues, setFormValues] = useState(buildDefaultValues);
   const [visiblePasswords, setVisiblePasswords] = useState({});
+
+  useEffect(() => {
+    setFormValues(buildDefaultValues());
+  }, [initialValues, fields]);
 
   function handleChange(event) {
     const { name, value } = event.target;

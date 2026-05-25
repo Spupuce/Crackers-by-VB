@@ -2,6 +2,7 @@
 
 import { connectMongo } from '../../../../lib/mongodb';
 import Product from '../../../../models/Product';
+import RestockRequest from '../../../../models/RestockRequest';
 import { resolveProductStock } from '../../../../lib/services/stockService';
 import { generateUniqueSlug } from '../../../../lib/services/slugService';
 
@@ -42,7 +43,15 @@ export default async function handler(req, res) {
         });
       }
 
-      return res.status(200).json(product);
+      const pendingRequestsCount = await RestockRequest.countDocuments({
+        product: product._id,
+        notifiedAt: null,
+      });
+
+      return res.status(200).json({
+        ...product.toObject(),
+        pendingRequestsCount,
+      });
     } catch (error) {
       return res.status(500).json({
         message: 'Erreur lors de la récupération du produit.',

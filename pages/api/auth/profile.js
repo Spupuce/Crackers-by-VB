@@ -1,10 +1,31 @@
 // pages/api/auth/profile.js
 
 import { connectMongo } from '../../../lib/mongodb';
+import { getSessionFromRequest } from '../../../lib/session';
 import User from '../../../models/User';
 
+function formatUser(user) {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    id: String(user._id),
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    phone: user.phone || '',
+    addressLine1: user.addressLine1 || '',
+    addressLine2: user.addressLine2 || '',
+    postalCode: user.postalCode || '',
+    city: user.city || '',
+    country: user.country || 'France',
+    role: user.role === 'admin' ? 'admin' : 'customer',
+  };
+}
+
 export default async function handler(req, res) {
-  if (req.method !== 'PUT') {
+  if (req.method !== 'GET' && req.method !== 'PUT') {
     return res.status(405).json({
       message: 'Méthode non autorisée.',
     });
@@ -12,6 +33,28 @@ export default async function handler(req, res) {
 
   try {
     await connectMongo();
+
+    if (req.method === 'GET') {
+      const session = getSessionFromRequest(req);
+
+      if (!session?.userId) {
+        return res.status(401).json({
+          message: 'Utilisateur non authentifié.',
+        });
+      }
+
+      const user = await User.findById(session.userId);
+
+      if (!user) {
+        return res.status(404).json({
+          message: 'Utilisateur introuvable.',
+        });
+      }
+
+      return res.status(200).json({
+        user: formatUser(user),
+      });
+    }
 
     const {
       id = '',
@@ -122,22 +165,11 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       message: 'Profil mis à jour avec succès.',
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone || '',
-        addressLine1: user.addressLine1 || '',
-        addressLine2: user.addressLine2 || '',
-        postalCode: user.postalCode || '',
-        city: user.city || '',
-        country: user.country || 'France',
-      },
+      user: formatUser(user),
     });
   } catch (error) {
     return res.status(500).json({
-      message: 'Une erreur est survenue lors de la mise à jour du profil.',
+      message: 'Une erreur est survenue lors de la gestion du profil.',
     });
   }
 }

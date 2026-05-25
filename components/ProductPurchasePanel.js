@@ -7,12 +7,14 @@ import { FaHeart } from 'react-icons/fa';
 import { isSoldOut } from '../utils/product';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useCart } from '../context/CartContext';
 import styles from '../styles/ProductDetail.module.css';
 
 export default function ProductPurchasePanel({ product }) {
   const router = useRouter();
   const soldOut = isSoldOut(product);
   const [quantity, setQuantity] = useState(1);
+  const [cartMessage, setCartMessage] = useState('');
 
   const [showNotifyForm, setShowNotifyForm] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
@@ -22,6 +24,7 @@ export default function ProductPurchasePanel({ product }) {
 
   const { user, isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
+  const { items, addToCart } = useCart();
   const favorite = isFavorite(product.slug);
 
   useEffect(() => {
@@ -30,12 +33,23 @@ export default function ProductPurchasePanel({ product }) {
     }
   }, [isAuthenticated, user]);
 
+  useEffect(() => {
+    setCartMessage('');
+  }, [quantity, product?.slug]);
+
+  const quantityInCart =
+    items.find((item) => item.slug === product.slug)?.quantity || 0;
+
+  const remainingAvailable = Math.max(0, (product.stock || 0) - quantityInCart);
+
   const decreaseQuantity = () => {
     setQuantity((prev) => Math.max(1, prev - 1));
+    setCartMessage('');
   };
 
   const increaseQuantity = () => {
     setQuantity((prev) => Math.min(product.stock || 1, prev + 1));
+    setCartMessage('');
   };
 
   const handleToggleFavorite = async () => {
@@ -110,6 +124,34 @@ export default function ProductPurchasePanel({ product }) {
       setNotifyLoading(false);
     }
   };
+
+  function handleAddToCart() {
+    if (!product || soldOut) {
+      return;
+    }
+
+    if (remainingAvailable <= 0) {
+      setCartMessage('Stock maximum atteint');
+      return;
+    }
+
+    const quantityToAdd = Math.min(quantity, remainingAvailable);
+
+    addToCart({
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      stock: product.stock,
+      imageUrl: product.imageUrl,
+      category: product.category,
+    }, quantityToAdd);
+
+    if (quantity > remainingAvailable) {
+      setCartMessage('Stock maximum atteint');
+    } else {
+      setCartMessage('');
+    }
+  }
 
   return (
     <div className={styles.purchasePanel}>
@@ -216,6 +258,10 @@ export default function ProductPurchasePanel({ product }) {
           <p className={styles.stockInfo}>
             Maximum disponible : {product.stock}
           </p>
+
+          {cartMessage ? (
+            <p className={styles.notifyError}>{cartMessage}</p>
+          ) : null}
         </div>
       )}
 
@@ -224,6 +270,7 @@ export default function ProductPurchasePanel({ product }) {
           type="button"
           className={styles.addToCartButton}
           disabled={soldOut}
+          onClick={handleAddToCart}
         >
           <FiShoppingCart />
           <span>

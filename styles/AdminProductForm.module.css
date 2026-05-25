@@ -132,6 +132,12 @@ select.input:focus {
   margin-top: 4px;
 }
 
+.submitButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .primaryButton,
 .secondaryButton {
   height: 38px;
@@ -149,6 +155,24 @@ select.input:focus {
 .primaryButton:hover,
 .secondaryButton:hover {
   background-color: var(--color-secondary);
+}
+
+.secondarySubmitButton {
+  height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-secondary);
+  color: var(--color-white);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.secondarySubmitButton:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
 }
 
 .outlineButton {
@@ -183,7 +207,7 @@ select.input:focus {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  background-color: #ffe9d4; /* proche de ton fond pêche */
+  background-color: #ffe9d4;
   border: 1px solid #f4c9a2;
 }
 
@@ -245,7 +269,8 @@ select.input:focus {
   }
 
   .pageTopbar,
-  .colorsHeader {
+  .colorsHeader,
+  .submitButtons {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -255,8 +280,8 @@ select.input:focus {
   }
 
   .input:disabled {
-  background-color: var(--color-gray-100);
-  color: var(--color-text-soft);
-  cursor: not-allowed;
+    background-color: var(--color-gray-100);
+    color: var(--color-text-soft);
+    cursor: not-allowed;
   }
 }

@@ -1,3 +1,5 @@
+// components/Header.js
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -10,6 +12,8 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useCart } from '../context/CartContext';
+import CartDrawer from '../components/CartDrawer';
 import styles from '../styles/Header.module.css';
 
 function normalizeValue(value) {
@@ -24,16 +28,19 @@ function normalizeValue(value) {
 export default function Header({ products = [] }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const searchContainerRef = useRef(null);
   const searchInputRef = useRef(null);
 
   const { isAuthenticated } = useAuth();
   const { favoritesCount, isFavoritesReady } = useFavorites();
+  const { cartCount } = useCart();
 
   const safeProducts = Array.isArray(products) ? products : [];
 
   const closeMenu = () => setMenuOpen(false);
+  const closeCart = () => setCartOpen(false);
   const accountHref = isAuthenticated ? '/mon-compte' : '/connexion';
   const displayedFavoritesCount =
     isAuthenticated && isFavoritesReady ? favoritesCount : 0;
@@ -41,11 +48,18 @@ export default function Header({ products = [] }) {
   function handleToggleSearch() {
     setSearchOpen((prev) => !prev);
     setMenuOpen(false);
+    setCartOpen(false);
   }
 
   function handleCloseSearch() {
     setSearchOpen(false);
     setSearchTerm('');
+  }
+
+  function handleToggleCart() {
+    setCartOpen((prev) => !prev);
+    setMenuOpen(false);
+    handleCloseSearch();
   }
 
   useEffect(() => {
@@ -71,6 +85,7 @@ export default function Header({ products = [] }) {
       if (event.key === 'Escape') {
         setMenuOpen(false);
         handleCloseSearch();
+        closeCart();
       }
     }
 
@@ -112,176 +127,182 @@ export default function Header({ products = [] }) {
   }, [safeProducts, searchTerm]);
 
   return (
-    <header className={styles.header}>
-      <div className={styles.container}>
-        <Link href="/" legacyBehavior>
-          <a className={styles.logo}>Crackers by VB</a>
-        </Link>
-
-        <nav
-          id="header-navigation"
-          className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
-          aria-label="Navigation principale"
-        >
+    <>
+      <header className={styles.header}>
+        <div className={styles.container}>
           <Link href="/" legacyBehavior>
-            <a onClick={closeMenu}>Accueil</a>
+            <a className={styles.logo}>Crackers by VB</a>
           </Link>
 
-          <Link href="/boutique" legacyBehavior>
-            <a onClick={closeMenu}>Boutique</a>
-          </Link>
+          <nav
+            id="header-navigation"
+            className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
+            aria-label="Navigation principale"
+          >
+            <Link href="/" legacyBehavior>
+              <a onClick={closeMenu}>Accueil</a>
+            </Link>
 
-          <Link href="/apropos" legacyBehavior>
-            <a onClick={closeMenu}>À propos</a>
-          </Link>
+            <Link href="/boutique" legacyBehavior>
+              <a onClick={closeMenu}>Boutique</a>
+            </Link>
 
-          <Link href="/contact" legacyBehavior>
-            <a onClick={closeMenu}>Contact</a>
-          </Link>
-        </nav>
+            <Link href="/apropos" legacyBehavior>
+              <a onClick={closeMenu}>À propos</a>
+            </Link>
 
-        <div className={styles.rightBlock}>
-          <div className={styles.actions}>
-            <div ref={searchContainerRef} className={styles.searchContainer}>
-              <button
-                className={`${styles.iconButton} ${
-                  searchOpen ? styles.iconButtonActive : ''
-                }`}
-                aria-label="Rechercher"
-                aria-expanded={searchOpen}
-                aria-controls="header-search-panel"
-                type="button"
-                onClick={handleToggleSearch}
-              >
-                <FiSearch aria-hidden="true" />
-              </button>
+            <Link href="/contact" legacyBehavior>
+              <a onClick={closeMenu}>Contact</a>
+            </Link>
+          </nav>
 
-              {searchOpen && (
-                <>
-                  <button
-                    type="button"
-                    className={styles.searchBackdrop}
-                    aria-label="Fermer la recherche"
-                    onClick={handleCloseSearch}
-                  />
+          <div className={styles.rightBlock}>
+            <div className={styles.actions}>
+              <div ref={searchContainerRef} className={styles.searchContainer}>
+                <button
+                  className={`${styles.iconButton} ${
+                    searchOpen ? styles.iconButtonActive : ''
+                  }`}
+                  aria-label="Rechercher"
+                  aria-expanded={searchOpen}
+                  aria-controls="header-search-panel"
+                  type="button"
+                  onClick={handleToggleSearch}
+                >
+                  <FiSearch aria-hidden="true" />
+                </button>
 
-                  <div
-                    id="header-search-panel"
-                    className={styles.searchPanel}
-                    role="dialog"
-                    aria-label="Recherche de produits"
-                  >
-                    <div className={styles.searchInputRow}>
-                      <FiSearch
-                        aria-hidden="true"
-                        className={styles.searchInputIcon}
-                      />
+                {searchOpen && (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.searchBackdrop}
+                      aria-label="Fermer la recherche"
+                      onClick={handleCloseSearch}
+                    />
 
-                      <input
-                        ref={searchInputRef}
-                        type="text"
-                        value={searchTerm}
-                        onChange={(event) => setSearchTerm(event.target.value)}
-                        placeholder="Rechercher une création..."
-                        className={styles.searchInput}
-                      />
-                    </div>
+                    <div
+                      id="header-search-panel"
+                      className={styles.searchPanel}
+                      role="dialog"
+                      aria-label="Recherche de produits"
+                    >
+                      <div className={styles.searchInputRow}>
+                        <FiSearch
+                          aria-hidden="true"
+                          className={styles.searchInputIcon}
+                        />
 
-                    <div className={styles.searchResults}>
-                      {!searchTerm.trim() ? (
-                        <p className={styles.searchMessage}>
-                          Tape un nom de produit ou une catégorie.
-                        </p>
-                      ) : filteredResults.length === 0 ? (
-                        <p className={styles.searchMessage}>
-                          Aucun produit trouvé.
-                        </p>
-                      ) : (
-                        filteredResults.map((product) => (
-                          <Link
-                            key={product._id || product.slug}
-                            href={`/boutique/${product.slug}`}
-                            legacyBehavior
-                          >
-                            <a
-                              className={styles.searchResultItem}
-                              onClick={handleCloseSearch}
+                        <input
+                          ref={searchInputRef}
+                          type="text"
+                          value={searchTerm}
+                          onChange={(event) => setSearchTerm(event.target.value)}
+                          placeholder="Rechercher une création..."
+                          className={styles.searchInput}
+                        />
+                      </div>
+
+                      <div className={styles.searchResults}>
+                        {!searchTerm.trim() ? (
+                          <p className={styles.searchMessage}>
+                            Tape un nom de produit ou une catégorie.
+                          </p>
+                        ) : filteredResults.length === 0 ? (
+                          <p className={styles.searchMessage}>
+                            Aucun produit trouvé.
+                          </p>
+                        ) : (
+                          filteredResults.map((product) => (
+                            <Link
+                              key={product._id || product.slug}
+                              href={`/boutique/${product.slug}`}
+                              legacyBehavior
                             >
-                              <div className={styles.searchResultImageWrapper}>
-                                <img
-                                  src={product.imageUrl}
-                                  alt={product.name}
-                                  className={styles.searchResultImage}
-                                />
-                              </div>
+                              <a
+                                className={styles.searchResultItem}
+                                onClick={handleCloseSearch}
+                              >
+                                <div className={styles.searchResultImageWrapper}>
+                                  <img
+                                    src={product.imageUrl}
+                                    alt={product.name}
+                                    className={styles.searchResultImage}
+                                  />
+                                </div>
 
-                              <div className={styles.searchResultContent}>
-                                <span className={styles.searchResultName}>
-                                  {product.name}
-                                </span>
-                                <span className={styles.searchResultCategory}>
-                                  {product.category}
-                                </span>
-                              </div>
+                                <div className={styles.searchResultContent}>
+                                  <span className={styles.searchResultName}>
+                                    {product.name}
+                                  </span>
+                                  <span className={styles.searchResultCategory}>
+                                    {product.category}
+                                  </span>
+                                </div>
 
-                              <span className={styles.searchResultPrice}>
-                                {Number(product.price).toFixed(2)} €
-                              </span>
-                            </a>
-                          </Link>
-                        ))
-                      )}
+                                <span className={styles.searchResultPrice}>
+                                  {Number(product.price).toFixed(2)} €
+                                </span>
+                              </a>
+                            </Link>
+                          ))
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
+              </div>
+
+              <Link href="/favoris" legacyBehavior>
+                <a
+                  className={styles.iconButton}
+                  aria-label="Mes favoris"
+                  onClick={closeMenu}
+                >
+                  <FiHeart aria-hidden="true" />
+                  {displayedFavoritesCount > 0 && (
+                    <span className={styles.badge}>{displayedFavoritesCount}</span>
+                  )}
+                </a>
+              </Link>
+
+              <Link href={accountHref} legacyBehavior>
+                <a
+                  className={styles.iconButton}
+                  aria-label="Mon compte"
+                  onClick={closeMenu}
+                >
+                  <FiUser aria-hidden="true" />
+                </a>
+              </Link>
+
+              <button
+                className={styles.iconButton}
+                aria-label="Panier"
+                aria-expanded={cartOpen}
+                type="button"
+                onClick={handleToggleCart}
+              >
+                <FiShoppingCart aria-hidden="true" />
+                {cartCount > 0 && <span className={styles.badge}>{cartCount}</span>}
+              </button>
             </div>
 
-            <Link href="/favoris" legacyBehavior>
-              <a
-                className={styles.iconButton}
-                aria-label="Mes favoris"
-                onClick={closeMenu}
-              >
-                <FiHeart aria-hidden="true" />
-                {displayedFavoritesCount > 0 && (
-                  <span className={styles.badge}>{displayedFavoritesCount}</span>
-                )}
-              </a>
-            </Link>
-
-            <Link href={accountHref} legacyBehavior>
-              <a
-                className={styles.iconButton}
-                aria-label="Mon compte"
-                onClick={closeMenu}
-              >
-                <FiUser aria-hidden="true" />
-              </a>
-            </Link>
-
             <button
-              className={styles.iconButton}
-              aria-label="Panier"
               type="button"
+              className={styles.menuButton}
+              aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+              aria-expanded={menuOpen}
+              aria-controls="header-navigation"
+              onClick={() => setMenuOpen(!menuOpen)}
             >
-              <FiShoppingCart aria-hidden="true" />
-              <span className={styles.badge}>0</span>
+              {menuOpen ? <FiX aria-hidden="true" /> : <FiMenu aria-hidden="true" />}
             </button>
           </div>
-
-          <button
-            type="button"
-            className={styles.menuButton}
-            aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-            aria-expanded={menuOpen}
-            aria-controls="header-navigation"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            {menuOpen ? <FiX aria-hidden="true" /> : <FiMenu aria-hidden="true" />}
-          </button>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <CartDrawer isOpen={cartOpen} onClose={closeCart} />
+    </>
   );
 }

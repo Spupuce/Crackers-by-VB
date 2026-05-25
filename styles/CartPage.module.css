@@ -1,0 +1,200 @@
+/* styles/CartPage.module.css */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.summaryColumn {
+  align-self: flex-start;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 18px;
+}
+
+.sectionOptional {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--color-text-soft);
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.paymentInfoBox {
+  border-radius: 10px;
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-border);
+  padding: 16px 18px;
+}
+
+.paymentTitle {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.paymentText {
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: var(--color-text-soft);
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.itemRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.itemImageWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: var(--color-gray-50);
+  flex-shrink: 0;
+}
+
+.itemImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.itemContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemName {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.itemMeta {
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+}
+
+.itemPrice {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.summaryTotals {
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summaryRow,
+.summaryRowTotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.summaryRowTotal span:last-child {
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.submitWrapper {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.submitHint {
+  font-size: 0.88rem;
+  color: var(--color-text-soft);
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.emptyText {
+  font-size: 0.95rem;
+  color: var(--color-text-soft);
+  margin-bottom: 16px;
+}
+
+.errorMessage {
+  font-size: 0.95rem;
+  color: var(--color-error);
+  background-color: rgba(220, 53, 69, 0.08);
+  border: 1px solid rgba(220, 53, 69, 0.18);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.infoMessage {
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+  background-color: rgba(212, 165, 116, 0.12);
+  border: 1px solid rgba(212, 165, 116, 0.24);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.inputError {
+  border-color: var(--color-error) !important;
+  background-color: rgba(220, 53, 69, 0.04);
+}
+
+.inputError:focus {
+  border-color: var(--color-error) !important;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+}
+
+.fieldError {
+  margin-top: 6px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--color-error);
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .summaryColumn {
+    order: -1;
+  }
+}

@@ -7,6 +7,7 @@ export default function ProductForm({
   mode = "create",
   initialValues = null,
   onSubmit,
+  hasPendingRestockRequests = false,
 }) {
   const [showColorForm, setShowColorForm] = useState(false);
   const [colorDraft, setColorDraft] = useState({
@@ -14,11 +15,15 @@ export default function ProductForm({
     quantity: "",
     imageUrl: "",
   });
+  const [submitAction, setSubmitAction] = useState("save");
+  const [stockInputValue, setStockInputValue] = useState(
+    initialValues?.stock ?? ""
+  );
 
   const [colors, setColors] = useState(
     initialValues?.colors && Array.isArray(initialValues.colors)
       ? initialValues.colors
-      : [],
+      : []
   );
 
   const hasColors = colors.length > 0;
@@ -30,6 +35,19 @@ export default function ProductForm({
       return total + quantity;
     }, 0);
   }, [colors, hasColors]);
+
+  const currentStock = useMemo(() => {
+    if (hasColors) {
+      return Number(visualStock) || 0;
+    }
+
+    return Number(stockInputValue) || 0;
+  }, [hasColors, visualStock, stockInputValue]);
+
+  const canShowNotifyButton =
+    mode === "edit" &&
+    hasPendingRestockRequests &&
+    currentStock > 0;
 
   function handleColorDraftChange(field, value) {
     setColorDraft((prev) => ({
@@ -90,12 +108,12 @@ export default function ProductForm({
       price: Number(formData.get("price")),
       description: formData.get("description")?.toString().trim() || "",
       imageUrl: formData.get("imageUrl")?.toString().trim() || "",
-      stock: hasColors ? visualStock : Number(formData.get("stock")),
+      stock: hasColors ? Number(visualStock) || 0 : Number(stockInputValue) || 0,
       colors,
     };
 
     if (typeof onSubmit === "function") {
-      onSubmit(payload, { mode });
+      onSubmit(payload, { mode, submitAction });
     }
   }
 
@@ -178,9 +196,12 @@ export default function ProductForm({
             step="1"
             placeholder="1"
             className={styles.input}
-            defaultValue={initialValues?.stock ?? ""}
-            value={hasColors ? visualStock : undefined}
-            onChange={() => {}}
+            value={hasColors ? visualStock : stockInputValue}
+            onChange={(e) => {
+              if (!hasColors) {
+                setStockInputValue(e.target.value);
+              }
+            }}
             disabled={hasColors}
             required={!hasColors}
           />
@@ -342,11 +363,31 @@ export default function ProductForm({
         )}
 
         <div className={styles.submitArea}>
-          <button type="submit" className={styles.primaryButton}>
-            {mode === "edit"
-              ? "Mettre à jour le produit"
-              : "Ajouter le produit"}
-          </button>
+          {mode === "edit" ? (
+            <div className={styles.submitButtons}>
+              <button
+                type="submit"
+                className={styles.primaryButton}
+                onClick={() => setSubmitAction("save")}
+              >
+                Mettre à jour le produit
+              </button>
+
+              {canShowNotifyButton && (
+                <button
+                  type="submit"
+                  className={styles.secondarySubmitButton}
+                  onClick={() => setSubmitAction("save-and-notify")}
+                >
+                  Notifier les demandes
+                </button>
+              )}
+            </div>
+          ) : (
+            <button type="submit" className={styles.primaryButton}>
+              Ajouter le produit
+            </button>
+          )}
         </div>
       </form>
     </section>

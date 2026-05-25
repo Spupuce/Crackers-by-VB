@@ -290,15 +290,28 @@
 }
 
 .restockNotifyButton {
-  padding: 6px 12px;
-  border-radius: 999px;
+  height: 34px;
+  padding: 0 12px;
   border: none;
-  background-color: var(--color-secondary);
+  border-radius: 999px;
+  background-color: var(--color-primary);
   color: var(--color-white);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: flex-end;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(230, 159, 106, 0.22);
+  transition: background-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+}
+
+.restockNotifyButton svg {
+  flex-shrink: 0;
+  font-size: 0.95rem;
 }
 
 .restockNotifyButton:hover:enabled {
@@ -360,5 +373,11 @@
   .image {
     width: 84px;
     height: 84px;
+  }
+
+  .restockNotifyButton {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 0.8rem;
   }
 }

@@ -1,0 +1,274 @@
+/* styles/CartDrawer.module.css */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 41, 55, 0.28);
+  border: none;
+  padding: 0;
+  margin: 0;
+  z-index: 1100;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(420px, 100vw);
+  height: 100vh;
+  background: var(--color-white);
+  box-shadow: -12px 0 32px rgba(31, 41, 55, 0.14);
+  display: flex;
+  flex-direction: column;
+  z-index: 1101;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+
+.emptyState {
+  padding: 24px 8px;
+}
+
+.emptyTitle {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-text-soft);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--color-section);
+}
+
+.itemImageWrapper {
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--color-white);
+}
+
+.itemImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.itemContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.itemTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.itemInfos {
+  min-width: 0;
+}
+
+.itemName {
+  margin: 0 0 4px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.35;
+}
+
+.itemCategory {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+  color: var(--color-text-soft);
+}
+
+.itemPrice {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.removeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #d35b67;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.quantityRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quantityButton {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-white);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.quantityButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.quantityValue {
+  min-width: 18px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.stockLimitMessage {
+  margin: -4px 0 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #d35b67;
+  line-height: 1.35;
+}
+
+.footer {
+  border-top: 1px solid var(--color-border);
+  padding: 18px 20px 22px;
+  background: var(--color-white);
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summaryLabel {
+  font-size: 0.95rem;
+  color: var(--color-text-soft);
+}
+
+.summaryValue {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: #f7b26f;
+  color: var(--color-white);
+  text-decoration: none;
+  font-size: 0.96rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.primaryButton:hover {
+  background: #efaa67;
+  text-decoration: none;
+}
+
+@media (max-width: 580px) {
+  .drawer {
+    width: 100vw;
+  }
+
+  .header {
+    padding: 18px 16px 16px;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .footer {
+    padding: 16px;
+  }
+
+  .item {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .itemImageWrapper {
+    width: 72px;
+    height: 72px;
+  }
+}

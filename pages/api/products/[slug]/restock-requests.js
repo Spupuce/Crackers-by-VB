@@ -63,6 +63,13 @@ export default async function handler(req, res) {
       alreadyExists: false,
     });
   } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(200).json({
+        message: 'Une demande existe déjà pour cette adresse e-mail.',
+        alreadyExists: true,
+      });
+    }
+
     console.error('POST /api/products/[slug]/restock-requests error:', error);
 
     return res.status(500).json({

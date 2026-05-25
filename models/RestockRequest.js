@@ -25,5 +25,10 @@ const restockRequestSchema = new mongoose.Schema(
   }
 );
 
+restockRequestSchema.index(
+  { product: 1, email: 1, notifiedAt: 1 },
+  { unique: true }
+);
+
 export default mongoose.models.RestockRequest ||
   mongoose.model('RestockRequest', restockRequestSchema);

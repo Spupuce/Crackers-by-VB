@@ -2,6 +2,7 @@
 
 import { connectMongo } from '../../../../lib/mongodb';
 import Product from '../../../../models/Product';
+import RestockRequest from '../../../../models/RestockRequest';
 import { resolveProductStock } from '../../../../lib/services/stockService';
 import { generateUniqueSlug } from '../../../../lib/services/slugService';
 
@@ -61,7 +62,35 @@ export default async function handler(req, res) {
 
       const products = await Product.find(filter).sort({ createdAt: -1 });
 
-      return res.status(200).json(products);
+      const pendingRequests = await RestockRequest.aggregate([
+        {
+          $match: {
+            notifiedAt: null,
+          },
+        },
+        {
+          $group: {
+            _id: '$product',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const pendingRequestsMap = new Map(
+        pendingRequests.map((item) => [String(item._id), item.count])
+      );
+
+      const enrichedProducts = products.map((product) => {
+        const plainProduct = product.toObject();
+
+        return {
+          ...plainProduct,
+          pendingRequestsCount:
+            pendingRequestsMap.get(String(product._id)) || 0,
+        };
+      });
+
+      return res.status(200).json(enrichedProducts);
     } catch (error) {
       return res.status(500).json({
         message: 'Erreur lors de la récupération des produits admin.',

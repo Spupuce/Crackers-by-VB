@@ -1,5 +1,6 @@
 // components/ProductCard.js
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FiHeart } from 'react-icons/fi';
@@ -7,6 +8,7 @@ import { FaHeart } from 'react-icons/fa';
 import { getProductStatus, isSoldOut } from '../utils/product';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useCart } from '../context/CartContext';
 import styles from '../styles/ProductCard.module.css';
 
 export default function ProductCard({ product }) {
@@ -16,7 +18,18 @@ export default function ProductCard({ product }) {
 
   const { isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
+  const { items, addToCart } = useCart();
   const favorite = isFavorite(product.slug);
+  const [cartMessage, setCartMessage] = useState('');
+
+  const quantityInCart =
+    items.find((item) => item.slug === product.slug)?.quantity || 0;
+
+  const remainingAvailable = Math.max(0, (product.stock || 0) - quantityInCart);
+
+  useEffect(() => {
+    setCartMessage('');
+  }, [product.slug, quantityInCart]);
 
   async function handleToggleFavorite(event) {
     event.preventDefault();
@@ -27,7 +40,12 @@ export default function ProductCard({ product }) {
     }
 
     if (!isAuthenticated) {
-      router.push('/connexion');
+      const nextPath =
+        typeof window !== 'undefined'
+          ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+          : router.asPath || '/';
+
+      router.push(`/connexion?redirect=${encodeURIComponent(nextPath)}`);
       return;
     }
 
@@ -37,6 +55,26 @@ export default function ProductCard({ product }) {
   function handleAddToCart(event) {
     event.preventDefault();
     event.stopPropagation();
+
+    if (!product || soldOut) {
+      return;
+    }
+
+    if (remainingAvailable <= 0) {
+      setCartMessage('Stock maximum atteint');
+      return;
+    }
+
+    addToCart({
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      stock: product.stock,
+      imageUrl: product.imageUrl,
+      category: product.category,
+    });
+
+    setCartMessage('');
   }
 
   return (
@@ -71,13 +109,19 @@ export default function ProductCard({ product }) {
                   {favorite ? <FaHeart /> : <FiHeart />}
                 </button>
 
-                <button
-                  type="button"
-                  className={styles.addToCartButton}
-                  onClick={handleAddToCart}
-                >
-                  Ajouter au panier
-                </button>
+                <div className={styles.cartActionBlock}>
+                  <button
+                    type="button"
+                    className={styles.addToCartButton}
+                    onClick={handleAddToCart}
+                  >
+                    Ajouter au panier
+                  </button>
+
+                  {cartMessage ? (
+                    <p className={styles.cartMessage}>{cartMessage}</p>
+                  ) : null}
+                </div>
               </div>
             )}
           </div>

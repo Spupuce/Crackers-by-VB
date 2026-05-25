@@ -226,12 +226,15 @@ export function FavoritesProvider({ children }) {
     setActiveFavoriteSlugs([]);
   }, [isAuthenticated, persistFavorites]);
 
-  const favoritesCount = activeFavoriteSlugs.length;
+  const favoritesCount = favorites.length;
+  const activeFavoritesCount = activeFavoriteSlugs.length;
 
   const value = useMemo(
     () => ({
       favorites,
       favoritesCount,
+      activeFavoriteSlugs,
+      activeFavoritesCount,
       isFavoritesReady,
       isSyncingFavorites,
       isFavorite,
@@ -244,6 +247,8 @@ export function FavoritesProvider({ children }) {
     [
       favorites,
       favoritesCount,
+      activeFavoriteSlugs,
+      activeFavoritesCount,
       isFavoritesReady,
       isSyncingFavorites,
       isFavorite,

@@ -28,6 +28,7 @@ export default function MonComptePage() {
   const [formValues, setFormValues] = useState(buildInitialForm(user));
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -70,9 +71,26 @@ export default function MonComptePage() {
     setIsEditing(false);
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/');
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+    } finally {
+      logout();
+      router.push('/');
+      setIsLoggingOut(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -184,8 +202,9 @@ export default function MonComptePage() {
               type="button"
               className={styles.logoutButton}
               onClick={handleLogout}
+              disabled={isLoggingOut}
             >
-              Déconnexion
+              {isLoggingOut ? 'Déconnexion...' : 'Déconnexion'}
             </button>
           </div>
 

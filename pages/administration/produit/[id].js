@@ -1,6 +1,6 @@
 // pages/administration/produit/[id].js
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Header from '../../../components/Header';
@@ -16,42 +16,110 @@ export default function EditProductPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [saveError, setSaveError] = useState('');
+  const [saveFeedback, setSaveFeedback] = useState('');
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [notifyFeedback, setNotifyFeedback] = useState('');
 
-  useEffect(() => {
-    if (!id) return;
+  const fetchProduct = useCallback(async () => {
+    if (!id) return null;
 
-    async function fetchProduct() {
-      try {
-        setIsLoading(true);
-        setLoadError('');
-        setSaveError('');
+    try {
+      setIsLoading(true);
+      setLoadError('');
+      setSaveError('');
 
-        const response = await fetch(`/api/admin/products/${id}`);
-        const data = await response.json();
+      const response = await fetch(`/api/admin/products/${id}`);
+      const data = await response.json();
 
-        if (!response.ok) {
-          setLoadError(data?.message || 'Erreur lors du chargement du produit.');
-          setProduct(null);
-          return;
-        }
-
-        setProduct(data);
-      } catch (error) {
-        setLoadError('Impossible de charger le produit.');
+      if (!response.ok) {
+        setLoadError(data?.message || 'Erreur lors du chargement du produit.');
         setProduct(null);
-      } finally {
-        setIsLoading(false);
+        return null;
       }
-    }
 
-    fetchProduct();
+      setProduct(data);
+      return data;
+    } catch (error) {
+      setLoadError('Impossible de charger le produit.');
+      setProduct(null);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
   }, [id]);
 
-  async function handleSubmit(payload) {
+  useEffect(() => {
+    setNotifyFeedback('');
+    setSaveFeedback('');
+    fetchProduct();
+  }, [fetchProduct]);
+
+  const pendingRequestsCount = Number(product?.pendingRequestsCount || 0);
+  const hasPendingRestockRequests =
+    Boolean(product) &&
+    !product.isArchived &&
+    pendingRequestsCount > 0;
+
+  async function runNotifyRestock() {
+    if (!id) {
+      return { ok: false, sentCount: 0 };
+    }
+
+    try {
+      setNotifyLoading(true);
+      setNotifyFeedback('');
+
+      const response = await fetch(`/api/admin/products/${id}/notify-restock`, {
+        method: 'POST',
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setNotifyFeedback(
+          data?.message || "Erreur lors de l'envoi des notifications."
+        );
+        return { ok: false, sentCount: 0 };
+      }
+
+      const sentCount = Number(data?.sentCount || 0);
+
+      setNotifyFeedback(
+        data?.message || 'Notification de réassort envoyée.'
+      );
+
+      if (sentCount > 0) {
+        setProduct((prev) =>
+          prev
+            ? {
+                ...prev,
+                pendingRequestsCount: Math.max(
+                  0,
+                  Number(prev.pendingRequestsCount || 0) - sentCount
+                ),
+              }
+            : prev
+        );
+      }
+
+      return { ok: true, sentCount };
+    } catch (error) {
+      setNotifyFeedback("Erreur lors de l'envoi des notifications.");
+      return { ok: false, sentCount: 0 };
+    } finally {
+      setNotifyLoading(false);
+    }
+  }
+
+  async function handleSubmit(payload, options = {}) {
     if (!id) return;
+
+    const submitAction = options?.submitAction || 'save';
 
     try {
       setSaveError('');
+      setSaveFeedback('');
+      setNotifyFeedback('');
 
       const response = await fetch(`/api/admin/products/${id}`, {
         method: 'PUT',
@@ -70,7 +138,19 @@ export default function EditProductPage() {
         return;
       }
 
-      router.push('/administration/stock');
+      await fetchProduct();
+
+      if (submitAction === 'save-and-notify') {
+        const notifyResult = await runNotifyRestock();
+
+        if (notifyResult.ok) {
+          setSaveFeedback('Produit mis à jour avec succès.');
+        }
+
+        return;
+      }
+
+      setSaveFeedback('Produit mis à jour avec succès.');
     } catch (error) {
       setSaveError('Impossible d’enregistrer le produit.');
     }
@@ -124,6 +204,14 @@ export default function EditProductPage() {
                 </div>
               )}
 
+              {saveFeedback && (
+                <div className={styles.infoBox}>{saveFeedback}</div>
+              )}
+
+              {notifyFeedback && (
+                <div className={styles.infoBox}>{notifyFeedback}</div>
+              )}
+
               <section className={styles.panel}>
                 <div className={styles.panelHeader}>
                   <h1 className={styles.panelTitle}>
@@ -136,7 +224,17 @@ export default function EditProductPage() {
                     mode="edit"
                     initialValues={product}
                     onSubmit={handleSubmit}
+                    hasPendingRestockRequests={
+                      hasPendingRestockRequests && !notifyLoading
+                    }
                   />
+
+                  {pendingRequestsCount > 0 && (
+                    <p className={styles.restockFeedback}>
+                      {pendingRequestsCount} demande
+                      {pendingRequestsCount > 1 ? 's' : ''} de réassort en attente.
+                    </p>
+                  )}
                 </div>
               </section>
             </>

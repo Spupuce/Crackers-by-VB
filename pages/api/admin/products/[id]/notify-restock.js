@@ -23,6 +23,8 @@ function getTransporter() {
       user,
       pass,
     },
+    logger: true,
+    debug: true,
   });
 }
 
@@ -55,6 +57,21 @@ Attention : cet e-mail vous informe uniquement du retour en stock. Il ne garanti
 ${shopName}`;
 }
 
+function isAcceptedResult(info, email) {
+  if (!info) {
+    return false;
+  }
+
+  const accepted = Array.isArray(info.accepted) ? info.accepted : [];
+  const rejected = Array.isArray(info.rejected) ? info.rejected : [];
+
+  if (rejected.includes(email)) {
+    return false;
+  }
+
+  return accepted.includes(email);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Méthode non autorisée.' });
@@ -68,7 +85,7 @@ export default async function handler(req, res) {
     const mailFromName = process.env.MAIL_FROM_NAME || 'Crackers by VB';
 
     if (!mailFromAddress) {
-      throw new Error("MAIL_FROM_ADDRESS est manquant.");
+      throw new Error('MAIL_FROM_ADDRESS est manquant.');
     }
 
     const product = await Product.findById(id);
@@ -86,42 +103,112 @@ export default async function handler(req, res) {
       return res.status(200).json({
         message: 'Aucune demande en attente pour ce produit.',
         sentCount: 0,
+        failedCount: 0,
       });
     }
 
     const transporter = getTransporter();
+    await transporter.verify();
 
-    await Promise.all(
-      requests.map((request) =>
-        transporter.sendMail({
+    const sentRequestIds = [];
+    const failedEmails = [];
+
+    for (const request of requests) {
+      try {
+        const info = await transporter.sendMail({
           from: `"${mailFromName}" <${mailFromAddress}>`,
           to: request.email,
           subject: `${product.name} est de nouveau disponible`,
           text: buildMailText(product),
-        })
-      )
-    );
+        });
 
-    const now = new Date();
+        console.log('RESTOCK_MAIL_RESULT:', {
+          productId: String(product._id),
+          requestId: String(request._id),
+          email: request.email,
+          messageId: info?.messageId || null,
+          accepted: info?.accepted || [],
+          rejected: info?.rejected || [],
+          response: info?.response || null,
+        });
 
-    await RestockRequest.updateMany(
-      {
-        _id: { $in: requests.map((request) => request._id) },
-      },
-      {
-        $set: { notifiedAt: now },
+        if (isAcceptedResult(info, request.email)) {
+          sentRequestIds.push(request._id);
+        } else {
+          failedEmails.push(request.email);
+          console.error('RESTOCK_MAIL_NOT_ACCEPTED:', {
+            productId: String(product._id),
+            requestId: String(request._id),
+            email: request.email,
+            messageId: info?.messageId || null,
+            accepted: info?.accepted || [],
+            rejected: info?.rejected || [],
+            response: info?.response || null,
+          });
+        }
+      } catch (error) {
+        failedEmails.push(request.email);
+        console.error('RESTOCK_MAIL_SEND_ERROR:', {
+          productId: String(product._id),
+          requestId: String(request._id),
+          email: request.email,
+          error: error?.message || error,
+          code: error?.code || null,
+          command: error?.command || null,
+          response: error?.response || null,
+          responseCode: error?.responseCode || null,
+        });
       }
-    );
+    }
+
+    if (sentRequestIds.length > 0) {
+      await RestockRequest.updateMany(
+        {
+          _id: { $in: sentRequestIds },
+        },
+        {
+          $set: { notifiedAt: new Date() },
+        }
+      );
+    }
+
+    const failedCount = failedEmails.length;
+    const sentCount = sentRequestIds.length;
+
+    if (sentCount === 0) {
+      return res.status(500).json({
+        message: "Aucune notification n'a pu être envoyée.",
+        sentCount: 0,
+        failedCount,
+      });
+    }
+
+    if (failedCount > 0) {
+      return res.status(200).json({
+        message: `${sentCount} notification(s) acceptée(s), ${failedCount} en échec.`,
+        sentCount,
+        failedCount,
+      });
+    }
 
     return res.status(200).json({
-      message: `${requests.length} notification(s) envoyée(s).`,
-      sentCount: requests.length,
+      message: `${sentCount} notification(s) acceptée(s).`,
+      sentCount,
+      failedCount: 0,
     });
   } catch (error) {
-    console.error('NOTIFY_RESTOCK_ERROR:', error);
+    console.error('NOTIFY_RESTOCK_ERROR:', {
+      message: error?.message || error,
+      code: error?.code || null,
+      command: error?.command || null,
+      response: error?.response || null,
+      responseCode: error?.responseCode || null,
+    });
 
     return res.status(500).json({
       message: "Erreur lors de l'envoi des notifications.",
+      sentCount: 0,
+      failedCount: 0,
     });
   }
 }
