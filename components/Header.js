@@ -28,19 +28,17 @@ function normalizeValue(value) {
 export default function Header({ products = [] }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const searchContainerRef = useRef(null);
   const searchInputRef = useRef(null);
 
   const { isAuthenticated } = useAuth();
   const { favoritesCount, isFavoritesReady } = useFavorites();
-  const { cartCount } = useCart();
+  const { cartCount, isCartOpen, closeCart, toggleCart } = useCart();
 
   const safeProducts = Array.isArray(products) ? products : [];
 
   const closeMenu = () => setMenuOpen(false);
-  const closeCart = () => setCartOpen(false);
   const accountHref = isAuthenticated ? '/mon-compte' : '/connexion';
   const displayedFavoritesCount =
     isAuthenticated && isFavoritesReady ? favoritesCount : 0;
@@ -48,7 +46,7 @@ export default function Header({ products = [] }) {
   function handleToggleSearch() {
     setSearchOpen((prev) => !prev);
     setMenuOpen(false);
-    setCartOpen(false);
+    closeCart();
   }
 
   function handleCloseSearch() {
@@ -57,7 +55,7 @@ export default function Header({ products = [] }) {
   }
 
   function handleToggleCart() {
-    setCartOpen((prev) => !prev);
+    toggleCart();
     setMenuOpen(false);
     handleCloseSearch();
   }
@@ -96,7 +94,7 @@ export default function Header({ products = [] }) {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [searchOpen]);
+  }, [searchOpen, closeCart]);
 
   const filteredResults = useMemo(() => {
     const normalizedSearch = normalizeValue(searchTerm);
@@ -279,7 +277,7 @@ export default function Header({ products = [] }) {
               <button
                 className={styles.iconButton}
                 aria-label="Panier"
-                aria-expanded={cartOpen}
+                aria-expanded={isCartOpen}
                 type="button"
                 onClick={handleToggleCart}
               >
@@ -302,7 +300,7 @@ export default function Header({ products = [] }) {
         </div>
       </header>
 
-      <CartDrawer isOpen={cartOpen} onClose={closeCart} />
+      <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
     </>
   );
 }

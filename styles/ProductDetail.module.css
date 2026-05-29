@@ -184,6 +184,33 @@
   color: var(--color-primary-dark);
 }
 
+.cartFeedback {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.cartFeedbackSuccess {
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.cartFeedbackWarning {
+  background-color: color-mix(in srgb, var(--color-warning) 12%, var(--color-white));
+  border-color: color-mix(in srgb, var(--color-warning) 35%, var(--color-white));
+  color: #8a5a00;
+}
+
+.cartFeedbackError {
+  background-color: color-mix(in srgb, var(--color-error) 10%, var(--color-white));
+  border-color: color-mix(in srgb, var(--color-error) 35%, var(--color-white));
+  color: var(--color-error);
+}
+
 .actions {
   display: flex;
   flex-direction: column;
@@ -232,8 +259,8 @@
   justify-content: center;
   padding: 4px 10px;
   border-radius: 999px;
-  background-color: var(--color-error-soft, #ffd6dd);
-  color: var(--color-error, #e53b5a);
+  background-color: color-mix(in srgb, var(--color-error) 12%, var(--color-white));
+  color: var(--color-error);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -242,8 +269,8 @@
   margin-bottom: 28px;
   padding: 16px 18px;
   border-radius: 12px;
-  border: 1px solid #efbe8f;
-  background: rgba(255, 165, 92, 0.08);
+  border: 1px solid var(--color-primary-light);
+  background-color: color-mix(in srgb, var(--color-primary) 8%, var(--color-white));
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -257,12 +284,12 @@
 
 .notifySuccess {
   font-size: 0.85rem;
-  color: var(--color-success, #2f855a);
+  color: var(--color-success);
 }
 
 .notifyError {
   font-size: 0.85rem;
-  color: var(--color-error, #e53b5a);
+  color: var(--color-error);
 }
 
 .notifyButton {
@@ -271,7 +298,7 @@
   padding: 10px 16px;
   border-radius: 8px;
   border: none;
-  background-color: #f3c18d;
+  background-color: var(--color-primary);
   color: var(--color-white);
   font-size: 0.88rem;
   font-weight: 500;
@@ -280,7 +307,7 @@
 }
 
 .notifyButton:hover {
-  background-color: #e7b173;
+  background-color: var(--color-primary-dark);
 }
 
 .notifyForm {
@@ -299,7 +326,7 @@
   padding: 8px 14px;
   border-radius: 8px;
   border: none;
-  background-color: #f3c18d;
+  background-color: var(--color-primary);
   color: var(--color-white);
   font-size: 0.85rem;
   font-weight: 500;
@@ -322,7 +349,7 @@
   padding: 10px 18px;
   border-radius: 8px;
   border: none;
-  background-color: #f3c18d;
+  background-color: var(--color-primary);
   color: var(--color-white);
   font-size: 0.9rem;
   font-weight: 500;
@@ -331,7 +358,7 @@
 }
 
 .notifySubmit:hover:enabled {
-  background-color: #e7b173;
+  background-color: var(--color-primary-dark);
 }
 
 .notifySubmit:disabled {

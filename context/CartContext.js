@@ -46,6 +46,19 @@ function normalizeCartItem(input) {
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const openCart = useCallback(() => {
+    setIsCartOpen(true);
+  }, []);
+
+  const closeCart = useCallback(() => {
+    setIsCartOpen(false);
+  }, []);
+
+  const toggleCart = useCallback(() => {
+    setIsCartOpen((prev) => !prev);
+  }, []);
 
   const addToCart = useCallback((product, quantity = 1) => {
     const normalizedProduct = normalizeCartItem(product);
@@ -151,21 +164,29 @@ export function CartProvider({ children }) {
   const value = useMemo(
     () => ({
       items,
+      isCartOpen,
       cartCount,
       cartTotal,
       addToCart,
       removeFromCart,
       updateItemQuantity,
       clearCart,
+      openCart,
+      closeCart,
+      toggleCart,
     }),
     [
       items,
+      isCartOpen,
       cartCount,
       cartTotal,
       addToCart,
       removeFromCart,
       updateItemQuantity,
       clearCart,
+      openCart,
+      closeCart,
+      toggleCart,
     ]
   );
 

@@ -174,20 +174,22 @@ export default function PanierPage() {
   const [submitInfo, setSubmitInfo] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user) {
+      return;
+    }
 
     setContact((prev) => ({
-      firstName: prev.firstName || user.firstName || '',
-      lastName: prev.lastName || user.lastName || '',
-      email: prev.email || user.email || '',
-      phone: prev.phone || user.phone || '',
+      firstName: prev.firstName?.trim() ? prev.firstName : user.firstName || '',
+      lastName: prev.lastName?.trim() ? prev.lastName : user.lastName || '',
+      email: prev.email?.trim() ? prev.email : user.email || '',
+      phone: prev.phone?.trim() ? prev.phone : user.phone || '',
     }));
 
     setShipping((prev) => ({
-      address: prev.address || user.addressLine1 || '',
-      zip: prev.zip || user.postalCode || '',
-      city: prev.city || user.city || '',
-      country: prev.country || user.country || 'France',
+      address: prev.address?.trim() ? prev.address : user.addressLine1 || '',
+      zip: prev.zip?.trim() ? prev.zip : user.postalCode || '',
+      city: prev.city?.trim() ? prev.city : user.city || '',
+      country: prev.country?.trim() ? prev.country : user.country || 'France',
     }));
   }, [isAuthenticated, user]);
 

@@ -14,7 +14,7 @@ export default function ProductPurchasePanel({ product }) {
   const router = useRouter();
   const soldOut = isSoldOut(product);
   const [quantity, setQuantity] = useState(1);
-  const [cartMessage, setCartMessage] = useState('');
+  const [justAdded, setJustAdded] = useState(false);
 
   const [showNotifyForm, setShowNotifyForm] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
@@ -24,7 +24,7 @@ export default function ProductPurchasePanel({ product }) {
 
   const { user, isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
-  const { items, addToCart } = useCart();
+  const { items, addToCart, openCart } = useCart();
   const favorite = isFavorite(product.slug);
 
   useEffect(() => {
@@ -34,8 +34,20 @@ export default function ProductPurchasePanel({ product }) {
   }, [isAuthenticated, user]);
 
   useEffect(() => {
-    setCartMessage('');
+    setJustAdded(false);
   }, [quantity, product?.slug]);
+
+  useEffect(() => {
+    if (!justAdded) {
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setJustAdded(false);
+    }, 2000);
+
+    return () => window.clearTimeout(timeout);
+  }, [justAdded]);
 
   const quantityInCart =
     items.find((item) => item.slug === product.slug)?.quantity || 0;
@@ -44,12 +56,12 @@ export default function ProductPurchasePanel({ product }) {
 
   const decreaseQuantity = () => {
     setQuantity((prev) => Math.max(1, prev - 1));
-    setCartMessage('');
+    setJustAdded(false);
   };
 
   const increaseQuantity = () => {
     setQuantity((prev) => Math.min(product.stock || 1, prev + 1));
-    setCartMessage('');
+    setJustAdded(false);
   };
 
   const handleToggleFavorite = async () => {
@@ -126,31 +138,30 @@ export default function ProductPurchasePanel({ product }) {
   };
 
   function handleAddToCart() {
-    if (!product || soldOut) {
-      return;
-    }
-
-    if (remainingAvailable <= 0) {
-      setCartMessage('Stock maximum atteint');
+    if (!product || soldOut || remainingAvailable <= 0) {
       return;
     }
 
     const quantityToAdd = Math.min(quantity, remainingAvailable);
 
-    addToCart({
-      slug: product.slug,
-      name: product.name,
-      price: product.price,
-      stock: product.stock,
-      imageUrl: product.imageUrl,
-      category: product.category,
-    }, quantityToAdd);
-
-    if (quantity > remainingAvailable) {
-      setCartMessage('Stock maximum atteint');
-    } else {
-      setCartMessage('');
+    if (quantityToAdd <= 0) {
+      return;
     }
+
+    addToCart(
+      {
+        slug: product.slug,
+        name: product.name,
+        price: product.price,
+        stock: product.stock,
+        imageUrl: product.imageUrl,
+        category: product.category,
+      },
+      quantityToAdd
+    );
+
+    setJustAdded(true);
+    openCart();
   }
 
   return (
@@ -258,10 +269,6 @@ export default function ProductPurchasePanel({ product }) {
           <p className={styles.stockInfo}>
             Maximum disponible : {product.stock}
           </p>
-
-          {cartMessage ? (
-            <p className={styles.notifyError}>{cartMessage}</p>
-          ) : null}
         </div>
       )}
 
@@ -269,12 +276,18 @@ export default function ProductPurchasePanel({ product }) {
         <button
           type="button"
           className={styles.addToCartButton}
-          disabled={soldOut}
+          disabled={soldOut || remainingAvailable <= 0}
           onClick={handleAddToCart}
         >
           <FiShoppingCart />
           <span>
-            {soldOut ? 'Article indisponible' : 'Ajouter au panier'}
+            {soldOut
+              ? 'Article indisponible'
+              : justAdded
+              ? 'Ajouté au panier'
+              : remainingAvailable <= 0
+              ? 'Stock déjà au maximum'
+              : 'Ajouter au panier'}
           </span>
         </button>
 
