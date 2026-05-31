@@ -15,6 +15,7 @@ export default function ProductPurchasePanel({ product }) {
   const soldOut = isSoldOut(product);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [lastAddedQuantity, setLastAddedQuantity] = useState(0);
 
   const [showNotifyForm, setShowNotifyForm] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
@@ -35,6 +36,7 @@ export default function ProductPurchasePanel({ product }) {
 
   useEffect(() => {
     setJustAdded(false);
+    setLastAddedQuantity(0);
   }, [quantity, product?.slug]);
 
   useEffect(() => {
@@ -44,7 +46,8 @@ export default function ProductPurchasePanel({ product }) {
 
     const timeout = window.setTimeout(() => {
       setJustAdded(false);
-    }, 2000);
+      setLastAddedQuantity(0);
+    }, 2500);
 
     return () => window.clearTimeout(timeout);
   }, [justAdded]);
@@ -57,11 +60,13 @@ export default function ProductPurchasePanel({ product }) {
   const decreaseQuantity = () => {
     setQuantity((prev) => Math.max(1, prev - 1));
     setJustAdded(false);
+    setLastAddedQuantity(0);
   };
 
   const increaseQuantity = () => {
     setQuantity((prev) => Math.min(product.stock || 1, prev + 1));
     setJustAdded(false);
+    setLastAddedQuantity(0);
   };
 
   const handleToggleFavorite = async () => {
@@ -160,6 +165,7 @@ export default function ProductPurchasePanel({ product }) {
       quantityToAdd
     );
 
+    setLastAddedQuantity(quantityToAdd);
     setJustAdded(true);
     openCart();
   }
@@ -272,6 +278,18 @@ export default function ProductPurchasePanel({ product }) {
         </div>
       )}
 
+      {justAdded && (
+        <p
+          className={styles.addedMessage}
+          role="status"
+          aria-live="polite"
+        >
+          {lastAddedQuantity > 1
+            ? `${lastAddedQuantity} articles ont bien été ajoutés au panier.`
+            : 'L’article a bien été ajouté au panier.'}
+        </p>
+      )}
+
       <div className={styles.actions}>
         <button
           type="button"
@@ -283,8 +301,6 @@ export default function ProductPurchasePanel({ product }) {
           <span>
             {soldOut
               ? 'Article indisponible'
-              : justAdded
-              ? 'Ajouté au panier'
               : remainingAvailable <= 0
               ? 'Stock déjà au maximum'
               : 'Ajouter au panier'}

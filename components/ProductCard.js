@@ -18,7 +18,7 @@ export default function ProductCard({ product }) {
 
   const { isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
-  const { items, addToCart } = useCart();
+  const { items, addToCart, openCart } = useCart();
   const favorite = isFavorite(product.slug);
   const [cartMessage, setCartMessage] = useState('');
 
@@ -74,7 +74,8 @@ export default function ProductCard({ product }) {
       category: product.category,
     });
 
-    setCartMessage('');
+    setCartMessage('Article ajouté au panier');
+    openCart();
   }
 
   return (

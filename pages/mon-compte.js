@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { FiLock, FiUser } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
@@ -21,16 +22,37 @@ function buildInitialForm(user) {
   };
 }
 
+function buildInitialPasswordForm() {
+  return {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  };
+}
+
 export default function MonComptePage() {
   const router = useRouter();
   const { user, isAuthenticated, isAuthReady, logout, updateUser } = useAuth();
 
   const [formValues, setFormValues] = useState(buildInitialForm(user));
+  const [passwordValues, setPasswordValues] = useState(buildInitialPasswordForm());
+
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isDeleteSectionOpen, setIsDeleteSectionOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState('');
+  const [deleteSuccessMessage, setDeleteSuccessMessage] = useState('');
+
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
+  const [passwordSuccessMessage, setPasswordSuccessMessage] = useState('');
 
   useEffect(() => {
     if (isAuthReady && !isAuthenticated) {
@@ -56,6 +78,40 @@ export default function MonComptePage() {
       ...previousValues,
       [name]: value,
     }));
+  };
+
+  const handlePasswordChange = (event) => {
+    const { name, value } = event.target;
+
+    setPasswordErrorMessage('');
+    setPasswordSuccessMessage('');
+
+    setPasswordValues((previousValues) => ({
+      ...previousValues,
+      [name]: value,
+    }));
+  };
+
+  const resetPasswordBlock = () => {
+    setPasswordValues(buildInitialPasswordForm());
+    setPasswordErrorMessage('');
+    setPasswordSuccessMessage('');
+  };
+
+  const handlePasswordToggle = () => {
+    if (isChangingPassword) {
+      return;
+    }
+
+    if (isPasswordOpen) {
+      resetPasswordBlock();
+      setIsPasswordOpen(false);
+      return;
+    }
+
+    setPasswordErrorMessage('');
+    setPasswordSuccessMessage('');
+    setIsPasswordOpen(true);
   };
 
   const handleEditToggle = () => {
@@ -179,6 +235,150 @@ export default function MonComptePage() {
     }
   };
 
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+
+    if (isChangingPassword) return;
+
+    setPasswordErrorMessage('');
+    setPasswordSuccessMessage('');
+
+    const currentPassword = passwordValues.currentPassword;
+    const newPassword = passwordValues.newPassword;
+    const confirmPassword = passwordValues.confirmPassword;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordErrorMessage('Tous les champs mot de passe sont obligatoires.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordErrorMessage(
+        'Le nouveau mot de passe doit contenir au moins 8 caractères.'
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordErrorMessage(
+        'La confirmation du nouveau mot de passe ne correspond pas.'
+      );
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordErrorMessage(
+        'Le nouveau mot de passe doit être différent de l’ancien.'
+      );
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setPasswordErrorMessage(
+          data.message ||
+            'Une erreur est survenue lors du changement de mot de passe.'
+        );
+        return;
+      }
+
+      setPasswordValues(buildInitialPasswordForm());
+      setPasswordSuccessMessage('Votre mot de passe a bien été mis à jour.');
+      setIsPasswordOpen(false);
+    } catch (error) {
+      setPasswordErrorMessage(
+        'Une erreur est survenue lors du changement de mot de passe.'
+      );
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleDeleteSectionToggle = () => {
+    if (isDeletingAccount) return;
+
+    if (isDeleteSectionOpen) {
+      setDeletePassword('');
+      setDeleteErrorMessage('');
+      setDeleteSuccessMessage('');
+      setIsDeleteSectionOpen(false);
+      return;
+    }
+
+    setDeleteErrorMessage('');
+    setDeleteSuccessMessage('');
+    setDeletePassword('');
+    setIsDeleteSectionOpen(true);
+  };
+
+  const handleDeleteSubmit = async (event) => {
+    event.preventDefault();
+
+    if (isDeletingAccount) return;
+
+    setDeleteErrorMessage('');
+    setDeleteSuccessMessage('');
+
+    const trimmedPassword = deletePassword.trim();
+
+    if (!trimmedPassword) {
+      setDeleteErrorMessage('Le mot de passe actuel est obligatoire.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      const response = await fetch('/api/auth/delete-account', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          password: trimmedPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setDeleteErrorMessage(
+          data.message ||
+            'Une erreur est survenue lors de la suppression du compte.'
+        );
+        return;
+      }
+
+      setDeleteSuccessMessage('Votre compte a bien été supprimé.');
+      setTimeout(() => {
+        logout();
+        router.push('/');
+      }, 800);
+    } catch (error) {
+      setDeleteErrorMessage(
+        'Une erreur est survenue lors de la suppression du compte.'
+      );
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   if (!isAuthReady || !isAuthenticated) {
     return null;
   }
@@ -208,9 +408,13 @@ export default function MonComptePage() {
             </button>
           </div>
 
+          {/* Carte infos compte */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <div>
+              <div className={styles.cardHeading}>
+                <span className={styles.iconBadge} aria-hidden="true">
+                  <FiUser />
+                </span>
                 <p className={styles.cardEyebrow}>Gérez vos informations</p>
               </div>
 
@@ -439,15 +643,130 @@ export default function MonComptePage() {
             )}
           </section>
 
+          {/* Carte mot de passe */}
           <section className={styles.card}>
             <div className={styles.passwordBlock}>
-              <p className={styles.cardEyebrow}>Modifiez votre mot de passe</p>
-              <button type="button" className={styles.primaryButton} disabled>
-                Modifier le mot de passe
-              </button>
+              <div className={styles.passwordHeader}>
+                <div className={styles.cardHeading}>
+                  <span className={styles.iconBadge} aria-hidden="true">
+                    <FiLock />
+                  </span>
+                  <p className={styles.cardEyebrow}>Modifiez votre mot de passe</p>
+                </div>
+              </div>
+
+              {!isPasswordOpen ? (
+                <>
+                  {passwordSuccessMessage ? (
+                    <p className={styles.successMessage}>{passwordSuccessMessage}</p>
+                  ) : null}
+
+                  <button
+                    id="password-panel-trigger"
+                    type="button"
+                    className={styles.passwordToggleButton}
+                    onClick={handlePasswordToggle}
+                    aria-expanded={false}
+                    aria-controls="password-panel"
+                  >
+                    Modifier le mot de passe
+                  </button>
+                </>
+              ) : (
+                <div
+                  id="password-panel"
+                  className={styles.passwordPanel}
+                  role="region"
+                  aria-labelledby="password-panel-trigger"
+                >
+                  <form className={styles.form} onSubmit={handlePasswordSubmit}>
+                    <div className={styles.formGrid}>
+                      <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                        <label htmlFor="currentPassword" className={styles.label}>
+                          Mot de passe actuel
+                        </label>
+                        <input
+                          id="currentPassword"
+                          name="currentPassword"
+                          type="password"
+                          className={styles.input}
+                          value={passwordValues.currentPassword}
+                          onChange={handlePasswordChange}
+                          disabled={isChangingPassword}
+                          autoComplete="current-password"
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label htmlFor="newPassword" className={styles.label}>
+                          Nouveau mot de passe
+                        </label>
+                        <input
+                          id="newPassword"
+                          name="newPassword"
+                          type="password"
+                          className={styles.input}
+                          value={passwordValues.newPassword}
+                          onChange={handlePasswordChange}
+                          disabled={isChangingPassword}
+                          autoComplete="new-password"
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label htmlFor="confirmPassword" className={styles.label}>
+                          Confirmer le mot de passe
+                        </label>
+                        <input
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type="password"
+                          className={styles.input}
+                          value={passwordValues.confirmPassword}
+                          onChange={handlePasswordChange}
+                          disabled={isChangingPassword}
+                          autoComplete="new-password"
+                        />
+                      </div>
+                    </div>
+
+                    {passwordErrorMessage ? (
+                      <p className={styles.errorMessage}>{passwordErrorMessage}</p>
+                    ) : null}
+
+                    {passwordSuccessMessage ? (
+                      <p className={styles.successMessage}>
+                        {passwordSuccessMessage}
+                      </p>
+                    ) : null}
+
+                    <div className={styles.formActions}>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={handlePasswordToggle}
+                        disabled={isChangingPassword}
+                      >
+                        Annuler
+                      </button>
+
+                      <button
+                        type="submit"
+                        className={styles.primaryButton}
+                        disabled={isChangingPassword}
+                      >
+                        {isChangingPassword
+                          ? 'Mise à jour...'
+                          : 'Enregistrer le nouveau mot de passe'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
             </div>
           </section>
 
+          {/* Carte commandes */}
           <section className={styles.card}>
             <div className={styles.ordersEmpty}>
               <p className={styles.emptyTitle}>Aucune commande pour le moment</p>
@@ -457,15 +776,86 @@ export default function MonComptePage() {
             </div>
           </section>
 
+          {/* Zone dangereuse */}
           <section className={styles.dangerZone}>
             <h2 className={styles.dangerTitle}>Zone dangereuse</h2>
             <p className={styles.dangerText}>
               La suppression de votre compte est irréversible. Toutes vos données
               seront définitivement perdues.
             </p>
-            <button type="button" className={styles.dangerButton} disabled>
-              Supprimer mon compte
-            </button>
+
+            {!isDeleteSectionOpen ? (
+              <>
+                {deleteErrorMessage ? (
+                  <p className={styles.errorMessage}>{deleteErrorMessage}</p>
+                ) : null}
+                {deleteSuccessMessage ? (
+                  <p className={styles.successMessage}>
+                    {deleteSuccessMessage}
+                  </p>
+                ) : null}
+
+                <button
+                  type="button"
+                  className={styles.dangerButton}
+                  onClick={handleDeleteSectionToggle}
+                  disabled={isDeletingAccount}
+                >
+                  Supprimer mon compte
+                </button>
+              </>
+            ) : (
+              <form
+                className={styles.deleteForm}
+                onSubmit={handleDeleteSubmit}
+              >
+                <div className={styles.formGroup}>
+                  <label
+                    htmlFor="deletePassword"
+                    className={styles.label}
+                  >
+                    Mot de passe actuel
+                  </label>
+                  <input
+                    id="deletePassword"
+                    name="deletePassword"
+                    type="password"
+                    className={styles.input}
+                    value={deletePassword}
+                    onChange={(event) =>
+                      setDeletePassword(event.target.value)
+                    }
+                    disabled={isDeletingAccount}
+                    autoComplete="current-password"
+                  />
+                </div>
+
+                {deleteErrorMessage ? (
+                  <p className={styles.errorMessage}>{deleteErrorMessage}</p>
+                ) : null}
+
+                <div className={styles.formActions}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={handleDeleteSectionToggle}
+                    disabled={isDeletingAccount}
+                  >
+                    Annuler
+                  </button>
+
+                  <button
+                    type="submit"
+                    className={styles.dangerButton}
+                    disabled={isDeletingAccount}
+                  >
+                    {isDeletingAccount
+                      ? 'Suppression...'
+                      : 'Confirmer la suppression'}
+                  </button>
+                </div>
+              </form>
+            )}
           </section>
         </div>
       </main>
