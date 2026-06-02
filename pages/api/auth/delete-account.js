@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { connectMongo } from '../../../lib/mongodb';
 import { getSessionFromRequest, clearSessionCookie } from '../../../lib/session';
 import User from '../../../models/User';
+import RestockRequest from '../../../models/RestockRequest';
 
 export default async function handler(req, res) {
   if (req.method !== 'DELETE') {
@@ -53,12 +54,16 @@ export default async function handler(req, res) {
       });
     }
 
+    await RestockRequest.deleteMany({
+      email: user.email,
+    });
+
     await User.findByIdAndDelete(user._id);
 
     clearSessionCookie(res);
 
     return res.status(200).json({
-      message: 'Votre compte a bien été supprimé.',
+      message: 'Votre compte et les données associées ont bien été supprimés.',
     });
   } catch (error) {
     return res.status(500).json({
