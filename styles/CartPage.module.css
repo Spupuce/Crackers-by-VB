@@ -20,13 +20,24 @@
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .sectionOptional {
   font-size: 0.9rem;
   font-weight: 400;
   color: var(--color-text-soft);
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formBlock {
+  display: flex;
+  flex-direction: column;
 }
 
 .gridTwo {
@@ -190,12 +201,6 @@
   font-weight: 500;
 }
 
-.mainColumn > section .gridTwo,
-.mainColumn > section .gridTwo + .formGroup,
-.mainColumn > section .formGroup + .formGroup {
-  margin-top: 8px;
-}
-
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
@@ -217,16 +222,14 @@
   }
 
   .sectionTitle {
-    margin-bottom: 18px;
+    margin-bottom: 10px;
+  }
+
+  .formStack {
+    gap: 14px;
   }
 
   .paymentInfoBox {
     padding: 16px 18px;
-  }
-
-  .mainColumn > section .gridTwo,
-  .mainColumn > section .gridTwo + .formGroup,
-  .mainColumn > section .formGroup + .formGroup {
-    margin-top: 6px;
   }
 }

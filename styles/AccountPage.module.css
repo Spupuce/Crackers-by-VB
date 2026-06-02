@@ -2,7 +2,7 @@
 
 .page {
   min-height: calc(100vh - 80px);
-  background: linear-gradient(180deg, #fffdfa 0%, #fdf6ef 100%);
+  background: linear-gradient(180deg, var(--color-white) 0%, var(--color-bg) 100%);
   padding: 48px 24px 80px;
 }
 
@@ -41,7 +41,7 @@
 
 .card {
   background-color: var(--color-white);
-  border: 1px solid #f1e2d6;
+  border: 1px solid var(--color-border);
   border-radius: 18px;
   padding: 20px 20px 22px;
   box-shadow: 0 10px 24px rgba(66, 37, 13, 0.1);
@@ -59,6 +59,29 @@
   margin-bottom: 18px;
 }
 
+.cardHeading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconBadge {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    180deg,
+    var(--color-primary-light) 0%,
+    var(--color-primary) 100%
+  );
+  color: var(--color-white);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
 .cardEyebrow {
   font-size: 0.95rem;
   color: var(--color-text-soft);
@@ -67,7 +90,7 @@
 .editButton {
   border: none;
   background: transparent;
-  color: #e9b889;
+  color: var(--color-primary);
   font-size: 0.92rem;
   font-weight: 500;
   cursor: pointer;
@@ -102,7 +125,7 @@
   align-items: center;
   padding: 0 14px;
   border-radius: 8px;
-  background-color: #f6f7f8;
+  background-color: var(--color-gray-50);
   color: var(--color-text);
   font-size: 0.95rem;
 }
@@ -138,7 +161,7 @@
 .input {
   width: 100%;
   height: 46px;
-  border: 1px solid #e2e2e6;
+  border: 1px solid var(--color-gray-200);
   border-radius: 8px;
   background-color: var(--color-white);
   padding: 0 14px;
@@ -153,7 +176,7 @@
 }
 
 .input:disabled {
-  background-color: #f9f9fa;
+  background-color: var(--color-gray-50);
   cursor: not-allowed;
 }
 
@@ -166,7 +189,8 @@
 
 .primaryButton,
 .secondaryButton,
-.dangerButton {
+.dangerButton,
+.passwordToggleButton {
   min-height: 46px;
   border-radius: 8px;
   font-size: 0.95rem;
@@ -177,37 +201,61 @@
 
 .primaryButton {
   border: none;
-  background-color: #e9b07b;
+  background-color: var(--color-primary);
   color: var(--color-white);
   padding: 0 18px;
 }
 
 .primaryButton:hover:not(:disabled) {
-  background-color: #df9f63;
+  background-color: var(--color-primary-dark);
 }
 
 .secondaryButton {
-  border: 1px solid #ead8ca;
+  border: 1px solid var(--color-border);
   background-color: var(--color-white);
   color: var(--color-text);
   padding: 0 18px;
 }
 
 .secondaryButton:hover:not(:disabled) {
-  background-color: #faf6f2;
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled,
-.dangerButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  background-color: var(--color-gray-50);
 }
 
 .passwordBlock {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.passwordHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.passwordToggleButton {
+  width: 100%;
+  border: none;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: 0 18px;
+}
+
+.passwordToggleButton:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+}
+
+.passwordPanel {
+  padding-top: 4px;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled,
+.passwordToggleButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .ordersEmpty {
@@ -227,17 +275,17 @@
 
 .emptyText {
   font-size: 0.92rem;
-  color: #9aa1aa;
+  color: var(--color-gray-400);
 }
 
 .errorMessage {
   font-size: 0.92rem;
-  color: #b42318;
+  color: var(--color-error);
 }
 
 .successMessage {
   font-size: 0.92rem;
-  color: #1f7a3d;
+  color: var(--color-success);
 }
 
 .dangerZone {
@@ -274,6 +322,13 @@
   background-color: #eb3b3d;
 }
 
+.deleteForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
 @media (max-width: 768px) {
   .page {
     padding: 36px 16px 64px;
@@ -305,7 +360,8 @@
 
   .primaryButton,
   .secondaryButton,
-  .dangerButton {
+  .dangerButton,
+  .passwordToggleButton {
     width: 100%;
   }
 }

@@ -574,284 +574,300 @@ export default function PanierPage() {
                   <section className={internalStyles.card}>
                     <h2 className={styles.sectionTitle}>Informations de contact</h2>
 
-                    <div className={styles.gridTwo}>
-                      <div className={internalStyles.formGroup}>
-                        <label
-                          htmlFor="contact-firstName"
-                          className={internalStyles.label}
-                        >
-                          Prénom
-                        </label>
-                        <input
-                          id="contact-firstName"
-                          name="firstName"
-                          className={`${internalStyles.input} ${
-                            fieldErrors.firstName ? styles.inputError : ''
-                          }`}
-                          type="text"
-                          autoComplete="given-name"
-                          value={contact.firstName}
-                          onChange={handleContactChange}
-                          onBlur={handleContactBlur}
-                          aria-invalid={Boolean(fieldErrors.firstName)}
-                          aria-describedby={
-                            fieldErrors.firstName ? 'contact-firstName-error' : undefined
-                          }
-                        />
-                        {fieldErrors.firstName && (
-                          <p
-                            id="contact-firstName-error"
-                            className={styles.fieldError}
-                            role="alert"
-                          >
-                            {fieldErrors.firstName}
-                          </p>
-                        )}
+                    <div className={styles.formStack}>
+                      <div className={styles.formBlock}>
+                        <div className={styles.gridTwo}>
+                          <div className={internalStyles.formGroup}>
+                            <label
+                              htmlFor="contact-firstName"
+                              className={internalStyles.label}
+                            >
+                              Prénom
+                            </label>
+                            <input
+                              id="contact-firstName"
+                              name="firstName"
+                              className={`${internalStyles.input} ${
+                                fieldErrors.firstName ? styles.inputError : ''
+                              }`}
+                              type="text"
+                              autoComplete="given-name"
+                              value={contact.firstName}
+                              onChange={handleContactChange}
+                              onBlur={handleContactBlur}
+                              aria-invalid={Boolean(fieldErrors.firstName)}
+                              aria-describedby={
+                                fieldErrors.firstName ? 'contact-firstName-error' : undefined
+                              }
+                            />
+                            {fieldErrors.firstName && (
+                              <p
+                                id="contact-firstName-error"
+                                className={styles.fieldError}
+                                role="alert"
+                              >
+                                {fieldErrors.firstName}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className={internalStyles.formGroup}>
+                            <label
+                              htmlFor="contact-lastName"
+                              className={internalStyles.label}
+                            >
+                              Nom
+                            </label>
+                            <input
+                              id="contact-lastName"
+                              name="lastName"
+                              className={`${internalStyles.input} ${
+                                fieldErrors.lastName ? styles.inputError : ''
+                              }`}
+                              type="text"
+                              autoComplete="family-name"
+                              value={contact.lastName}
+                              onChange={handleContactChange}
+                              onBlur={handleContactBlur}
+                              aria-invalid={Boolean(fieldErrors.lastName)}
+                              aria-describedby={
+                                fieldErrors.lastName ? 'contact-lastName-error' : undefined
+                              }
+                            />
+                            {fieldErrors.lastName && (
+                              <p
+                                id="contact-lastName-error"
+                                className={styles.fieldError}
+                                role="alert"
+                              >
+                                {fieldErrors.lastName}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className={internalStyles.formGroup}>
-                        <label
-                          htmlFor="contact-lastName"
-                          className={internalStyles.label}
-                        >
-                          Nom
-                        </label>
-                        <input
-                          id="contact-lastName"
-                          name="lastName"
-                          className={`${internalStyles.input} ${
-                            fieldErrors.lastName ? styles.inputError : ''
-                          }`}
-                          type="text"
-                          autoComplete="family-name"
-                          value={contact.lastName}
-                          onChange={handleContactChange}
-                          onBlur={handleContactBlur}
-                          aria-invalid={Boolean(fieldErrors.lastName)}
-                          aria-describedby={
-                            fieldErrors.lastName ? 'contact-lastName-error' : undefined
-                          }
-                        />
-                        {fieldErrors.lastName && (
-                          <p
-                            id="contact-lastName-error"
-                            className={styles.fieldError}
-                            role="alert"
+                      <div className={styles.formBlock}>
+                        <div className={internalStyles.formGroup}>
+                          <label
+                            htmlFor="contact-email"
+                            className={internalStyles.label}
                           >
-                            {fieldErrors.lastName}
-                          </p>
-                        )}
+                            Email
+                          </label>
+                          <input
+                            id="contact-email"
+                            name="email"
+                            className={`${internalStyles.input} ${
+                              fieldErrors.email ? styles.inputError : ''
+                            }`}
+                            type="email"
+                            autoComplete="email"
+                            value={contact.email}
+                            onChange={handleContactChange}
+                            onBlur={handleContactBlur}
+                            aria-invalid={Boolean(fieldErrors.email)}
+                            aria-describedby={
+                              fieldErrors.email ? 'contact-email-error' : undefined
+                            }
+                          />
+                          {fieldErrors.email && (
+                            <p
+                              id="contact-email-error"
+                              className={styles.fieldError}
+                              role="alert"
+                            >
+                              {fieldErrors.email}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className={internalStyles.formGroup}>
-                      <label
-                        htmlFor="contact-email"
-                        className={internalStyles.label}
-                      >
-                        Email
-                      </label>
-                      <input
-                        id="contact-email"
-                        name="email"
-                        className={`${internalStyles.input} ${
-                          fieldErrors.email ? styles.inputError : ''
-                        }`}
-                        type="email"
-                        autoComplete="email"
-                        value={contact.email}
-                        onChange={handleContactChange}
-                        onBlur={handleContactBlur}
-                        aria-invalid={Boolean(fieldErrors.email)}
-                        aria-describedby={
-                          fieldErrors.email ? 'contact-email-error' : undefined
-                        }
-                      />
-                      {fieldErrors.email && (
-                        <p
-                          id="contact-email-error"
-                          className={styles.fieldError}
-                          role="alert"
-                        >
-                          {fieldErrors.email}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className={internalStyles.formGroup}>
-                      <label
-                        htmlFor="contact-phone"
-                        className={internalStyles.label}
-                      >
-                        Téléphone
-                      </label>
-                      <input
-                        id="contact-phone"
-                        name="phone"
-                        className={`${internalStyles.input} ${
-                          fieldErrors.phone ? styles.inputError : ''
-                        }`}
-                        type="tel"
-                        autoComplete="tel"
-                        value={contact.phone}
-                        onChange={handleContactChange}
-                        onBlur={handleContactBlur}
-                        aria-invalid={Boolean(fieldErrors.phone)}
-                        aria-describedby={
-                          fieldErrors.phone ? 'contact-phone-error' : undefined
-                        }
-                      />
-                      {fieldErrors.phone && (
-                        <p
-                          id="contact-phone-error"
-                          className={styles.fieldError}
-                          role="alert"
-                        >
-                          {fieldErrors.phone}
-                        </p>
-                      )}
+                      <div className={styles.formBlock}>
+                        <div className={internalStyles.formGroup}>
+                          <label
+                            htmlFor="contact-phone"
+                            className={internalStyles.label}
+                          >
+                            Téléphone
+                          </label>
+                          <input
+                            id="contact-phone"
+                            name="phone"
+                            className={`${internalStyles.input} ${
+                              fieldErrors.phone ? styles.inputError : ''
+                            }`}
+                            type="tel"
+                            autoComplete="tel"
+                            value={contact.phone}
+                            onChange={handleContactChange}
+                            onBlur={handleContactBlur}
+                            aria-invalid={Boolean(fieldErrors.phone)}
+                            aria-describedby={
+                              fieldErrors.phone ? 'contact-phone-error' : undefined
+                            }
+                          />
+                          {fieldErrors.phone && (
+                            <p
+                              id="contact-phone-error"
+                              className={styles.fieldError}
+                              role="alert"
+                            >
+                              {fieldErrors.phone}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </section>
 
                   <section className={internalStyles.card}>
                     <h2 className={styles.sectionTitle}>Adresse de livraison</h2>
 
-                    <div className={internalStyles.formGroup}>
-                      <label
-                        htmlFor="shipping-address"
-                        className={internalStyles.label}
-                      >
-                        Adresse
-                      </label>
-                      <input
-                        id="shipping-address"
-                        name="address"
-                        className={`${internalStyles.input} ${
-                          fieldErrors.address ? styles.inputError : ''
-                        }`}
-                        type="text"
-                        autoComplete="street-address"
-                        value={shipping.address}
-                        onChange={handleShippingChange}
-                        onBlur={handleShippingBlur}
-                        aria-invalid={Boolean(fieldErrors.address)}
-                        aria-describedby={
-                          fieldErrors.address ? 'shipping-address-error' : undefined
-                        }
-                      />
-                      {fieldErrors.address && (
-                        <p
-                          id="shipping-address-error"
-                          className={styles.fieldError}
-                          role="alert"
-                        >
-                          {fieldErrors.address}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className={styles.gridTwo}>
-                      <div className={internalStyles.formGroup}>
-                        <label
-                          htmlFor="shipping-zip"
-                          className={internalStyles.label}
-                        >
-                          Code postal
-                        </label>
-                        <input
-                          id="shipping-zip"
-                          name="zip"
-                          className={`${internalStyles.input} ${
-                            fieldErrors.zip ? styles.inputError : ''
-                          }`}
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="postal-code"
-                          value={shipping.zip}
-                          onChange={handleShippingChange}
-                          onBlur={handleShippingBlur}
-                          aria-invalid={Boolean(fieldErrors.zip)}
-                          aria-describedby={
-                            fieldErrors.zip ? 'shipping-zip-error' : undefined
-                          }
-                        />
-                        {fieldErrors.zip && (
-                          <p
-                            id="shipping-zip-error"
-                            className={styles.fieldError}
-                            role="alert"
+                    <div className={styles.formStack}>
+                      <div className={styles.formBlock}>
+                        <div className={internalStyles.formGroup}>
+                          <label
+                            htmlFor="shipping-address"
+                            className={internalStyles.label}
                           >
-                            {fieldErrors.zip}
-                          </p>
-                        )}
+                            Adresse
+                          </label>
+                          <input
+                            id="shipping-address"
+                            name="address"
+                            className={`${internalStyles.input} ${
+                              fieldErrors.address ? styles.inputError : ''
+                            }`}
+                            type="text"
+                            autoComplete="street-address"
+                            value={shipping.address}
+                            onChange={handleShippingChange}
+                            onBlur={handleShippingBlur}
+                            aria-invalid={Boolean(fieldErrors.address)}
+                            aria-describedby={
+                              fieldErrors.address ? 'shipping-address-error' : undefined
+                            }
+                          />
+                          {fieldErrors.address && (
+                            <p
+                              id="shipping-address-error"
+                              className={styles.fieldError}
+                              role="alert"
+                            >
+                              {fieldErrors.address}
+                            </p>
+                          )}
+                        </div>
                       </div>
 
-                      <div className={internalStyles.formGroup}>
-                        <label
-                          htmlFor="shipping-city"
-                          className={internalStyles.label}
-                        >
-                          Ville
-                        </label>
-                        <input
-                          id="shipping-city"
-                          name="city"
-                          className={`${internalStyles.input} ${
-                            fieldErrors.city ? styles.inputError : ''
-                          }`}
-                          type="text"
-                          autoComplete="address-level2"
-                          value={shipping.city}
-                          onChange={handleShippingChange}
-                          onBlur={handleShippingBlur}
-                          aria-invalid={Boolean(fieldErrors.city)}
-                          aria-describedby={
-                            fieldErrors.city ? 'shipping-city-error' : undefined
-                          }
-                        />
-                        {fieldErrors.city && (
-                          <p
-                            id="shipping-city-error"
-                            className={styles.fieldError}
-                            role="alert"
-                          >
-                            {fieldErrors.city}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                      <div className={styles.formBlock}>
+                        <div className={styles.gridTwo}>
+                          <div className={internalStyles.formGroup}>
+                            <label
+                              htmlFor="shipping-zip"
+                              className={internalStyles.label}
+                            >
+                              Code postal
+                            </label>
+                            <input
+                              id="shipping-zip"
+                              name="zip"
+                              className={`${internalStyles.input} ${
+                                fieldErrors.zip ? styles.inputError : ''
+                              }`}
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="postal-code"
+                              value={shipping.zip}
+                              onChange={handleShippingChange}
+                              onBlur={handleShippingBlur}
+                              aria-invalid={Boolean(fieldErrors.zip)}
+                              aria-describedby={
+                                fieldErrors.zip ? 'shipping-zip-error' : undefined
+                              }
+                            />
+                            {fieldErrors.zip && (
+                              <p
+                                id="shipping-zip-error"
+                                className={styles.fieldError}
+                                role="alert"
+                              >
+                                {fieldErrors.zip}
+                              </p>
+                            )}
+                          </div>
 
-                    <div className={internalStyles.formGroup}>
-                      <label
-                        htmlFor="shipping-country"
-                        className={internalStyles.label}
-                      >
-                        Pays
-                      </label>
-                      <input
-                        id="shipping-country"
-                        name="country"
-                        className={`${internalStyles.input} ${
-                          fieldErrors.country ? styles.inputError : ''
-                        }`}
-                        type="text"
-                        value={shipping.country}
-                        onChange={handleShippingChange}
-                        onBlur={handleShippingBlur}
-                        aria-invalid={Boolean(fieldErrors.country)}
-                        aria-describedby={
-                          fieldErrors.country ? 'shipping-country-error' : undefined
-                        }
-                      />
-                      {fieldErrors.country && (
-                        <p
-                          id="shipping-country-error"
-                          className={styles.fieldError}
-                          role="alert"
-                        >
-                          {fieldErrors.country}
-                        </p>
-                      )}
+                          <div className={internalStyles.formGroup}>
+                            <label
+                              htmlFor="shipping-city"
+                              className={internalStyles.label}
+                            >
+                              Ville
+                            </label>
+                            <input
+                              id="shipping-city"
+                              name="city"
+                              className={`${internalStyles.input} ${
+                                fieldErrors.city ? styles.inputError : ''
+                              }`}
+                              type="text"
+                              autoComplete="address-level2"
+                              value={shipping.city}
+                              onChange={handleShippingChange}
+                              onBlur={handleShippingBlur}
+                              aria-invalid={Boolean(fieldErrors.city)}
+                              aria-describedby={
+                                fieldErrors.city ? 'shipping-city-error' : undefined
+                              }
+                            />
+                            {fieldErrors.city && (
+                              <p
+                                id="shipping-city-error"
+                                className={styles.fieldError}
+                                role="alert"
+                              >
+                                {fieldErrors.city}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.formBlock}>
+                        <div className={internalStyles.formGroup}>
+                          <label
+                            htmlFor="shipping-country"
+                            className={internalStyles.label}
+                          >
+                            Pays
+                          </label>
+                          <input
+                            id="shipping-country"
+                            name="country"
+                            className={`${internalStyles.input} ${
+                              fieldErrors.country ? styles.inputError : ''
+                            }`}
+                            type="text"
+                            value={shipping.country}
+                            onChange={handleShippingChange}
+                            onBlur={handleShippingBlur}
+                            aria-invalid={Boolean(fieldErrors.country)}
+                            aria-describedby={
+                              fieldErrors.country ? 'shipping-country-error' : undefined
+                            }
+                          />
+                          {fieldErrors.country && (
+                            <p
+                              id="shipping-country-error"
+                              className={styles.fieldError}
+                              role="alert"
+                            >
+                              {fieldErrors.country}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </section>
 

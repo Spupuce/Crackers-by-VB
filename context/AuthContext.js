@@ -13,6 +13,38 @@ const AuthContext = createContext(null);
 
 const STORAGE_KEY = 'crackers-user';
 
+function sanitizeCart(cart) {
+  if (!Array.isArray(cart)) {
+    return [];
+  }
+
+  return cart.reduce((accumulator, item) => {
+    if (!item || typeof item !== 'object') {
+      return accumulator;
+    }
+
+    const slug =
+      typeof item.slug === 'string' && item.slug.trim() ? item.slug.trim() : '';
+    const quantity = Number(item.quantity);
+    const addedAt =
+      typeof item.addedAt === 'string' || item.addedAt instanceof Date
+        ? item.addedAt
+        : null;
+
+    if (!slug || Number.isNaN(quantity) || quantity <= 0) {
+      return accumulator;
+    }
+
+    accumulator.push({
+      slug,
+      quantity: Math.max(1, Math.floor(quantity)),
+      addedAt: addedAt || null,
+    });
+
+    return accumulator;
+  }, []);
+}
+
 function sanitizeUser(value) {
   if (!value || typeof value !== 'object') return null;
 
@@ -46,6 +78,7 @@ function sanitizeUser(value) {
     value.role === 'admin' || value.role === 'customer'
       ? value.role
       : 'customer';
+  const cart = sanitizeCart(value.cart);
 
   if (!id || !email) return null;
 
@@ -61,6 +94,7 @@ function sanitizeUser(value) {
     city,
     country,
     role,
+    cart,
   };
 }
 

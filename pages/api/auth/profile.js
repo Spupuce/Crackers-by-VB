@@ -21,6 +21,13 @@ function formatUser(user) {
     city: user.city || '',
     country: user.country || 'France',
     role: user.role === 'admin' ? 'admin' : 'customer',
+    cart: Array.isArray(user.cart)
+      ? user.cart.map((item) => ({
+          slug: item?.slug || '',
+          quantity: Number(item?.quantity) || 0,
+          addedAt: item?.addedAt || null,
+        }))
+      : [],
   };
 }
 
@@ -34,15 +41,15 @@ export default async function handler(req, res) {
   try {
     await connectMongo();
 
+    const session = getSessionFromRequest(req);
+
+    if (!session?.userId) {
+      return res.status(401).json({
+        message: 'Utilisateur non authentifié.',
+      });
+    }
+
     if (req.method === 'GET') {
-      const session = getSessionFromRequest(req);
-
-      if (!session?.userId) {
-        return res.status(401).json({
-          message: 'Utilisateur non authentifié.',
-        });
-      }
-
       const user = await User.findById(session.userId);
 
       if (!user) {
@@ -57,7 +64,6 @@ export default async function handler(req, res) {
     }
 
     const {
-      id = '',
       firstName = '',
       lastName = '',
       email = '',
@@ -69,7 +75,6 @@ export default async function handler(req, res) {
       country = '',
     } = req.body || {};
 
-    const normalizedId = String(id).trim();
     const normalizedFirstName = String(firstName).trim();
     const normalizedLastName = String(lastName).trim();
     const normalizedEmail = String(email).trim().toLowerCase();
@@ -79,12 +84,6 @@ export default async function handler(req, res) {
     const normalizedPostalCode = String(postalCode).trim();
     const normalizedCity = String(city).trim();
     const normalizedCountry = String(country).trim() || 'France';
-
-    if (!normalizedId) {
-      return res.status(400).json({
-        message: 'Utilisateur introuvable.',
-      });
-    }
 
     if (!normalizedFirstName || !normalizedLastName || !normalizedEmail) {
       return res.status(400).json({
@@ -129,7 +128,7 @@ export default async function handler(req, res) {
 
     const existingUserWithEmail = await User.findOne({
       email: normalizedEmail,
-      _id: { $ne: normalizedId },
+      _id: { $ne: session.userId },
     });
 
     if (existingUserWithEmail) {
@@ -139,7 +138,7 @@ export default async function handler(req, res) {
     }
 
     const user = await User.findByIdAndUpdate(
-      normalizedId,
+      session.userId,
       {
         firstName: normalizedFirstName,
         lastName: normalizedLastName,
