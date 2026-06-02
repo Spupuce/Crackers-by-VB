@@ -1,6 +1,6 @@
 // components/ProductCard.js
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FiHeart } from 'react-icons/fi';
@@ -20,7 +20,10 @@ export default function ProductCard({ product }) {
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
   const { items, addToCart } = useCart();
   const favorite = isFavorite(product.slug);
+
   const [cartMessage, setCartMessage] = useState('');
+  const [cartMessageType, setCartMessageType] = useState('');
+  const cartMessageTimeoutRef = useRef(null);
 
   const quantityInCart =
     items.find((item) => item.slug === product.slug)?.quantity || 0;
@@ -28,8 +31,31 @@ export default function ProductCard({ product }) {
   const remainingAvailable = Math.max(0, (product.stock || 0) - quantityInCart);
 
   useEffect(() => {
+    return () => {
+      if (cartMessageTimeoutRef.current) {
+        clearTimeout(cartMessageTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     setCartMessage('');
-  }, [product.slug, quantityInCart]);
+    setCartMessageType('');
+  }, [product.slug]);
+
+  function showCartMessage(message, type) {
+    if (cartMessageTimeoutRef.current) {
+      clearTimeout(cartMessageTimeoutRef.current);
+    }
+
+    setCartMessage(message);
+    setCartMessageType(type);
+
+    cartMessageTimeoutRef.current = setTimeout(() => {
+      setCartMessage('');
+      setCartMessageType('');
+    }, 1800);
+  }
 
   async function handleToggleFavorite(event) {
     event.preventDefault();
@@ -61,7 +87,7 @@ export default function ProductCard({ product }) {
     }
 
     if (remainingAvailable <= 0) {
-      setCartMessage('Stock maximum atteint');
+      showCartMessage('Stock maximum atteint', 'error');
       return;
     }
 
@@ -74,7 +100,7 @@ export default function ProductCard({ product }) {
       category: product.category,
     });
 
-    setCartMessage('');
+    showCartMessage('Ajouté au panier', 'success');
   }
 
   return (
@@ -119,7 +145,15 @@ export default function ProductCard({ product }) {
                   </button>
 
                   {cartMessage ? (
-                    <p className={styles.cartMessage}>{cartMessage}</p>
+                    <p
+                      className={`${styles.cartMessage} ${
+                        cartMessageType === 'success'
+                          ? styles.cartMessageSuccess
+                          : styles.cartMessageError
+                      }`}
+                    >
+                      {cartMessage}
+                    </p>
                   ) : null}
                 </div>
               </div>
