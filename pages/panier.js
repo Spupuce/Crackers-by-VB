@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { FiArrowLeft } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -159,6 +160,7 @@ function validateSingleField(fieldName, fieldValue) {
 }
 
 export default function PanierPage() {
+  const router = useRouter();
   const { items, cartTotal } = useCart();
   const { user, isAuthenticated, updateUser } = useAuth();
 
@@ -192,6 +194,39 @@ export default function PanierPage() {
       country: prev.country?.trim() ? prev.country : user.country || 'France',
     }));
   }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const checkoutStatus = router.query.checkout;
+
+    if (checkoutStatus === 'success') {
+      setSubmitInfo(
+        'Votre paiement a bien été enregistré. Merci pour votre commande !'
+      );
+      setSubmitError('');
+    }
+
+    if (checkoutStatus === 'cancel') {
+      setSubmitError(
+        'Le paiement a été interrompu avant validation. Vous pouvez réessayer à tout moment.'
+      );
+      setSubmitInfo('');
+    }
+
+    if (checkoutStatus === 'success' || checkoutStatus === 'cancel') {
+      const { checkout, ...restQuery } = router.query;
+
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: restQuery,
+        },
+        undefined,
+        { shallow: true }
+      );
+    }
+  }, [router.isReady, router.pathname, router.query, router]);
 
   const canAttemptCheckout = useMemo(
     () => hasItems && !isSubmitting,
@@ -544,7 +579,8 @@ export default function PanierPage() {
             <section className={internalStyles.card}>
               <p className={styles.emptyTitle}>Votre panier est vide</p>
               <p className={styles.emptyText}>
-                Ajoutez quelques créations à votre panier avant de passer à la commande.
+                Ajoutez quelques créations à votre panier avant de passer à la
+                commande.
               </p>
               <Link href="/boutique" legacyBehavior>
                 <a className={internalStyles.primaryButton}>
@@ -572,7 +608,9 @@ export default function PanierPage() {
               <div className={styles.layout}>
                 <div className={styles.mainColumn}>
                   <section className={internalStyles.card}>
-                    <h2 className={styles.sectionTitle}>Informations de contact</h2>
+                    <h2 className={styles.sectionTitle}>
+                      Informations de contact
+                    </h2>
 
                     <div className={styles.formStack}>
                       <div className={styles.formBlock}>
@@ -597,7 +635,9 @@ export default function PanierPage() {
                               onBlur={handleContactBlur}
                               aria-invalid={Boolean(fieldErrors.firstName)}
                               aria-describedby={
-                                fieldErrors.firstName ? 'contact-firstName-error' : undefined
+                                fieldErrors.firstName
+                                  ? 'contact-firstName-error'
+                                  : undefined
                               }
                             />
                             {fieldErrors.firstName && (
@@ -631,7 +671,9 @@ export default function PanierPage() {
                               onBlur={handleContactBlur}
                               aria-invalid={Boolean(fieldErrors.lastName)}
                               aria-describedby={
-                                fieldErrors.lastName ? 'contact-lastName-error' : undefined
+                                fieldErrors.lastName
+                                  ? 'contact-lastName-error'
+                                  : undefined
                               }
                             />
                             {fieldErrors.lastName && (
@@ -668,7 +710,9 @@ export default function PanierPage() {
                             onBlur={handleContactBlur}
                             aria-invalid={Boolean(fieldErrors.email)}
                             aria-describedby={
-                              fieldErrors.email ? 'contact-email-error' : undefined
+                              fieldErrors.email
+                                ? 'contact-email-error'
+                                : undefined
                             }
                           />
                           {fieldErrors.email && (
@@ -704,7 +748,9 @@ export default function PanierPage() {
                             onBlur={handleContactBlur}
                             aria-invalid={Boolean(fieldErrors.phone)}
                             aria-describedby={
-                              fieldErrors.phone ? 'contact-phone-error' : undefined
+                              fieldErrors.phone
+                                ? 'contact-phone-error'
+                                : undefined
                             }
                           />
                           {fieldErrors.phone && (
@@ -722,7 +768,9 @@ export default function PanierPage() {
                   </section>
 
                   <section className={internalStyles.card}>
-                    <h2 className={styles.sectionTitle}>Adresse de livraison</h2>
+                    <h2 className={styles.sectionTitle}>
+                      Adresse de livraison
+                    </h2>
 
                     <div className={styles.formStack}>
                       <div className={styles.formBlock}>
@@ -746,7 +794,9 @@ export default function PanierPage() {
                             onBlur={handleShippingBlur}
                             aria-invalid={Boolean(fieldErrors.address)}
                             aria-describedby={
-                              fieldErrors.address ? 'shipping-address-error' : undefined
+                              fieldErrors.address
+                                ? 'shipping-address-error'
+                                : undefined
                             }
                           />
                           {fieldErrors.address && (
@@ -784,7 +834,9 @@ export default function PanierPage() {
                               onBlur={handleShippingBlur}
                               aria-invalid={Boolean(fieldErrors.zip)}
                               aria-describedby={
-                                fieldErrors.zip ? 'shipping-zip-error' : undefined
+                                fieldErrors.zip
+                                  ? 'shipping-zip-error'
+                                  : undefined
                               }
                             />
                             {fieldErrors.zip && (
@@ -818,7 +870,9 @@ export default function PanierPage() {
                               onBlur={handleShippingBlur}
                               aria-invalid={Boolean(fieldErrors.city)}
                               aria-describedby={
-                                fieldErrors.city ? 'shipping-city-error' : undefined
+                                fieldErrors.city
+                                  ? 'shipping-city-error'
+                                  : undefined
                               }
                             />
                             {fieldErrors.city && (
@@ -854,7 +908,9 @@ export default function PanierPage() {
                             onBlur={handleShippingBlur}
                             aria-invalid={Boolean(fieldErrors.country)}
                             aria-describedby={
-                              fieldErrors.country ? 'shipping-country-error' : undefined
+                              fieldErrors.country
+                                ? 'shipping-country-error'
+                                : undefined
                             }
                           />
                           {fieldErrors.country && (
@@ -875,10 +931,13 @@ export default function PanierPage() {
                     <h2 className={styles.sectionTitle}>Mode de paiement</h2>
 
                     <div className={styles.paymentInfoBox}>
-                      <p className={styles.paymentTitle}>Paiement sécurisé par Stripe</p>
+                      <p className={styles.paymentTitle}>
+                        Paiement sécurisé par Stripe
+                      </p>
                       <p className={styles.paymentText}>
-                        Après validation, vous serez redirigée vers la page de paiement
-                        sécurisée de Stripe pour régler votre commande.
+                        Après validation, vous serez redirigée vers la page de
+                        paiement sécurisée de Stripe pour régler votre
+                        commande.
                       </p>
                     </div>
                   </section>
@@ -886,7 +945,9 @@ export default function PanierPage() {
                   <section className={internalStyles.card}>
                     <h2 className={styles.sectionTitle}>
                       Notes de commande{' '}
-                      <span className={styles.sectionOptional}>(optionnel)</span>
+                      <span className={styles.sectionOptional}>
+                        (optionnel)
+                      </span>
                     </h2>
 
                     <div className={internalStyles.formGroup}>
@@ -919,8 +980,8 @@ export default function PanierPage() {
                         : 'Confirmer la commande'}
                     </button>
                     <p className={styles.submitHint}>
-                      Le montant final et les frais de port seront confirmés sur la page
-                      de paiement Stripe.
+                      Le montant final et les frais de port seront confirmés sur
+                      la page de paiement Stripe.
                     </p>
                   </div>
                 </div>
@@ -944,7 +1005,9 @@ export default function PanierPage() {
 
                           <div className={styles.itemContent}>
                             <p className={styles.itemName}>{item.name}</p>
-                            <p className={styles.itemMeta}>Qté : {item.quantity}</p>
+                            <p className={styles.itemMeta}>
+                              Qté : {item.quantity}
+                            </p>
                             <p className={styles.itemPrice}>
                               {(item.price * item.quantity).toFixed(2)} €
                             </p>

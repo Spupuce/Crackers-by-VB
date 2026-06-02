@@ -6,3 +6,6 @@
 6 . faire les tests complets du site ;
 7 . faire un audit du site ;
 8 . déployer sur o2switch.
+
+Point à améliorer :
+Page finalisation de panier si champs non rempli alors remonter jusqu'au champs le plus haut
