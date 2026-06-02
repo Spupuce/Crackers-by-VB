@@ -1,0 +1,8 @@
+1 . supprimer les données liées à l’utilisateur, y compris l’historique de commande quand il existera ;
+2 . mettre en place Stripe ;
+3 . faire des simulations d’achat ;
+4 . mettre en place l’historique de commande sur la page mon compte ;
+5 . injecter de fausses données en BDD pour travailler le visuel final de cet historique ;
+6 . faire les tests complets du site ;
+7 . faire un audit du site ;
+8 . déployer sur o2switch.
