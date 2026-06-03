@@ -182,8 +182,8 @@ function validateSingleField(fieldName, fieldValue) {
 }
 
 function focusFirstInvalidField(errorsObject) {
-  const firstInvalidFieldName = fieldOrder.find(
-    (fieldName) => Boolean(errorsObject[fieldName])
+  const firstInvalidFieldName = fieldOrder.find((fieldName) =>
+    Boolean(errorsObject[fieldName])
   );
 
   if (!firstInvalidFieldName) {
@@ -549,6 +549,7 @@ export default function PanierPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          userId: user?.id || '',
           items: items.map((item) => ({
             slug: item.slug,
             name: item.name,
@@ -577,13 +578,6 @@ export default function PanierPage() {
         setSubmitError(
           data?.message ||
             'Une erreur est survenue lors de la préparation du paiement.'
-        );
-        return;
-      }
-
-      if (!data?.ok && data?.code === 'STRIPE_NOT_CONFIGURED') {
-        setSubmitInfo(
-          "Le paiement en ligne n'est pas encore configuré. La simulation d'achat fonctionne, il ne reste plus qu’à connecter Stripe."
         );
         return;
       }
