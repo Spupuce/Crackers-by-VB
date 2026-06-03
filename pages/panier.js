@@ -17,6 +17,28 @@ const postalCodeRegex = /^\d{5}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const nameRegex = /^[A-Za-zÀ-ÿ' -]{2,}$/;
 
+const fieldOrder = [
+  'firstName',
+  'lastName',
+  'email',
+  'phone',
+  'address',
+  'zip',
+  'city',
+  'country',
+];
+
+const fieldIdMap = {
+  firstName: 'contact-firstName',
+  lastName: 'contact-lastName',
+  email: 'contact-email',
+  phone: 'contact-phone',
+  address: 'shipping-address',
+  zip: 'shipping-zip',
+  city: 'shipping-city',
+  country: 'shipping-country',
+};
+
 function buildInitialContact(user) {
   return {
     firstName: user?.firstName || '',
@@ -157,6 +179,37 @@ function validateSingleField(fieldName, fieldValue) {
     default:
       return '';
   }
+}
+
+function focusFirstInvalidField(errorsObject) {
+  const firstInvalidFieldName = fieldOrder.find(
+    (fieldName) => Boolean(errorsObject[fieldName])
+  );
+
+  if (!firstInvalidFieldName) {
+    return;
+  }
+
+  const targetId = fieldIdMap[firstInvalidFieldName];
+  const targetElement = document.getElementById(targetId);
+
+  if (!targetElement) {
+    return;
+  }
+
+  const headerOffset = 140;
+  const elementTop =
+    targetElement.getBoundingClientRect().top + window.pageYOffset;
+  const targetTop = Math.max(elementTop - headerOffset, 0);
+
+  window.scrollTo({
+    top: targetTop,
+    behavior: 'smooth',
+  });
+
+  window.setTimeout(() => {
+    targetElement.focus({ preventScroll: true });
+  }, 250);
 }
 
 export default function PanierPage() {
@@ -391,6 +444,7 @@ export default function PanierPage() {
       isValid: !Object.values(nextErrors).some(Boolean),
       trimmedContact,
       trimmedShipping,
+      nextErrors,
     };
   }
 
@@ -474,12 +528,13 @@ export default function PanierPage() {
     setSubmitError('');
     setSubmitInfo('');
 
-    const { isValid, trimmedContact, trimmedShipping } = validateForm();
+    const { isValid, trimmedContact, trimmedShipping, nextErrors } = validateForm();
 
     if (!isValid) {
       setSubmitError(
         'Merci de corriger les champs obligatoires avant de continuer.'
       );
+      focusFirstInvalidField(nextErrors);
       return;
     }
 
