@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { FiLock, FiUser } from 'react-icons/fi';
+import { FiLock, FiPackage, FiUser, FiX } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +30,89 @@ function buildInitialPasswordForm() {
   };
 }
 
+const mockOrders = [
+  {
+    id: 'CMD-2026-001',
+    createdAt: '2026-05-28',
+    status: 'Livrée',
+    total: 42.5,
+    itemCount: 3,
+    items: [
+      {
+        id: '1',
+        name: 'Cracker fleuri rose poudré',
+        quantity: 1,
+        price: 14.5,
+        image: '/images/placeholder-product.jpg',
+      },
+      {
+        id: '2',
+        name: 'Décoration crochet eucalyptus',
+        quantity: 2,
+        price: 14.0,
+        image: '/images/placeholder-product.jpg',
+      },
+    ],
+  },
+  {
+    id: 'CMD-2026-002',
+    createdAt: '2026-04-16',
+    status: 'En préparation',
+    total: 27.0,
+    itemCount: 1,
+    items: [
+      {
+        id: '3',
+        name: 'Suspension tricot naturel',
+        quantity: 1,
+        price: 27.0,
+        image: '/images/placeholder-product.jpg',
+      },
+    ],
+  },
+  {
+    id: 'CMD-2026-003',
+    createdAt: '2026-03-02',
+    status: 'Payée',
+    total: 18.9,
+    itemCount: 1,
+    items: [
+      {
+        id: '4',
+        name: 'Petit accessoire crochet lavande',
+        quantity: 1,
+        price: 18.9,
+        image: '/images/placeholder-product.jpg',
+      },
+    ],
+  },
+];
+
+function formatOrderDate(value) {
+  if (!value) {
+    return '';
+  }
+
+  return new Date(value).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function getStatusClassName(status, stylesObject) {
+  switch (status) {
+    case 'Livrée':
+      return stylesObject.orderStatusDelivered;
+    case 'En préparation':
+      return stylesObject.orderStatusPreparing;
+    case 'Payée':
+      return stylesObject.orderStatusPaid;
+    default:
+      return '';
+  }
+}
+
 export default function MonComptePage() {
   const router = useRouter();
   const { user, isAuthenticated, isAuthReady, logout, updateUser } = useAuth();
@@ -54,6 +137,8 @@ export default function MonComptePage() {
   const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
   const [passwordSuccessMessage, setPasswordSuccessMessage] = useState('');
 
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
   useEffect(() => {
     if (isAuthReady && !isAuthenticated) {
       router.replace('/connexion');
@@ -63,6 +148,24 @@ export default function MonComptePage() {
   useEffect(() => {
     setFormValues(buildInitialForm(user));
   }, [user]);
+
+  useEffect(() => {
+    if (!selectedOrder) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedOrder(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedOrder]);
 
   const fullName = useMemo(() => {
     const parts = [user?.firstName || '', user?.lastName || ''].filter(Boolean);
@@ -379,6 +482,18 @@ export default function MonComptePage() {
     }
   };
 
+  const handleReorder = (order) => {
+    if (!order) return;
+
+    console.log('Commander à nouveau :', order.id);
+  };
+
+  const handleDownloadInvoice = (order) => {
+    if (!order) return;
+
+    console.log('Télécharger la facture :', order.id);
+  };
+
   if (!isAuthReady || !isAuthenticated) {
     return null;
   }
@@ -408,7 +523,6 @@ export default function MonComptePage() {
             </button>
           </div>
 
-          {/* Carte infos compte */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
               <div className={styles.cardHeading}>
@@ -643,7 +757,6 @@ export default function MonComptePage() {
             )}
           </section>
 
-          {/* Carte mot de passe */}
           <section className={styles.card}>
             <div className={styles.passwordBlock}>
               <div className={styles.passwordHeader}>
@@ -766,17 +879,64 @@ export default function MonComptePage() {
             </div>
           </section>
 
-          {/* Carte commandes */}
           <section className={styles.card}>
-            <div className={styles.ordersEmpty}>
-              <p className={styles.emptyTitle}>Aucune commande pour le moment</p>
-              <p className={styles.emptyText}>
-                Vos futures commandes apparaîtront ici.
-              </p>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardHeading}>
+                <span className={styles.iconBadge} aria-hidden="true">
+                  <FiPackage />
+                </span>
+                <p className={styles.cardEyebrow}>Historique de commandes</p>
+              </div>
             </div>
+
+            {mockOrders.length === 0 ? (
+              <div className={styles.ordersEmpty}>
+                <p className={styles.emptyTitle}>Aucune commande pour le moment</p>
+                <p className={styles.emptyText}>
+                  Vos futures commandes apparaîtront ici.
+                </p>
+              </div>
+            ) : (
+              <div className={styles.ordersList}>
+                {mockOrders.map((order) => (
+                  <button
+                    key={order.id}
+                    type="button"
+                    className={styles.orderCardButton}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    <div className={styles.orderTopRow}>
+                      <div className={styles.orderIdentity}>
+                        <p className={styles.orderNumber}>{order.id}</p>
+                        <p className={styles.orderDate}>
+                          Commande du {formatOrderDate(order.createdAt)}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`${styles.orderStatus} ${getStatusClassName(
+                          order.status,
+                          styles
+                        )}`}
+                      >
+                        {order.status}
+                      </span>
+                    </div>
+
+                    <div className={styles.orderSummaryRow}>
+                      <span className={styles.orderSummaryText}>
+                        {order.itemCount} article{order.itemCount > 1 ? 's' : ''}
+                      </span>
+                      <span className={styles.orderTotalValue}>
+                        {order.total.toFixed(2)} €
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
-          {/* Zone dangereuse */}
           <section className={styles.dangerZone}>
             <h2 className={styles.dangerTitle}>Zone dangereuse</h2>
             <p className={styles.dangerText}>
@@ -858,6 +1018,109 @@ export default function MonComptePage() {
             )}
           </section>
         </div>
+
+        {selectedOrder ? (
+          <div
+            className={styles.orderModalOverlay}
+            role="presentation"
+            onClick={() => setSelectedOrder(null)}
+          >
+            <div
+              className={styles.orderModal}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="order-modal-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className={styles.orderModalHeader}>
+                <div>
+                  <h2 id="order-modal-title" className={styles.orderModalTitle}>
+                    {selectedOrder.id}
+                  </h2>
+                  <p className={styles.orderModalSubtitle}>
+                    Commande du {formatOrderDate(selectedOrder.createdAt)}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.orderModalClose}
+                  onClick={() => setSelectedOrder(null)}
+                  aria-label="Fermer le détail de la commande"
+                >
+                  <FiX />
+                </button>
+              </div>
+
+              <div className={styles.orderModalStatusRow}>
+                <span
+                  className={`${styles.orderStatus} ${getStatusClassName(
+                    selectedOrder.status,
+                    styles
+                  )}`}
+                >
+                  {selectedOrder.status}
+                </span>
+                <span className={styles.orderSummaryText}>
+                  {selectedOrder.itemCount} article
+                  {selectedOrder.itemCount > 1 ? 's' : ''}
+                </span>
+              </div>
+
+              <div className={styles.orderModalItems}>
+                {selectedOrder.items.map((item) => (
+                  <div key={item.id} className={styles.orderModalItem}>
+                    <div className={styles.orderModalImageWrapper}>
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className={styles.orderModalImage}
+                      />
+                    </div>
+
+                    <div className={styles.orderModalItemContent}>
+                      <p className={styles.orderModalItemName}>{item.name}</p>
+                      <p className={styles.orderModalItemMeta}>
+                        Quantité : {item.quantity}
+                      </p>
+                    </div>
+
+                    <p className={styles.orderModalItemPrice}>
+                      {(item.price * item.quantity).toFixed(2)} €
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className={styles.orderModalFooter}>
+                <div className={styles.orderModalFooterSummary}>
+                  <span className={styles.orderTotalLabel}>Total</span>
+                  <span className={styles.orderModalTotal}>
+                    {selectedOrder.total.toFixed(2)} €
+                  </span>
+                </div>
+
+                <div className={styles.orderModalFooterActions}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => handleDownloadInvoice(selectedOrder)}
+                  >
+                    Télécharger la facture
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => handleReorder(selectedOrder)}
+                  >
+                    Commander à nouveau
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </main>
 
       <Footer />

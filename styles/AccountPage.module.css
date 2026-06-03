@@ -267,6 +267,263 @@
   text-align: center;
 }
 
+.ordersList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.orderCardButton {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background-color: var(--color-gray-50);
+  padding: 16px;
+  text-align: left;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.orderCardButton:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 10px 18px rgba(66, 37, 13, 0.08);
+  transform: translateY(-1px);
+}
+
+.orderCardButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.orderTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.orderIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orderNumber {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.orderDate {
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+}
+
+.orderStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.orderStatusDelivered {
+  background-color: rgba(78, 167, 110, 0.14);
+  color: #2f7a4b;
+}
+
+.orderStatusPreparing {
+  background-color: rgba(232, 172, 70, 0.18);
+  color: #9a6500;
+}
+
+.orderStatusPaid {
+  background-color: rgba(248, 184, 131, 0.18);
+  color: var(--color-primary-dark);
+}
+
+.orderSummaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.orderSummaryText {
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+}
+
+.orderTotalLabel {
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+}
+
+.orderTotalValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.orderModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: rgba(34, 24, 16, 0.5);
+}
+
+.orderModal {
+  width: 100%;
+  max-width: 720px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background-color: var(--color-white);
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  padding: 22px;
+  box-shadow: 0 18px 40px rgba(34, 24, 16, 0.22);
+}
+
+.orderModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.orderModalTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.orderModalSubtitle {
+  font-size: 0.92rem;
+  color: var(--color-text-soft);
+}
+
+.orderModalClose {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-white);
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.orderModalClose:hover {
+  background-color: var(--color-gray-50);
+}
+
+.orderModalStatusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.orderModalItems {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.orderModalItem {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.orderModalItem:first-child {
+  border-top: 1px solid var(--color-border);
+}
+
+.orderModalImageWrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-border);
+}
+
+.orderModalImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.orderModalItemContent {
+  min-width: 0;
+}
+
+.orderModalItemName {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.orderModalItemMeta {
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+}
+
+.orderModalItemPrice {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.orderModalFooter {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.orderModalFooterSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orderModalFooterActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.orderModalTotal {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 .emptyTitle {
   font-size: 1rem;
   color: var(--color-text-soft);
@@ -351,6 +608,48 @@
 
   .card {
     padding: 18px;
+  }
+
+  .orderTopRow,
+  .orderSummaryRow,
+  .orderModalStatusRow,
+  .orderModalFooter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .orderModalFooterActions {
+    width: 100%;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .orderModalFooterActions .primaryButton,
+  .orderModalFooterActions .secondaryButton {
+    width: 100%;
+  }
+
+  .orderModalOverlay {
+    padding: 16px;
+  }
+
+  .orderModal {
+    padding: 18px;
+    max-height: calc(100vh - 32px);
+  }
+
+  .orderModalItem {
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  .orderModalImageWrapper {
+    width: 64px;
+    height: 64px;
+  }
+
+  .orderModalItemPrice {
+    grid-column: 2;
   }
 
   .formActions {
