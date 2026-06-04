@@ -117,6 +117,32 @@ function buildOrderPayload({
   };
 }
 
+function buildStripeLineItems(resolvedItems) {
+  return resolvedItems.map((item) => ({
+    quantity: item.quantity,
+    price_data: {
+      currency: 'eur',
+      product_data: {
+        name: item.name,
+        metadata: {
+          slug: item.slug,
+          productId: String(item.productId),
+        },
+      },
+      unit_amount: Math.round(item.unitPrice * 100),
+    },
+  }));
+}
+
+function getStripeClient(stripeSecretKey) {
+  // eslint-disable-next-line global-require
+  const Stripe = require('stripe');
+
+  return new Stripe(stripeSecretKey, {
+    apiVersion: '2023-10-16',
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -241,57 +267,52 @@ export default async function handler(req, res) {
       })
     );
 
-    // eslint-disable-next-line global-require
-    const Stripe = require('stripe');
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
+    try {
+      const stripe = getStripeClient(stripeSecretKey);
+      const lineItems = buildStripeLineItems(resolvedItems);
 
-    const lineItems = resolvedItems.map((item) => ({
-      quantity: item.quantity,
-      price_data: {
-        currency: 'eur',
-        product_data: {
-          name: item.name,
-          metadata: {
-            slug: item.slug,
-            productId: String(item.productId),
-          },
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          order_id: String(pendingOrder._id),
+          user_id: String(userId),
+          customer_email: normalizedCustomer.email || '',
+          customer_firstname: normalizedCustomer.firstName || '',
+          customer_lastname: normalizedCustomer.lastName || '',
+          shipping_address: normalizedShipping.address || '',
+          shipping_city: normalizedShipping.city || '',
+          shipping_zip: normalizedShipping.zip || '',
+          shipping_country: normalizedShipping.country || '',
+          notes: normalizeText(notes) || '',
         },
-        unit_amount: Math.round(item.unitPrice * 100),
-      },
-    }));
+      });
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        order_id: String(pendingOrder._id),
-        user_id: String(userId),
-        customer_email: normalizedCustomer.email || '',
-        customer_firstname: normalizedCustomer.firstName || '',
-        customer_lastname: normalizedCustomer.lastName || '',
-        shipping_address: normalizedShipping.address || '',
-        shipping_city: normalizedShipping.city || '',
-        shipping_zip: normalizedShipping.zip || '',
-        shipping_country: normalizedShipping.country || '',
-        notes: normalizeText(notes) || '',
-      },
-    });
+      pendingOrder.stripeSessionId = session.id;
+      await pendingOrder.save();
 
-    pendingOrder.stripeSessionId = session.id;
-    await pendingOrder.save();
+      return res.status(200).json({
+        ok: true,
+        code: 'SESSION_CREATED',
+        sessionId: session.id,
+        orderId: pendingOrder._id,
+        url: session.url,
+      });
+    } catch (stripeError) {
+      await Order.deleteOne({ _id: pendingOrder._id });
 
-    return res.status(200).json({
-      ok: true,
-      code: 'SESSION_CREATED',
-      sessionId: session.id,
-      orderId: pendingOrder._id,
-      url: session.url,
-    });
+      console.error('CHECKOUT_STRIPE_SESSION_ERROR', stripeError);
+
+      return res.status(500).json({
+        ok: false,
+        code: 'STRIPE_SESSION_ERROR',
+        message:
+          'Une erreur est survenue lors de la création de la session de paiement.',
+      });
+    }
   } catch (error) {
     console.error('CHECKOUT_CREATE_SESSION_ERROR', error);
 
