@@ -6,6 +6,19 @@ import { getSessionFromRequest, clearSessionCookie } from '../../../lib/session'
 import User from '../../../models/User';
 import RestockRequest from '../../../models/RestockRequest';
 
+async function deleteUserRelatedData(user) {
+  if (!user?.email) {
+    return;
+  }
+
+  await RestockRequest.deleteMany({
+    email: user.email,
+  });
+
+  // À compléter plus tard quand les commandes seront réellement stockées en base.
+  // Exemple : suppression ou anonymisation des commandes liées au compte.
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'DELETE') {
     return res.status(405).json({
@@ -25,7 +38,7 @@ export default async function handler(req, res) {
     }
 
     const { password = '' } = req.body || {};
-    const normalizedPassword = String(password);
+    const normalizedPassword = String(password).trim();
 
     if (!normalizedPassword) {
       return res.status(400).json({
@@ -54,16 +67,14 @@ export default async function handler(req, res) {
       });
     }
 
-    await RestockRequest.deleteMany({
-      email: user.email,
-    });
-
+    await deleteUserRelatedData(user);
     await User.findByIdAndDelete(user._id);
 
     clearSessionCookie(res);
 
     return res.status(200).json({
-      message: 'Votre compte et les données associées ont bien été supprimés.',
+      message:
+        'Votre compte ainsi que vos demandes de réassort associées ont bien été supprimés.',
     });
   } catch (error) {
     return res.status(500).json({

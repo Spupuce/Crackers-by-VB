@@ -3,6 +3,7 @@
 import mongoose from 'mongoose';
 import { connectMongo } from '../../../lib/mongodb';
 import Order from '../../../models/Order';
+import Product from '../../../models/Product';
 
 function buildOrigin(req) {
   return (
@@ -15,70 +16,134 @@ function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeIncomingItems(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+
+      const slug =
+        typeof item.slug === 'string' && item.slug.trim()
+          ? item.slug.trim()
+          : '';
+
+      const quantity = Number(item.quantity);
+
+      if (!slug || !Number.isFinite(quantity) || quantity <= 0) {
+        return null;
+      }
+
+      return {
+        slug,
+        quantity: Math.max(1, Math.floor(quantity)),
+      };
+    })
+    .filter(Boolean);
+}
+
+async function resolveOrderItemsFromProducts(incomingItems) {
+  const slugs = [...new Set(incomingItems.map((item) => item.slug))];
+
+  const products = await Product.find({
+    slug: { $in: slugs },
+    isArchived: false,
+  });
+
+  const productMap = new Map(products.map((product) => [product.slug, product]));
+  const resolvedItems = [];
+
+  for (const incomingItem of incomingItems) {
+    const product = productMap.get(incomingItem.slug);
+
+    if (!product) {
+      continue;
+    }
+
+    const safePrice = Number(product.price);
+    const safeQuantity = Number(incomingItem.quantity);
+
+    if (!Number.isFinite(safePrice) || safePrice < 0 || safeQuantity <= 0) {
+      continue;
+    }
+
+    resolvedItems.push({
+      productId: product._id,
+      name: product.name,
+      slug: product.slug,
+      quantity: safeQuantity,
+      unitPrice: safePrice,
+      imageUrl: product.imageUrl || '',
+    });
+  }
+
+  return resolvedItems;
+}
+
+function buildOrderPayload({
+  userId,
+  resolvedItems,
+  normalizedShipping,
+  notes,
+  status,
+  stripeSessionId = '',
+  stripePaymentIntentId = '',
+}) {
+  const totalAmount = resolvedItems.reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0
+  );
+
+  return {
+    userId,
+    status,
+    totalAmount,
+    currency: 'EUR',
+    items: resolvedItems,
+    notes: normalizeText(notes),
+    stripeSessionId,
+    stripePaymentIntentId,
+    shippingAddress: {
+      addressLine1: normalizedShipping.address,
+      addressLine2: '',
+      postalCode: normalizedShipping.zip,
+      city: normalizedShipping.city,
+      country: normalizedShipping.country,
+    },
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res
-      .status(405)
-      .json({ ok: false, message: 'Méthode non autorisée.' });
+    return res.status(405).json({
+      ok: false,
+      message: 'Méthode non autorisée.',
+    });
   }
 
   try {
     const { items, customer, shipping, notes, userId } = req.body || {};
 
-    if (!Array.isArray(items) || items.length === 0) {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
         ok: false,
-        code: 'EMPTY_CART',
-        message: 'Votre panier est vide.',
+        code: 'INVALID_USER_ID',
+        message: 'Identifiant utilisateur invalide.',
       });
     }
 
-    const normalizedItems = items
-      .map((item) => {
-        if (!item || typeof item !== 'object') return null;
-
-        const slug =
-          typeof item.slug === 'string' && item.slug.trim()
-            ? item.slug.trim()
-            : null;
-
-        const name =
-          typeof item.name === 'string' && item.name.trim()
-            ? item.name.trim()
-            : null;
-
-        const quantity = Number(item.quantity);
-        const price = Number(item.price);
-
-        if (
-          !slug ||
-          !name ||
-          !Number.isFinite(quantity) ||
-          !Number.isFinite(price)
-        ) {
-          return null;
-        }
-
-        if (quantity <= 0 || price < 0) {
-          return null;
-        }
-
-        return {
-          slug,
-          name,
-          quantity,
-          price,
-        };
-      })
-      .filter(Boolean);
+    const normalizedItems = normalizeIncomingItems(items);
 
     if (!normalizedItems.length) {
       return res.status(400).json({
         ok: false,
-        code: 'INVALID_ITEMS',
-        message:
-          'Les informations du panier sont invalides. Merci de réessayer.',
+        code: 'EMPTY_CART',
+        message: 'Votre panier est vide ou invalide.',
       });
     }
 
@@ -97,6 +162,20 @@ export default async function handler(req, res) {
     };
 
     if (
+      !normalizedCustomer.firstName ||
+      !normalizedCustomer.lastName ||
+      !normalizedCustomer.email ||
+      !normalizedCustomer.phone
+    ) {
+      return res.status(400).json({
+        ok: false,
+        code: 'INVALID_CUSTOMER',
+        message:
+          'Les informations de contact sont incomplètes. Merci de réessayer.',
+      });
+    }
+
+    if (
       !normalizedShipping.address ||
       !normalizedShipping.city ||
       !normalizedShipping.zip ||
@@ -110,6 +189,19 @@ export default async function handler(req, res) {
       });
     }
 
+    await connectMongo();
+
+    const resolvedItems = await resolveOrderItemsFromProducts(normalizedItems);
+
+    if (!resolvedItems.length) {
+      return res.status(400).json({
+        ok: false,
+        code: 'INVALID_ITEMS',
+        message:
+          'Les produits du panier sont introuvables ou ne sont plus disponibles.',
+      });
+    }
+
     const stripeSecretKey =
       process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
 
@@ -118,55 +210,36 @@ export default async function handler(req, res) {
     const cancelUrl = `${origin}/panier?checkout=cancel`;
 
     if (!stripeSecretKey) {
-      if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({
-          ok: false,
-          code: 'MISSING_USER_ID',
-          message:
-            "Impossible de simuler la commande sans identifiant utilisateur valide.",
-        });
-      }
-
-      await connectMongo();
-
-      const totalAmount = normalizedItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
+      const simulatedOrder = await Order.create(
+        buildOrderPayload({
+          userId,
+          resolvedItems,
+          normalizedShipping,
+          notes,
+          status: 'paid',
+          stripeSessionId: 'SIMULATED_SESSION',
+          stripePaymentIntentId: 'SIMULATED_PAYMENT',
+        })
       );
-
-      const order = await Order.create({
-        userId,
-        status: 'paid',
-        totalAmount,
-        currency: 'EUR',
-        items: normalizedItems.map((item) => ({
-          productId: new mongoose.Types.ObjectId(),
-          name: item.name,
-          slug: item.slug,
-          quantity: item.quantity,
-          unitPrice: item.price,
-          imageUrl: '',
-        })),
-        notes: normalizeText(notes),
-        stripeSessionId: 'SIMULATED_SESSION',
-        stripePaymentIntentId: 'SIMULATED_PAYMENT',
-        shippingAddress: {
-          addressLine1: normalizedShipping.address,
-          addressLine2: '',
-          postalCode: normalizedShipping.zip,
-          city: normalizedShipping.city,
-          country: normalizedShipping.country,
-        },
-      });
 
       return res.status(200).json({
         ok: true,
         code: 'SIMULATED_ORDER_CREATED',
         message: 'Commande simulée créée avec succès.',
-        orderId: order._id,
+        orderId: simulatedOrder._id,
         url: successUrl,
       });
     }
+
+    const pendingOrder = await Order.create(
+      buildOrderPayload({
+        userId,
+        resolvedItems,
+        normalizedShipping,
+        notes,
+        status: 'pending',
+      })
+    );
 
     // eslint-disable-next-line global-require
     const Stripe = require('stripe');
@@ -174,7 +247,7 @@ export default async function handler(req, res) {
       apiVersion: '2023-10-16',
     });
 
-    const lineItems = normalizedItems.map((item) => ({
+    const lineItems = resolvedItems.map((item) => ({
       quantity: item.quantity,
       price_data: {
         currency: 'eur',
@@ -182,9 +255,10 @@ export default async function handler(req, res) {
           name: item.name,
           metadata: {
             slug: item.slug,
+            productId: String(item.productId),
           },
         },
-        unit_amount: Math.round(item.price * 100),
+        unit_amount: Math.round(item.unitPrice * 100),
       },
     }));
 
@@ -195,6 +269,8 @@ export default async function handler(req, res) {
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
+        order_id: String(pendingOrder._id),
+        user_id: String(userId),
         customer_email: normalizedCustomer.email || '',
         customer_firstname: normalizedCustomer.firstName || '',
         customer_lastname: normalizedCustomer.lastName || '',
@@ -203,14 +279,17 @@ export default async function handler(req, res) {
         shipping_zip: normalizedShipping.zip || '',
         shipping_country: normalizedShipping.country || '',
         notes: normalizeText(notes) || '',
-        user_id: typeof userId === 'string' ? userId : '',
       },
     });
+
+    pendingOrder.stripeSessionId = session.id;
+    await pendingOrder.save();
 
     return res.status(200).json({
       ok: true,
       code: 'SESSION_CREATED',
       sessionId: session.id,
+      orderId: pendingOrder._id,
       url: session.url,
     });
   } catch (error) {
