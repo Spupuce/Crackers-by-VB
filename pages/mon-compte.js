@@ -30,64 +30,6 @@ function buildInitialPasswordForm() {
   };
 }
 
-const mockOrders = [
-  {
-    id: 'CMD-2026-001',
-    createdAt: '2026-05-28',
-    status: 'Livrée',
-    total: 42.5,
-    itemCount: 3,
-    items: [
-      {
-        id: '1',
-        name: 'Cracker fleuri rose poudré',
-        quantity: 1,
-        price: 14.5,
-        image: '/images/placeholder-product.jpg',
-      },
-      {
-        id: '2',
-        name: 'Décoration crochet eucalyptus',
-        quantity: 2,
-        price: 14.0,
-        image: '/images/placeholder-product.jpg',
-      },
-    ],
-  },
-  {
-    id: 'CMD-2026-002',
-    createdAt: '2026-04-16',
-    status: 'En préparation',
-    total: 27.0,
-    itemCount: 1,
-    items: [
-      {
-        id: '3',
-        name: 'Suspension tricot naturel',
-        quantity: 1,
-        price: 27.0,
-        image: '/images/placeholder-product.jpg',
-      },
-    ],
-  },
-  {
-    id: 'CMD-2026-003',
-    createdAt: '2026-03-02',
-    status: 'Payée',
-    total: 18.9,
-    itemCount: 1,
-    items: [
-      {
-        id: '4',
-        name: 'Petit accessoire crochet lavande',
-        quantity: 1,
-        price: 18.9,
-        image: '/images/placeholder-product.jpg',
-      },
-    ],
-  },
-];
-
 function formatOrderDate(value) {
   if (!value) {
     return '';
@@ -137,6 +79,9 @@ export default function MonComptePage() {
   const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
   const [passwordSuccessMessage, setPasswordSuccessMessage] = useState('');
 
+  const [orders, setOrders] = useState([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [ordersErrorMessage, setOrdersErrorMessage] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
@@ -148,6 +93,63 @@ export default function MonComptePage() {
   useEffect(() => {
     setFormValues(buildInitialForm(user));
   }, [user]);
+
+  useEffect(() => {
+    if (!isAuthReady || !isAuthenticated) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadOrders() {
+      setIsLoadingOrders(true);
+      setOrdersErrorMessage('');
+
+      try {
+        const response = await fetch('/api/account/orders', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message ||
+              'Une erreur est survenue lors de la récupération des commandes.'
+          );
+        }
+
+        if (isCancelled) {
+          return;
+        }
+
+        setOrders(Array.isArray(data?.orders) ? data.orders : []);
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+
+        setOrders([]);
+        setOrdersErrorMessage(
+          error?.message ||
+            'Une erreur est survenue lors de la récupération des commandes.'
+        );
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingOrders(false);
+        }
+      }
+    }
+
+    loadOrders();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isAuthReady, isAuthenticated]);
 
   useEffect(() => {
     if (!selectedOrder) {
@@ -166,6 +168,21 @@ export default function MonComptePage() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [selectedOrder]);
+
+  useEffect(() => {
+    if (!selectedOrder) {
+      return;
+    }
+
+    const updatedSelectedOrder = orders.find((order) => order.id === selectedOrder.id);
+
+    if (!updatedSelectedOrder) {
+      setSelectedOrder(null);
+      return;
+    }
+
+    setSelectedOrder(updatedSelectedOrder);
+  }, [orders, selectedOrder]);
 
   const fullName = useMemo(() => {
     const parts = [user?.firstName || '', user?.lastName || ''].filter(Boolean);
@@ -891,7 +908,16 @@ export default function MonComptePage() {
               </div>
             </div>
 
-            {mockOrders.length === 0 ? (
+            {isLoadingOrders ? (
+              <div className={styles.ordersEmpty}>
+                <p className={styles.emptyTitle}>Chargement des commandes...</p>
+              </div>
+            ) : ordersErrorMessage ? (
+              <div className={styles.ordersEmpty}>
+                <p className={styles.emptyTitle}>Impossible de charger vos commandes</p>
+                <p className={styles.emptyText}>{ordersErrorMessage}</p>
+              </div>
+            ) : orders.length === 0 ? (
               <div className={styles.ordersEmpty}>
                 <p className={styles.emptyTitle}>Aucune commande pour le moment</p>
                 <p className={styles.emptyText}>
@@ -900,7 +926,7 @@ export default function MonComptePage() {
               </div>
             ) : (
               <div className={styles.ordersList}>
-                {mockOrders.map((order) => (
+                {orders.map((order) => (
                   <button
                     key={order.id}
                     type="button"
