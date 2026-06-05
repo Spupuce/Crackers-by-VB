@@ -182,8 +182,8 @@ function validateSingleField(fieldName, fieldValue) {
 }
 
 function focusFirstInvalidField(errorsObject) {
-  const firstInvalidFieldName = fieldOrder.find(
-    (fieldName) => Boolean(errorsObject[fieldName])
+  const firstInvalidFieldName = fieldOrder.find((fieldName) =>
+    Boolean(errorsObject[fieldName])
   );
 
   if (!firstInvalidFieldName) {
@@ -284,6 +284,12 @@ export default function PanierPage() {
   const canAttemptCheckout = useMemo(
     () => hasItems && !isSubmitting,
     [hasItems, isSubmitting]
+  );
+
+  const totalItems = useMemo(
+    () =>
+      items.reduce((accumulator, item) => accumulator + (item.quantity || 0), 0),
+    [items]
   );
 
   function setFieldTouched(fieldName) {
@@ -549,6 +555,7 @@ export default function PanierPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          userId: user?.id || '',
           items: items.map((item) => ({
             slug: item.slug,
             name: item.name,
@@ -577,13 +584,6 @@ export default function PanierPage() {
         setSubmitError(
           data?.message ||
             'Une erreur est survenue lors de la préparation du paiement.'
-        );
-        return;
-      }
-
-      if (!data?.ok && data?.code === 'STRIPE_NOT_CONFIGURED') {
-        setSubmitInfo(
-          "Le paiement en ligne n'est pas encore configuré. La simulation d'achat fonctionne, il ne reste plus qu’à connecter Stripe."
         );
         return;
       }
@@ -1026,13 +1026,13 @@ export default function PanierPage() {
                   <div className={styles.submitWrapper}>
                     <button
                       type="button"
-                      className={internalStyles.primaryButton}
+                      className={`${internalStyles.primaryButton} ${styles.submitButton}`}
                       onClick={handleCheckout}
                       disabled={isSubmitting || !hasItems}
                     >
                       {isSubmitting
                         ? 'Préparation du paiement...'
-                        : 'Confirmer la commande'}
+                        : `Confirmer la commande · ${cartTotal.toFixed(2)} €`}
                     </button>
                     <p className={styles.submitHint}>
                       Le montant final et les frais de port seront confirmés sur
@@ -1042,31 +1042,47 @@ export default function PanierPage() {
                 </div>
 
                 <aside className={styles.summaryColumn}>
-                  <section className={internalStyles.card}>
-                    <h2 className={styles.sectionTitle}>Récapitulatif</h2>
+                  <section className={`${internalStyles.card} ${styles.summaryCard}`}>
+                    <div className={styles.summaryHeader}>
+                      <h2 className={styles.sectionTitle}>Récapitulatif</h2>
+                      <span className={styles.summaryBadge}>
+                        {totalItems} article{totalItems > 1 ? 's' : ''}
+                      </span>
+                    </div>
 
                     <div className={styles.itemsList}>
                       {items.map((item) => (
                         <div key={item.slug} className={styles.itemRow}>
                           <div className={styles.itemImageWrapper}>
-                            {item.imageUrl && (
+                            {item.imageUrl ? (
                               <img
                                 src={item.imageUrl}
                                 alt={item.name}
                                 className={styles.itemImage}
                               />
+                            ) : (
+                              <div
+                                className={styles.itemImageFallback}
+                                aria-label={item.name}
+                                role="img"
+                              >
+                                <span className={styles.itemImageFallbackText}>
+                                  VB
+                                </span>
+                              </div>
                             )}
                           </div>
 
                           <div className={styles.itemContent}>
                             <p className={styles.itemName}>{item.name}</p>
                             <p className={styles.itemMeta}>
-                              Qté : {item.quantity}
-                            </p>
-                            <p className={styles.itemPrice}>
-                              {(item.price * item.quantity).toFixed(2)} €
+                              Quantité : {item.quantity}
                             </p>
                           </div>
+
+                          <p className={styles.itemPrice}>
+                            {(item.price * item.quantity).toFixed(2)} €
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -1084,6 +1100,10 @@ export default function PanierPage() {
                         <span>Total estimé</span>
                         <span>{cartTotal.toFixed(2)} €</span>
                       </div>
+                    </div>
+
+                    <div className={styles.summaryBottomNote}>
+                      Paiement sécurisé et confirmation finale sur Stripe.
                     </div>
                   </section>
                 </aside>

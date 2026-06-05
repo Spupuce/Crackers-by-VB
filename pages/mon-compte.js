@@ -468,11 +468,13 @@ export default function MonComptePage() {
         return;
       }
 
+      setDeletePassword('');
+      setDeleteErrorMessage('');
       setDeleteSuccessMessage('Votre compte a bien été supprimé.');
-      setTimeout(() => {
-        logout();
-        router.push('/');
-      }, 800);
+      setIsDeleteSectionOpen(false);
+
+      logout();
+      router.push('/');
     } catch (error) {
       setDeleteErrorMessage(
         'Une erreur est survenue lors de la suppression du compte.'

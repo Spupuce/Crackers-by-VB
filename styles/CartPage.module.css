@@ -2,8 +2,9 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
   gap: 24px;
+  align-items: start;
 }
 
 .mainColumn {
@@ -14,6 +15,34 @@
 
 .summaryColumn {
   align-self: flex-start;
+  position: sticky;
+  top: 112px;
+}
+
+.summaryCard {
+  overflow: hidden;
+}
+
+.summaryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summaryBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background-color: rgba(212, 165, 116, 0.14);
+  color: var(--color-primary-dark);
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .sectionTitle {
@@ -48,8 +77,12 @@
 }
 
 .paymentInfoBox {
-  border-radius: 10px;
-  background-color: var(--color-gray-50);
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    var(--color-gray-50) 100%
+  );
   border: 1px solid var(--color-border);
   padding: 18px 20px;
 }
@@ -70,80 +103,147 @@
 .itemsList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
 .itemRow {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(66, 37, 13, 0.08);
+}
+
+.itemRow:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .itemImageWrapper {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
   overflow: hidden;
   background-color: var(--color-gray-50);
+  border: 1px solid rgba(66, 37, 13, 0.08);
   flex-shrink: 0;
 }
 
-.itemImage {
+.itemImage,
+.itemImageFallback {
   width: 100%;
   height: 100%;
+}
+
+.itemImage {
   object-fit: cover;
 }
 
+.itemImageFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    180deg,
+    rgba(212, 165, 116, 0.16) 0%,
+    rgba(212, 165, 116, 0.08) 100%
+  );
+}
+
+.itemImageFallbackText {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-primary-dark);
+}
+
 .itemContent {
-  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .itemName {
   font-size: 0.95rem;
   font-weight: 500;
+  line-height: 1.45;
   color: var(--color-text);
 }
 
 .itemMeta {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--color-text-soft);
 }
 
 .itemPrice {
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.96rem;
+  font-weight: 600;
   color: var(--color-text);
+  white-space: nowrap;
 }
 
 .summaryTotals {
   border-top: 1px solid var(--color-border);
-  padding-top: 12px;
+  padding-top: 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .summaryRow,
 .summaryRowTotal {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 16px;
   font-size: 0.95rem;
 }
 
-.summaryRowTotal span:last-child {
+.summaryRow {
+  color: var(--color-text-soft);
+}
+
+.summaryRow span:last-child {
+  color: var(--color-text);
+}
+
+.summaryRowTotal {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(66, 37, 13, 0.12);
+  font-size: 1rem;
+}
+
+.summaryRowTotal span:first-child {
   font-weight: 600;
+  color: var(--color-text);
+}
+
+.summaryRowTotal span:last-child {
+  font-weight: 700;
   color: var(--color-primary-dark);
 }
 
+.summaryBottomNote {
+  margin-top: 16px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--color-text-soft);
+}
+
 .submitWrapper {
-  margin-top: 20px;
+  margin-top: 4px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.submitButton {
+  min-height: 52px;
+  width: 100%;
 }
 
 .submitHint {
@@ -208,6 +308,7 @@
 
   .summaryColumn {
     order: -1;
+    position: static;
   }
 }
 
@@ -221,6 +322,11 @@
     gap: 18px;
   }
 
+  .summaryHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .sectionTitle {
     margin-bottom: 10px;
   }
@@ -231,5 +337,28 @@
 
   .paymentInfoBox {
     padding: 16px 18px;
+  }
+
+  .itemRow {
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  .itemImageWrapper {
+    width: 64px;
+    height: 64px;
+  }
+
+  .itemPrice {
+    grid-column: 2;
+  }
+
+  .summaryRow,
+  .summaryRowTotal {
+    font-size: 0.92rem;
+  }
+
+  .submitButton {
+    min-height: 50px;
   }
 }
