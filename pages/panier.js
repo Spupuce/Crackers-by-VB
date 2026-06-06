@@ -531,6 +531,16 @@ export default function PanierPage() {
   async function handleCheckout() {
     if (!canAttemptCheckout) return;
 
+    if (!isAuthenticated || !user?.id) {
+      setSubmitInfo('');
+      setSubmitError(
+        'Vous devez être connectée pour finaliser votre commande.'
+      );
+
+      router.push('/connexion');
+      return;
+    }
+
     setSubmitError('');
     setSubmitInfo('');
 
@@ -555,7 +565,6 @@ export default function PanierPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.id || '',
           items: items.map((item) => ({
             slug: item.slug,
             name: item.name,
