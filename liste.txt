@@ -1,8 +1,75 @@
-1 . mettre en place l’historique de commande sur la page mon compte ; OK 
-2 .injecter de fausses données en BDD pour travailler le visuel final de cet historique ; (Pour l’instant, on reste sur mockOrders côté front, pas encore de données en base.)
-3 . faire des simulations d’achat ; 
-4 . supprimer les données liées à l’utilisateur, y compris l’historique de commande quand il existera ;
-5 .  mettre en place Stripe ;
-6 . faire les tests complets du site ;
-7 . faire un audit du site ;
-8 . déployer sur o2switch.
+1. Supprimer proprement les données liées aux comptes utilisateurs
+Recenser les données liées à un utilisateur : profil, favoris, panier serveur, commandes futures, demandes éventuelles liées au compte.
+Vérifier ce qui est déjà supprimé aujourd’hui dans MongoDB et ce qui reste orphelin.
+Ajouter la suppression des commandes quand le modèle Order sera réellement branché.
+Tester la suppression complète avec un compte de test.
+Vérifier qu’aucune donnée supprimée ne reste visible sur mon-compte, favoris ou panier.
+
+2. Mettre en place Stripe proprement pour le paiement
+Créer / configurer le compte Stripe en mode test.
+Récupérer les clés API de test dans Stripe Dashboard.
+Renseigner les variables d’environnement locales (.env.local).
+Vérifier que /api/checkout/create-session utilise bien la clé secrète côté serveur uniquement.
+Configurer les URLs de retour success et cancel cohérentes avec /panier.
+Créer le webhook Stripe de test dans Developers > Webhooks.
+Écouter au minimum checkout.session.completed pour préparer l’enregistrement fiable des commandes.
+Vérifier qu’un paiement test Stripe redirige correctement vers le site.
+
+3. Construire une vraie simulation d’achat de bout en bout
+Préparer le contexte de test
+Te connecter avec un compte utilisateur de test.
+Vérifier que ce compte peut ajouter des produits au panier, accéder à /panier et à /mon-compte.
+Tester le flux de paiement « succès »
+Ajouter 1 ou 2 produits au panier.
+Aller sur /panier.
+Vérifier le préremplissage des champs et les validations front.
+Cliquer sur « Confirmer la commande ».
+Payer avec une carte test Stripe.
+Vérifier au retour : message de succès, panier vidé, vue panier vide.
+Tester le flux « annulation »
+Relancer une commande.
+Annuler sur la page Stripe ou revenir en arrière selon le scénario de test.
+Vérifier : message d’interruption, panier conservé, possibilité de recommencer.
+Vérifier la logique côté compte / persistance
+Après un succès, aller sur /mon-compte.
+Vérifier qu’il n’y a pas d’incohérence visible entre panier, compte et future logique commande.
+Vérifier le comportement non connecté
+Se déconnecter.
+Ajouter un produit.
+Aller sur /panier et tenter de commander.
+Vérifier : blocage, message, redirection vers /connexion.
+Vérifier les erreurs serveur Stripe / API
+Tester le comportement sans clé, avec clé invalide ou avec erreur serveur.
+Vérifier : message propre, pas de redirection, panier intact.
+
+4. Stocker les articles commandés en base
+Définir le modèle Order : utilisateur, coordonnées de commande, articles, montants, statut Stripe, dates.
+Choisir clairement le moment d’écriture en base : idéalement sur webhook checkout.session.completed.
+Enregistrer les lignes produits commandées avec quantité, prix unitaire, total et image éventuelle utile pour l’historique.
+Lier la commande à l’utilisateur connecté.
+Éviter les doublons si Stripe renvoie plusieurs événements.
+Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
+
+5. Faire une passe complète de tests du site
+Tester boutique, fiche produit, panier, connexion, inscription, compte, favoris, administration.
+Vérifier la cohérence du stock partout.
+Vérifier les favoris sur produits archivés.
+Vérifier les formulaires et messages d’erreur.
+Vérifier les comportements mobile / desktop.
+Dresser une liste précise des bugs restants.
+
+6. Auditer le site
+Audit UX du parcours achat.
+Audit logique métier : stock, panier, favoris, compte, admin.
+Audit cohérence front/back/API.
+Audit accessibilité de base : labels, focus, lisibilité, messages d’erreur.
+Audit robustesse : cas limites, erreurs serveur, navigation.
+Prioriser les corrections avant déploiement.
+
+7. Déployer le projet sur o2switch
+Préparer l’environnement de production.
+Reporter toutes les variables d’environnement nécessaires, notamment Stripe live plus tard.
+Vérifier MongoDB en production.
+Vérifier les URLs de retour Stripe en production.
+Refaire un test complet post-déploiement.
+Contrôler formulaires, panier, commandes, compte et administration en environnement réel.

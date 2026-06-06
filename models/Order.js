@@ -7,7 +7,7 @@ const OrderItemSchema = new mongoose.Schema(
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
-      required: true,
+      required: false,
     },
     name: {
       type: String,
@@ -46,11 +46,50 @@ const OrderSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+
+    // Identifiant lisible de commande (pour front / admin)
+    orderNumber: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
+    },
+
+    // Statut métier (logistique)
     status: {
       type: String,
-      enum: ['pending', 'paid', 'preparing', 'shipped', 'delivered', 'cancelled'],
+      enum: ['pending', 'preparing', 'shipped', 'delivered', 'cancelled'],
       default: 'pending',
       index: true,
+    },
+
+    // Statut de paiement séparé
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed', 'refunded'],
+      default: 'pending',
+      index: true,
+    },
+
+    // Snapshot des infos client au moment de la commande
+    customer: {
+      firstName: { type: String, required: true, trim: true },
+      lastName: { type: String, required: true, trim: true },
+      email: { type: String, required: true, trim: true },
+      phone: { type: String, required: true, trim: true },
+    },
+
+    // Montants
+    subtotalAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    shippingAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
     },
     totalAmount: {
       type: Number,
@@ -60,32 +99,48 @@ const OrderSchema = new mongoose.Schema(
     currency: {
       type: String,
       default: 'EUR',
+      trim: true,
     },
+
+    // Articles commandés
     items: {
       type: [OrderItemSchema],
       validate: (value) => Array.isArray(value) && value.length > 0,
     },
+
+    // Notes client ou internes
     notes: {
       type: String,
       default: '',
       trim: true,
     },
+
+    // Références Stripe
     stripeSessionId: {
       type: String,
       default: '',
+      trim: true,
       index: true,
     },
     stripePaymentIntentId: {
       type: String,
       default: '',
+      trim: true,
       index: true,
     },
+
+    // Adresse de livraison (snapshot)
     shippingAddress: {
       addressLine1: { type: String, required: true, trim: true },
       addressLine2: { type: String, default: '', trim: true },
       postalCode: { type: String, required: true, trim: true },
       city: { type: String, required: true, trim: true },
-      country: { type: String, required: true, trim: true, default: 'France' },
+      country: {
+        type: String,
+        required: true,
+        trim: true,
+        default: 'France',
+      },
     },
   },
   {
