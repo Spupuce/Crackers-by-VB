@@ -2,6 +2,7 @@
 
 import mongoose from 'mongoose';
 import { connectMongo } from '../../../lib/mongodb';
+import { getSessionFromRequest } from '../../../lib/session';
 import Order from '../../../models/Order';
 import Product from '../../../models/Product';
 
@@ -153,15 +154,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { items, customer, shipping, notes, userId } = req.body || {};
+    const session = getSessionFromRequest(req);
 
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({
+    if (!session?.userId || !mongoose.Types.ObjectId.isValid(session.userId)) {
+      return res.status(401).json({
         ok: false,
-        code: 'INVALID_USER_ID',
-        message: 'Identifiant utilisateur invalide.',
+        code: 'UNAUTHENTICATED',
+        message: 'Vous devez être connectée pour finaliser votre commande.',
       });
     }
+
+    const { items, customer, shipping, notes } = req.body || {};
+    const userId = session.userId;
 
     const normalizedItems = normalizeIncomingItems(items);
 
