@@ -32,7 +32,7 @@ export default function Header({ products = [] }) {
   const searchContainerRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const { favoritesCount, isFavoritesReady } = useFavorites();
   const { cartCount, isCartOpen, closeCart, toggleCart } = useCart();
 
@@ -42,6 +42,21 @@ export default function Header({ products = [] }) {
   const accountHref = isAuthenticated ? '/mon-compte' : '/connexion';
   const displayedFavoritesCount =
     isAuthenticated && isFavoritesReady ? favoritesCount : 0;
+
+  const navigationItems = isAdmin
+    ? [
+        { href: '/', label: 'Accueil' },
+        { href: '/boutique', label: 'Boutique' },
+        { href: '/administration/stock', label: 'Stock' },
+        { href: '/administration', label: 'Commandes' },
+        { href: '/administration', label: 'Fiche client' },
+      ]
+    : [
+        { href: '/', label: 'Accueil' },
+        { href: '/boutique', label: 'Boutique' },
+        { href: '/apropos', label: 'À propos' },
+        { href: '/contact', label: 'Contact' },
+      ];
 
   function handleToggleSearch() {
     setSearchOpen((prev) => !prev);
@@ -137,21 +152,11 @@ export default function Header({ products = [] }) {
             className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
             aria-label="Navigation principale"
           >
-            <Link href="/" legacyBehavior>
-              <a onClick={closeMenu}>Accueil</a>
-            </Link>
-
-            <Link href="/boutique" legacyBehavior>
-              <a onClick={closeMenu}>Boutique</a>
-            </Link>
-
-            <Link href="/apropos" legacyBehavior>
-              <a onClick={closeMenu}>À propos</a>
-            </Link>
-
-            <Link href="/contact" legacyBehavior>
-              <a onClick={closeMenu}>Contact</a>
-            </Link>
+            {navigationItems.map((item) => (
+              <Link key={item.href + item.label} href={item.href} legacyBehavior>
+                <a onClick={closeMenu}>{item.label}</a>
+              </Link>
+            ))}
           </nav>
 
           <div className={styles.rightBlock}>
