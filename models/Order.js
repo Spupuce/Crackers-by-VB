@@ -47,7 +47,6 @@ const OrderSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Identifiant lisible de commande (pour front / admin)
     orderNumber: {
       type: String,
       default: '',
@@ -55,7 +54,6 @@ const OrderSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Statut métier (logistique)
     status: {
       type: String,
       enum: ['pending', 'preparing', 'shipped', 'delivered', 'cancelled'],
@@ -63,7 +61,6 @@ const OrderSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Statut de paiement séparé
     paymentStatus: {
       type: String,
       enum: ['pending', 'paid', 'failed', 'refunded'],
@@ -71,7 +68,6 @@ const OrderSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Snapshot des infos client au moment de la commande
     customer: {
       firstName: { type: String, required: true, trim: true },
       lastName: { type: String, required: true, trim: true },
@@ -79,7 +75,6 @@ const OrderSchema = new mongoose.Schema(
       phone: { type: String, required: true, trim: true },
     },
 
-    // Montants
     subtotalAmount: {
       type: Number,
       required: true,
@@ -102,20 +97,17 @@ const OrderSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Articles commandés
     items: {
       type: [OrderItemSchema],
       validate: (value) => Array.isArray(value) && value.length > 0,
     },
 
-    // Notes client ou internes
     notes: {
       type: String,
       default: '',
       trim: true,
     },
 
-    // Références Stripe
     stripeSessionId: {
       type: String,
       default: '',
@@ -129,7 +121,6 @@ const OrderSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Adresse de livraison (snapshot)
     shippingAddress: {
       addressLine1: { type: String, required: true, trim: true },
       addressLine2: { type: String, default: '', trim: true },
@@ -140,6 +131,37 @@ const OrderSchema = new mongoose.Schema(
         required: true,
         trim: true,
         default: 'France',
+      },
+    },
+
+    shipping: {
+      method: {
+        type: String,
+        default: '',
+        trim: true,
+      },
+      carrier: {
+        type: String,
+        default: '',
+        trim: true,
+      },
+      trackingNumber: {
+        type: String,
+        default: '',
+        trim: true,
+      },
+      trackingUrl: {
+        type: String,
+        default: '',
+        trim: true,
+      },
+      shippedAt: {
+        type: Date,
+        default: null,
+      },
+      deliveredAt: {
+        type: Date,
+        default: null,
       },
     },
   },

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import {
   FiSearch,
   FiHeart,
@@ -9,6 +10,7 @@ import {
   FiShoppingCart,
   FiMenu,
   FiX,
+  FiLogOut,
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -32,7 +34,8 @@ export default function Header({ products = [] }) {
   const searchContainerRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  const { isAuthenticated, isAdmin } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, isAdmin, logout } = useAuth();
   const { favoritesCount, isFavoritesReady } = useFavorites();
   const { cartCount, isCartOpen, closeCart, toggleCart } = useCart();
 
@@ -48,8 +51,8 @@ export default function Header({ products = [] }) {
         { href: '/', label: 'Accueil' },
         { href: '/boutique', label: 'Boutique' },
         { href: '/administration/stock', label: 'Stock' },
-        { href: '/administration', label: 'Commandes' },
-        { href: '/administration', label: 'Fiche client' },
+        { href: '/administration/commandes', label: 'Commandes' },
+        { href: '/administration/clients', label: 'Fiches clients' },
       ]
     : [
         { href: '/', label: 'Accueil' },
@@ -73,6 +76,14 @@ export default function Header({ products = [] }) {
     toggleCart();
     setMenuOpen(false);
     handleCloseSearch();
+  }
+
+  function handleLogout() {
+    closeMenu();
+    handleCloseSearch();
+    closeCart();
+    logout();
+    router.push('/');
   }
 
   useEffect(() => {
@@ -157,6 +168,17 @@ export default function Header({ products = [] }) {
                 <a onClick={closeMenu}>{item.label}</a>
               </Link>
             ))}
+
+            {isAdmin && (
+              <button
+                type="button"
+                className={styles.mobileLogoutButton}
+                onClick={handleLogout}
+              >
+                <FiLogOut aria-hidden="true" />
+                <span>Déconnexion</span>
+              </button>
+            )}
           </nav>
 
           <div className={styles.rightBlock}>
@@ -256,39 +278,56 @@ export default function Header({ products = [] }) {
                 )}
               </div>
 
-              <Link href="/favoris" legacyBehavior>
-                <a
-                  className={styles.iconButton}
-                  aria-label="Mes favoris"
-                  onClick={closeMenu}
-                >
-                  <FiHeart aria-hidden="true" />
-                  {displayedFavoritesCount > 0 && (
-                    <span className={styles.badge}>{displayedFavoritesCount}</span>
-                  )}
-                </a>
-              </Link>
+              {!isAdmin && (
+                <Link href="/favoris" legacyBehavior>
+                  <a
+                    className={styles.iconButton}
+                    aria-label="Mes favoris"
+                    onClick={closeMenu}
+                  >
+                    <FiHeart aria-hidden="true" />
+                    {displayedFavoritesCount > 0 && (
+                      <span className={styles.badge}>{displayedFavoritesCount}</span>
+                    )}
+                  </a>
+                </Link>
+              )}
 
-              <Link href={accountHref} legacyBehavior>
-                <a
-                  className={styles.iconButton}
-                  aria-label="Mon compte"
-                  onClick={closeMenu}
-                >
-                  <FiUser aria-hidden="true" />
-                </a>
-              </Link>
+              {!isAdmin && (
+                <Link href={accountHref} legacyBehavior>
+                  <a
+                    className={styles.iconButton}
+                    aria-label="Mon compte"
+                    onClick={closeMenu}
+                  >
+                    <FiUser aria-hidden="true" />
+                  </a>
+                </Link>
+              )}
 
-              <button
-                className={styles.iconButton}
-                aria-label="Panier"
-                aria-expanded={isCartOpen}
-                type="button"
-                onClick={handleToggleCart}
-              >
-                <FiShoppingCart aria-hidden="true" />
-                {cartCount > 0 && <span className={styles.badge}>{cartCount}</span>}
-              </button>
+              {!isAdmin && (
+                <button
+                  className={styles.iconButton}
+                  aria-label="Panier"
+                  aria-expanded={isCartOpen}
+                  type="button"
+                  onClick={handleToggleCart}
+                >
+                  <FiShoppingCart aria-hidden="true" />
+                  {cartCount > 0 && <span className={styles.badge}>{cartCount}</span>}
+                </button>
+              )}
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  className={styles.logoutButton}
+                  onClick={handleLogout}
+                >
+                  <FiLogOut aria-hidden="true" />
+                  <span>Déconnexion</span>
+                </button>
+              )}
             </div>
 
             <button
@@ -305,7 +344,7 @@ export default function Header({ products = [] }) {
         </div>
       </header>
 
-      <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
+      {!isAdmin && <CartDrawer isOpen={isCartOpen} onClose={closeCart} />}
     </>
   );
 }

@@ -1,3 +1,5 @@
+/* styles/Header.module.css */
+
 .header {
   width: 100%;
   background-color: var(--color-white);
@@ -224,6 +226,42 @@
   white-space: nowrap;
 }
 
+.logoutButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-gray-700);
+  color: var(--color-white);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.logoutButton:hover {
+  background: var(--color-gray-800);
+  transform: translateY(-1px);
+}
+
+.mobileLogoutButton {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-gray-700);
+  color: var(--color-white);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .menuButton {
   display: none;
   border: none;
@@ -281,6 +319,15 @@
 
   .actions {
     gap: 10px;
+  }
+
+  .logoutButton {
+    display: none;
+  }
+
+  .mobileLogoutButton {
+    display: inline-flex;
+    justify-content: center;
   }
 
   .searchPanel {
