@@ -222,6 +222,7 @@ export default function AdminOrdersPage() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [emailSendingFor, setEmailSendingFor] = useState('');
 
   const selectedOrder =
     orders.find((order) => order.id === selectedOrderId) || null;
@@ -257,21 +258,40 @@ export default function AdminOrdersPage() {
     );
   }
 
-  function handleEmail(order) {
-    const subject = encodeURIComponent(`Commande ${order.id} - Crackers by VB`);
-    const body = encodeURIComponent(
-      `Bonjour ${getCustomerFullName(order)},\n\nConcernant votre commande ${
-        order.id
-      },\n\nStatut actuel : ${getStatusLabel(order.status)}.\n${
-        order.trackingNumber
-          ? `Numéro de suivi : ${order.trackingNumber}\n`
-          : ''
-      }${
-        order.trackingUrl ? `Lien de suivi : ${order.trackingUrl}\n` : ''
-      }\nBelle journée,\nCrackers by VB`
-    );
+  async function handleEmail(order) {
+    setEmailSendingFor(order.id);
 
-    window.location.href = `mailto:${order.customer.email}?subject=${subject}&body=${body}`;
+    try {
+      const response = await fetch('/api/admin/orders/send-test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          testEmail: 'spupucemail@gmail.com',
+          orderId: order.id,
+          customerName: getCustomerFullName(order),
+          customerEmail: order.customer.email,
+          statusLabel: getStatusLabel(order.status),
+          trackingNumber: order.trackingNumber || '',
+          trackingUrl: order.trackingUrl || '',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "L'envoi de l'email a échoué.");
+      }
+
+      window.alert(`Email de test envoyé à spupucemail@gmail.com pour ${order.id}.`);
+    } catch (error) {
+      window.alert(
+        error?.message || "Impossible d'envoyer l'email de test."
+      );
+    } finally {
+      setEmailSendingFor('');
+    }
   }
 
   return (
@@ -387,9 +407,14 @@ export default function AdminOrdersPage() {
                         type="button"
                         className={styles.emailButton}
                         onClick={() => handleEmail(order)}
+                        disabled={emailSendingFor === order.id}
                       >
                         <FiMail aria-hidden="true" />
-                        <span>Envoyer un email</span>
+                        <span>
+                          {emailSendingFor === order.id
+                            ? 'Envoi en cours...'
+                            : 'Envoyer un email'}
+                        </span>
                       </button>
 
                       {order.trackingNumber ? (
