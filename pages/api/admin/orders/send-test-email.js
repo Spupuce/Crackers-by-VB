@@ -163,6 +163,8 @@ export default async function handler(req, res) {
   try {
     const {
       testEmail,
+      customerEmail,
+      recipientType,
       orderId,
       customerName,
       statusLabel,
@@ -179,18 +181,24 @@ export default async function handler(req, res) {
       throw new Error('MAIL_FROM_ADDRESS est manquant.');
     }
 
-    if (!isValidEmail(testEmail)) {
-      return res.status(400).json({ message: 'Adresse email de test invalide.' });
-    }
-
     if (!orderId || typeof orderId !== 'string') {
       return res.status(400).json({ message: 'Commande invalide.' });
+    }
+
+    const finalRecipient =
+      recipientType === 'customer' ? customerEmail : testEmail;
+
+    if (!isValidEmail(finalRecipient)) {
+      return res.status(400).json({
+        message: 'Adresse email destinataire invalide.',
+      });
     }
 
     const transporter = getTransporter();
     await transporter.verify();
 
     const subject = `Votre commande ${orderId} - ${statusLabel}`;
+
     const text = normalizedCustomMessage
       ? buildCustomEmailText(normalizedCustomMessage)
       : buildDefaultEmailText({
@@ -213,7 +221,7 @@ export default async function handler(req, res) {
 
     const info = await transporter.sendMail({
       from: `"${mailFromName}" <${mailFromAddress}>`,
-      to: testEmail,
+      to: finalRecipient,
       subject,
       text,
       html,
@@ -223,7 +231,8 @@ export default async function handler(req, res) {
     console.log('ORDER_STATUS_MAIL_RESULT:', {
       adminUserId: session.userId,
       orderId,
-      testEmail,
+      recipientType: recipientType === 'customer' ? 'customer' : 'test',
+      recipient: finalRecipient,
       usedCustomMessage: Boolean(normalizedCustomMessage),
       messageId: info?.messageId || null,
       accepted: info?.accepted || [],
@@ -231,11 +240,12 @@ export default async function handler(req, res) {
       response: info?.response || null,
     });
 
-    if (!isAcceptedResult(info, testEmail)) {
+    if (!isAcceptedResult(info, finalRecipient)) {
       console.error('ORDER_STATUS_MAIL_NOT_ACCEPTED:', {
         adminUserId: session.userId,
         orderId,
-        testEmail,
+        recipientType: recipientType === 'customer' ? 'customer' : 'test',
+        recipient: finalRecipient,
         usedCustomMessage: Boolean(normalizedCustomMessage),
         messageId: info?.messageId || null,
         accepted: info?.accepted || [],
@@ -249,7 +259,7 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
-      message: `Email accepté pour ${testEmail}.`,
+      message: `Email accepté pour ${finalRecipient}.`,
     });
   } catch (error) {
     console.error('ORDER_STATUS_MAIL_ERROR:', {
