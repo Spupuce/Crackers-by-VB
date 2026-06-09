@@ -1,6 +1,6 @@
 // pages/administration/commandes.js
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import {
   FiArrowLeft,
@@ -218,14 +218,56 @@ function getAddressLabel(order) {
     .join(', ');
 }
 
+function getDefaultEmailMessage(order) {
+  const statusLabel = getStatusLabel(order.status);
+
+  if (order.status === 'shipped') {
+    return `Bonjour ${getCustomerFullName(
+      order
+    )},\n\nVotre commande ${order.id} a bien été expédiée.\n${
+      order.trackingNumber
+        ? `Votre numéro de suivi : ${order.trackingNumber}\n`
+        : ''
+    }\nBelle journée,\nCrackers by VB`;
+  }
+
+  if (order.status === 'delivered') {
+    return `Bonjour ${getCustomerFullName(
+      order
+    )},\n\nVotre commande ${order.id} a bien été livrée.\nNous espérons qu'elle vous plaît.\n\nBelle journée,\nCrackers by VB`;
+  }
+
+  return `Bonjour ${getCustomerFullName(
+    order
+  )},\n\nNous vous contactons au sujet de votre commande ${
+    order.id
+  }.\nStatut actuel : ${statusLabel}.\n\nBelle journée,\nCrackers by VB`;
+}
+
 export default function AdminOrdersPage() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [emailSendingFor, setEmailSendingFor] = useState('');
+  const [detailEmailMessage, setDetailEmailMessage] = useState('');
+  const [detailEmailFeedback, setDetailEmailFeedback] = useState({
+    type: '',
+    message: '',
+  });
 
   const selectedOrder =
     orders.find((order) => order.id === selectedOrderId) || null;
+
+  useEffect(() => {
+    if (!selectedOrder) {
+      setDetailEmailMessage('');
+      setDetailEmailFeedback({ type: '', message: '' });
+      return;
+    }
+
+    setDetailEmailMessage(getDefaultEmailMessage(selectedOrder));
+    setDetailEmailFeedback({ type: '', message: '' });
+  }, [selectedOrderId, selectedOrder]);
 
   const filteredOrders = useMemo(() => {
     if (activeFilter === 'all') {
@@ -281,14 +323,58 @@ export default function AdminOrdersPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "L'envoi de l'email a échoué.");
+        throw new Error(data?.message || "L'envoi de l'email a échoué.");
       }
 
-      window.alert(`Email de test envoyé à spupucemail@gmail.com pour ${order.id}.`);
+      window.alert(`Email envoyé pour ${order.id} à spupucemail@gmail.com.`);
     } catch (error) {
-      window.alert(
-        error?.message || "Impossible d'envoyer l'email de test."
-      );
+      window.alert(error?.message || "Impossible d'envoyer l'email.");
+    } finally {
+      setEmailSendingFor('');
+    }
+  }
+
+  async function handleDetailEmailSend() {
+    if (!selectedOrder) {
+      return;
+    }
+
+    setEmailSendingFor(selectedOrder.id);
+    setDetailEmailFeedback({ type: '', message: '' });
+
+    try {
+      const response = await fetch('/api/admin/orders/send-test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          testEmail: 'spupucemail@gmail.com',
+          orderId: selectedOrder.id,
+          customerName: getCustomerFullName(selectedOrder),
+          customerEmail: selectedOrder.customer.email,
+          statusLabel: getStatusLabel(selectedOrder.status),
+          trackingNumber: selectedOrder.trackingNumber || '',
+          trackingUrl: selectedOrder.trackingUrl || '',
+          customMessage: detailEmailMessage,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || "L'envoi de l'email a échoué.");
+      }
+
+      setDetailEmailFeedback({
+        type: 'success',
+        message: `Email envoyé à spupucemail@gmail.com pour ${selectedOrder.id}.`,
+      });
+    } catch (error) {
+      setDetailEmailFeedback({
+        type: 'error',
+        message: error?.message || "Impossible d'envoyer l'email.",
+      });
     } finally {
       setEmailSendingFor('');
     }
@@ -536,6 +622,61 @@ export default function AdminOrdersPage() {
                       <strong className={styles.paymentTotalValue}>
                         {formatPrice(selectedOrder.total)}
                       </strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.detailSection}>
+                  <h2 className={styles.sectionTitle}>Envoyer un email</h2>
+
+                  <div className={styles.emailPanel}>
+                    <p className={styles.emailPanelText}>
+                      Destinataire client :{' '}
+                      <strong>{selectedOrder.customer.email}</strong>
+                    </p>
+                    <p className={styles.emailPanelHint}>
+                      Pour ce test, l’envoi part encore vers
+                      <strong> spupucemail@gmail.com</strong>.
+                    </p>
+
+                    <label className={styles.emailLabel} htmlFor="order-email-message">
+                      Message
+                    </label>
+
+                    <textarea
+                      id="order-email-message"
+                      className={styles.emailTextarea}
+                      value={detailEmailMessage}
+                      onChange={(event) => setDetailEmailMessage(event.target.value)}
+                      rows={8}
+                    />
+
+                    {detailEmailFeedback.message ? (
+                      <p
+                        className={`${styles.emailFeedback} ${
+                          detailEmailFeedback.type === 'success'
+                            ? styles.emailFeedbackSuccess
+                            : styles.emailFeedbackError
+                        }`}
+                      >
+                        {detailEmailFeedback.message}
+                      </p>
+                    ) : null}
+
+                    <div className={styles.emailPanelActions}>
+                      <button
+                        type="button"
+                        className={styles.emailButton}
+                        onClick={handleDetailEmailSend}
+                        disabled={emailSendingFor === selectedOrder.id}
+                      >
+                        <FiMail aria-hidden="true" />
+                        <span>
+                          {emailSendingFor === selectedOrder.id
+                            ? 'Envoi en cours...'
+                            : 'Envoyer cet email'}
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>
