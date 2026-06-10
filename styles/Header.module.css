@@ -39,15 +39,44 @@
   gap: 28px;
 }
 
-.nav a {
+.navItem {
   text-decoration: none;
   font-size: 0.95rem;
   color: var(--color-text-soft);
   transition: color 0.2s ease;
 }
 
-.nav a:hover {
+.navItem:hover {
   color: var(--color-primary-dark);
+}
+
+.navItemActive {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.navPlaceholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: var(--color-text-soft);
+  opacity: 0.8;
+  cursor: default;
+}
+
+.comingSoonBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-section);
+  color: var(--color-text-soft);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .rightBlock {
@@ -312,8 +341,15 @@
     display: flex;
   }
 
+  .navItem,
   .nav a {
     width: 100%;
+    font-size: 1rem;
+  }
+
+  .navPlaceholder {
+    width: 100%;
+    justify-content: space-between;
     font-size: 1rem;
   }
 
