@@ -51,26 +51,17 @@ export default function Header({ products = [] }) {
 
   const navigationItems = isAdminView
     ? [
-        { href: '/', label: 'Accueil', disabled: false },
-        { href: '/boutique', label: 'Boutique', disabled: false },
-        { href: '/administration/stock', label: 'Stock', disabled: false },
-        {
-          href: '/administration/commandes',
-          label: 'Commandes',
-          disabled: false,
-        },
-        {
-          href: null,
-          label: 'Fiches clients',
-          disabled: true,
-          disabledLabel: 'Bientôt disponible',
-        },
+        { href: '/', label: 'Accueil' },
+        { href: '/boutique', label: 'Boutique' },
+        { href: '/administration/stock', label: 'Stock' },
+        { href: '/administration/commandes', label: 'Commandes' },
+        { href: '/administration/clients', label: 'Fiches clients' },
       ]
     : [
-        { href: '/', label: 'Accueil', disabled: false },
-        { href: '/boutique', label: 'Boutique', disabled: false },
-        { href: '/apropos', label: 'À propos', disabled: false },
-        { href: '/contact', label: 'Contact', disabled: false },
+        { href: '/', label: 'Accueil' },
+        { href: '/boutique', label: 'Boutique' },
+        { href: '/apropos', label: 'À propos' },
+        { href: '/contact', label: 'Contact' },
       ];
 
   function handleToggleSearch() {
@@ -179,31 +170,15 @@ export default function Header({ products = [] }) {
           <nav
             id="header-navigation"
             className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
-            aria-label={isAdminView ? 'Navigation administratrice' : 'Navigation principale'}
+            aria-label={
+              isAdminView ? 'Navigation administratrice' : 'Navigation principale'
+            }
           >
-            {navigationItems.map((item) => {
-              if (item.disabled) {
-                return (
-                  <span
-                    key={item.label}
-                    className={styles.navItemDisabled}
-                    aria-disabled="true"
-                    title={item.disabledLabel || 'Indisponible'}
-                  >
-                    <span>{item.label}</span>
-                    {item.disabledLabel ? (
-                      <small className={styles.navItemHint}>{item.disabledLabel}</small>
-                    ) : null}
-                  </span>
-                );
-              }
-
-              return (
-                <Link key={item.href + item.label} href={item.href} legacyBehavior>
-                  <a onClick={closeMenu}>{item.label}</a>
-                </Link>
-              );
-            })}
+            {navigationItems.map((item) => (
+              <Link key={item.href + item.label} href={item.href} legacyBehavior>
+                <a onClick={closeMenu}>{item.label}</a>
+              </Link>
+            ))}
 
             {isAdminView && (
               <button
