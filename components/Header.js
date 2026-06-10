@@ -40,35 +40,38 @@ export default function Header({ products = [] }) {
   const { cartCount, isCartOpen, closeCart, toggleCart } = useCart();
 
   const safeProducts = Array.isArray(products) ? products : [];
+  const isAdminView = isAuthReady && isAdmin;
+  const isCustomerView = isAuthReady && isAuthenticated && !isAdmin;
+  const isVisitorView = isAuthReady && !isAuthenticated;
 
   const closeMenu = () => setMenuOpen(false);
-  const isClient = isAuthenticated && !isAdmin;
   const accountHref = isAuthenticated ? '/mon-compte' : '/connexion';
   const displayedFavoritesCount =
-    isAuthenticated && isFavoritesReady ? favoritesCount : 0;
+    isCustomerView && isFavoritesReady ? favoritesCount : 0;
 
-  const navigationItems = useMemo(() => {
-    const publicItems = [
-      { href: '/', label: 'Accueil', type: 'link' },
-      { href: '/boutique', label: 'Boutique', type: 'link' },
-      { href: '/apropos', label: 'À propos', type: 'link' },
-      { href: '/contact', label: 'Contact', type: 'link' },
-    ];
-
-    const adminItems = [
-      { href: '/', label: 'Accueil', type: 'link' },
-      { href: '/boutique', label: 'Boutique', type: 'link' },
-      { href: '/administration/stock', label: 'Stock', type: 'link' },
-      { href: '/administration/commandes', label: 'Commandes', type: 'link' },
-      { label: 'Fiches clients', type: 'placeholder' },
-    ];
-
-    if (!isAuthReady) {
-      return publicItems;
-    }
-
-    return isAdmin ? adminItems : publicItems;
-  }, [isAdmin, isAuthReady]);
+  const navigationItems = isAdminView
+    ? [
+        { href: '/', label: 'Accueil', disabled: false },
+        { href: '/boutique', label: 'Boutique', disabled: false },
+        { href: '/administration/stock', label: 'Stock', disabled: false },
+        {
+          href: '/administration/commandes',
+          label: 'Commandes',
+          disabled: false,
+        },
+        {
+          href: null,
+          label: 'Fiches clients',
+          disabled: true,
+          disabledLabel: 'Bientôt disponible',
+        },
+      ]
+    : [
+        { href: '/', label: 'Accueil', disabled: false },
+        { href: '/boutique', label: 'Boutique', disabled: false },
+        { href: '/apropos', label: 'À propos', disabled: false },
+        { href: '/contact', label: 'Contact', disabled: false },
+      ];
 
   function handleToggleSearch() {
     setSearchOpen((prev) => !prev);
@@ -87,12 +90,12 @@ export default function Header({ products = [] }) {
     handleCloseSearch();
   }
 
-  async function handleLogout() {
+  function handleLogout() {
     closeMenu();
     handleCloseSearch();
     closeCart();
     logout();
-    await router.push('/');
+    router.push('/');
   }
 
   useEffect(() => {
@@ -176,38 +179,33 @@ export default function Header({ products = [] }) {
           <nav
             id="header-navigation"
             className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
-            aria-label={isAdmin ? 'Navigation administratrice' : 'Navigation principale'}
+            aria-label={isAdminView ? 'Navigation administratrice' : 'Navigation principale'}
           >
             {navigationItems.map((item) => {
-              if (item.type === 'placeholder') {
+              if (item.disabled) {
                 return (
                   <span
                     key={item.label}
-                    className={`${styles.navItem} ${styles.navPlaceholder}`}
+                    className={styles.navItemDisabled}
                     aria-disabled="true"
+                    title={item.disabledLabel || 'Indisponible'}
                   >
-                    {item.label}
-                    <span className={styles.comingSoonBadge}>À venir</span>
+                    <span>{item.label}</span>
+                    {item.disabledLabel ? (
+                      <small className={styles.navItemHint}>{item.disabledLabel}</small>
+                    ) : null}
                   </span>
                 );
               }
 
               return (
                 <Link key={item.href + item.label} href={item.href} legacyBehavior>
-                  <a
-                    className={`${styles.navItem} ${
-                      router.pathname === item.href ? styles.navItemActive : ''
-                    }`}
-                    onClick={closeMenu}
-                    aria-current={router.pathname === item.href ? 'page' : undefined}
-                  >
-                    {item.label}
-                  </a>
+                  <a onClick={closeMenu}>{item.label}</a>
                 </Link>
               );
             })}
 
-            {isAdmin && isAuthReady && (
+            {isAdminView && (
               <button
                 type="button"
                 className={styles.mobileLogoutButton}
@@ -316,7 +314,7 @@ export default function Header({ products = [] }) {
                 )}
               </div>
 
-              {isAuthReady && !isAdmin && (
+              {(isCustomerView || isVisitorView || !isAuthReady) && (
                 <Link href="/favoris" legacyBehavior>
                   <a
                     className={styles.iconButton}
@@ -331,11 +329,11 @@ export default function Header({ products = [] }) {
                 </Link>
               )}
 
-              {isAuthReady && !isAdmin && (
+              {(isCustomerView || isVisitorView || !isAuthReady) && (
                 <Link href={accountHref} legacyBehavior>
                   <a
                     className={styles.iconButton}
-                    aria-label={isClient ? 'Mon compte' : 'Connexion'}
+                    aria-label="Mon compte"
                     onClick={closeMenu}
                   >
                     <FiUser aria-hidden="true" />
@@ -343,7 +341,7 @@ export default function Header({ products = [] }) {
                 </Link>
               )}
 
-              {isAuthReady && !isAdmin && (
+              {(isCustomerView || isVisitorView || !isAuthReady) && (
                 <button
                   className={styles.iconButton}
                   aria-label="Panier"
@@ -356,7 +354,7 @@ export default function Header({ products = [] }) {
                 </button>
               )}
 
-              {isAdmin && isAuthReady && (
+              {isAdminView && (
                 <button
                   type="button"
                   className={styles.logoutButton}
@@ -374,7 +372,7 @@ export default function Header({ products = [] }) {
               aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
               aria-expanded={menuOpen}
               aria-controls="header-navigation"
-              onClick={() => setMenuOpen((prev) => !prev)}
+              onClick={() => setMenuOpen(!menuOpen)}
             >
               {menuOpen ? <FiX aria-hidden="true" /> : <FiMenu aria-hidden="true" />}
             </button>
@@ -382,9 +380,7 @@ export default function Header({ products = [] }) {
         </div>
       </header>
 
-      {isAuthReady && !isAdmin && (
-        <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
-      )}
+      {!isAdminView && <CartDrawer isOpen={isCartOpen} onClose={closeCart} />}
     </>
   );
 }

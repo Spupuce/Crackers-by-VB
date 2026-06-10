@@ -9,6 +9,37 @@ import AuthCard from '../components/AuthCard';
 import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Auth.module.css';
 
+function isSafeInternalRedirect(value) {
+  return (
+    typeof value === 'string' &&
+    value.startsWith('/') &&
+    !value.startsWith('//') &&
+    !value.startsWith('/\\')
+  );
+}
+
+function isAdminRoute(value) {
+  return typeof value === 'string' && value.startsWith('/administration');
+}
+
+function getRedirectTarget(redirect, role) {
+  const safeRedirect = isSafeInternalRedirect(redirect) ? redirect : null;
+
+  if (role === 'admin') {
+    if (safeRedirect) {
+      return safeRedirect;
+    }
+
+    return '/administration/stock';
+  }
+
+  if (safeRedirect && !isAdminRoute(safeRedirect)) {
+    return safeRedirect;
+  }
+
+  return '/';
+}
+
 export default function ConnexionPage() {
   const router = useRouter();
   const { login } = useAuth();
@@ -57,13 +88,10 @@ export default function ConnexionPage() {
 
       setSuccessMessage('Connexion réussie. Redirection en cours...');
 
-      const redirectTarget =
-        typeof router.query.redirect === 'string' &&
-        router.query.redirect.startsWith('/')
-          ? router.query.redirect
-          : data.user?.role === 'admin'
-            ? '/administration/stock'
-            : '/';
+      const redirectTarget = getRedirectTarget(
+        router.query.redirect,
+        data.user?.role
+      );
 
       setTimeout(() => {
         router.push(redirectTarget);

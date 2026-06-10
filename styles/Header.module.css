@@ -39,44 +39,37 @@
   gap: 28px;
 }
 
-.navItem {
+.nav a {
   text-decoration: none;
   font-size: 0.95rem;
   color: var(--color-text-soft);
   transition: color 0.2s ease;
 }
 
-.navItem:hover {
+.nav a:hover {
   color: var(--color-primary-dark);
 }
 
-.navItemActive {
-  color: var(--color-primary-dark);
-  font-weight: 600;
-}
-
-.navPlaceholder {
+.navItemDisabled {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   color: var(--color-text-soft);
-  opacity: 0.8;
+  opacity: 0.7;
   cursor: default;
+  user-select: none;
 }
 
-.comingSoonBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--color-section);
-  color: var(--color-text-soft);
+.navItemDisabled > span {
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.navItemHint {
   font-size: 0.72rem;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.2;
+  color: var(--color-secondary-light);
 }
 
 .rightBlock {
@@ -341,15 +334,16 @@
     display: flex;
   }
 
-  .navItem,
-  .nav a {
+  .nav a,
+  .navItemDisabled {
     width: 100%;
+  }
+
+  .nav a {
     font-size: 1rem;
   }
 
-  .navPlaceholder {
-    width: 100%;
-    justify-content: space-between;
+  .navItemDisabled > span {
     font-size: 1rem;
   }
 
