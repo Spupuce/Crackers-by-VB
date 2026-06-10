@@ -1,4 +1,4 @@
-/* models/Product.js */
+// models/Product.js
 
 import mongoose from "mongoose";
 
@@ -51,6 +51,12 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Le prix est obligatoire."],
       min: [0, "Le prix ne peut pas être négatif."],
+    },
+
+    promoPrice: {
+      type: Number,
+      default: null,
+      min: [0, "Le prix promo ne peut pas être négatif."],
     },
 
     description: {

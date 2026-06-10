@@ -18,8 +18,24 @@ function buildStatusFilter(status) {
   }
 }
 
+function normalizePromoPrice(value) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const normalizedValue = Number(value);
+
+  if (Number.isNaN(normalizedValue)) {
+    return Number.NaN;
+  }
+
+  return normalizedValue;
+}
+
 function validateProductPayload(payload) {
   const errors = [];
+  const numericPrice = Number(payload.price);
+  const normalizedPromoPrice = normalizePromoPrice(payload.promoPrice);
 
   if (!payload.name || !payload.name.trim()) {
     errors.push('Le nom du produit est obligatoire.');
@@ -32,16 +48,36 @@ function validateProductPayload(payload) {
   if (
     payload.price === undefined ||
     payload.price === null ||
-    Number(payload.price) < 0
+    Number.isNaN(numericPrice) ||
+    numericPrice < 0
   ) {
     errors.push('Le prix du produit est invalide.');
+  }
+
+  if (Number.isNaN(normalizedPromoPrice)) {
+    errors.push('Le prix promo est invalide.');
+  }
+
+  if (normalizedPromoPrice !== null && normalizedPromoPrice < 0) {
+    errors.push('Le prix promo ne peut pas être négatif.');
+  }
+
+  if (
+    normalizedPromoPrice !== null &&
+    !Number.isNaN(numericPrice) &&
+    normalizedPromoPrice >= numericPrice
+  ) {
+    errors.push('Le prix promo doit être inférieur au prix normal.');
   }
 
   if (!payload.imageUrl || !payload.imageUrl.trim()) {
     errors.push('L’image principale du produit est obligatoire.');
   }
 
-  return errors;
+  return {
+    errors,
+    promoPrice: normalizedPromoPrice,
+  };
 }
 
 export default async function handler(req, res) {
@@ -104,23 +140,25 @@ export default async function handler(req, res) {
         name,
         category,
         price,
+        promoPrice,
         description,
         imageUrl,
         stock,
         colors,
       } = req.body;
 
-      const validationErrors = validateProductPayload({
+      const validationResult = validateProductPayload({
         name,
         category,
         price,
+        promoPrice,
         imageUrl,
       });
 
-      if (validationErrors.length > 0) {
+      if (validationResult.errors.length > 0) {
         return res.status(400).json({
           message: 'Le formulaire produit contient des erreurs.',
-          errors: validationErrors,
+          errors: validationResult.errors,
         });
       }
 
@@ -139,6 +177,7 @@ export default async function handler(req, res) {
         slug,
         category: category.trim(),
         price: Number(price),
+        promoPrice: validationResult.promoPrice,
         description: description?.trim() || '',
         imageUrl: imageUrl.trim(),
         stock: stockData.stock,
