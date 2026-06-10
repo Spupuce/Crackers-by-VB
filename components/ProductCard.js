@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FiHeart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
-import { getProductStatus, isSoldOut } from '../utils/product';
+import {
+  getActiveProductPrice,
+  getProductBasePrice,
+  getProductStatus,
+  hasValidPromoPrice,
+  isSoldOut,
+} from '../utils/product';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext';
@@ -15,6 +21,9 @@ export default function ProductCard({ product }) {
   const router = useRouter();
   const status = getProductStatus(product);
   const soldOut = isSoldOut(product);
+  const hasPromo = hasValidPromoPrice(product);
+  const activePrice = getActiveProductPrice(product);
+  const basePrice = getProductBasePrice(product);
 
   const { isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
@@ -94,7 +103,7 @@ export default function ProductCard({ product }) {
     addToCart({
       slug: product.slug,
       name: product.name,
-      price: product.price,
+      price: activePrice,
       stock: product.stock,
       imageUrl: product.imageUrl,
       category: product.category,
@@ -172,9 +181,22 @@ export default function ProductCard({ product }) {
         <p className={styles.category}>{product.category}</p>
 
         <div className={styles.meta}>
-          <span className={styles.price}>
-            {Number(product.price).toFixed(2)} €
-          </span>
+          <div className={styles.priceBlock}>
+            {hasPromo ? (
+              <>
+                <span className={styles.priceOld}>
+                  {basePrice.toFixed(2)} €
+                </span>
+                <span className={styles.pricePromo}>
+                  {activePrice.toFixed(2)} €
+                </span>
+              </>
+            ) : (
+              <span className={styles.price}>
+                {basePrice.toFixed(2)} €
+              </span>
+            )}
+          </div>
 
           {!soldOut ? (
             <span className={styles.stock}>{status.label}</span>

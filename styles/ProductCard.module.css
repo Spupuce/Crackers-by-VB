@@ -64,10 +64,30 @@
   gap: 8px;
 }
 
+.priceBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .price {
   font-size: 1rem;
   font-weight: 500;
   color: var(--color-secondary);
+}
+
+.priceOld {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text);
+  text-decoration: line-through;
+}
+
+.pricePromo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-error);
 }
 
 .stock {

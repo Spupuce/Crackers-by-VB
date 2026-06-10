@@ -20,6 +20,33 @@ export function isLowStock(product) {
   return product.stock > 0 && product.stock <= 3;
 }
 
+export function hasValidPromoPrice(product) {
+  if (!product) {
+    return false;
+  }
+
+  const price = Number(product.price);
+  const promoPrice = Number(product.promoPrice);
+
+  if (Number.isNaN(price) || Number.isNaN(promoPrice)) {
+    return false;
+  }
+
+  return promoPrice >= 0 && promoPrice < price;
+}
+
+export function getActiveProductPrice(product) {
+  if (hasValidPromoPrice(product)) {
+    return Number(product.promoPrice);
+  }
+
+  return Number(product?.price) || 0;
+}
+
+export function getProductBasePrice(product) {
+  return Number(product?.price) || 0;
+}
+
 export function getProductStatus(product) {
   if (isSoldOut(product)) {
     return {

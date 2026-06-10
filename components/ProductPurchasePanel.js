@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { FiHeart, FiShoppingCart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
-import { isSoldOut } from '../utils/product';
+import {
+  getActiveProductPrice,
+  getProductBasePrice,
+  hasValidPromoPrice,
+  isSoldOut,
+} from '../utils/product';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext';
@@ -13,6 +18,9 @@ import styles from '../styles/ProductDetail.module.css';
 export default function ProductPurchasePanel({ product }) {
   const router = useRouter();
   const soldOut = isSoldOut(product);
+  const hasPromo = hasValidPromoPrice(product);
+  const activePrice = getActiveProductPrice(product);
+  const basePrice = getProductBasePrice(product);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const [lastAddedQuantity, setLastAddedQuantity] = useState(0);
@@ -157,7 +165,7 @@ export default function ProductPurchasePanel({ product }) {
       {
         slug: product.slug,
         name: product.name,
-        price: product.price,
+        price: activePrice,
         stock: product.stock,
         imageUrl: product.imageUrl,
         category: product.category,
@@ -176,9 +184,22 @@ export default function ProductPurchasePanel({ product }) {
       <p className={styles.productCategory}>{product.category}</p>
 
       <div className={styles.priceRow}>
-        <span className={styles.productPrice}>
-          {product.price.toFixed(2)} €
-        </span>
+        <div className={styles.priceGroup}>
+          {hasPromo ? (
+            <>
+              <span className={styles.productPriceOld}>
+                {basePrice.toFixed(2)} €
+              </span>
+              <span className={styles.productPricePromo}>
+                {activePrice.toFixed(2)} €
+              </span>
+            </>
+          ) : (
+            <span className={styles.productPrice}>
+              {basePrice.toFixed(2)} €
+            </span>
+          )}
+        </div>
 
         {soldOut ? (
           <span className={styles.soldOutBadge}>Article épuisé</span>
