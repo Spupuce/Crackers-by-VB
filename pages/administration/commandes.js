@@ -11,8 +11,10 @@ import {
   FiPackage,
   FiTruck,
 } from 'react-icons/fi';
+import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/AdminOrders.module.css';
 
 const ORDER_STATUSES = [
@@ -245,6 +247,9 @@ function getDefaultEmailMessage(order) {
 }
 
 export default function AdminOrdersPage() {
+  const router = useRouter();
+  const { isAuthenticated, isAdmin, isAuthReady } = useAuth();
+
   const [activeFilter, setActiveFilter] = useState('all');
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
@@ -257,6 +262,21 @@ export default function AdminOrdersPage() {
 
   const selectedOrder =
     orders.find((order) => order.id === selectedOrderId) || null;
+
+  useEffect(() => {
+    if (!isAuthReady) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.replace('/connexion?redirect=/administration/commandes');
+      return;
+    }
+
+    if (!isAdmin) {
+      router.replace('/');
+    }
+  }, [isAuthReady, isAuthenticated, isAdmin, router]);
 
   useEffect(() => {
     if (!selectedOrder) {
@@ -326,7 +346,9 @@ export default function AdminOrdersPage() {
         throw new Error(data?.message || "L'envoi de l'email a échoué.");
       }
 
-      window.alert(`Email envoyé pour ${order.id} à spupucemail@gmail.com.`);
+      window.alert(
+        `Email envoyé pour ${order.id} à [spupucemail@gmail.com](mailto:spupucemail@gmail.com).`
+      );
     } catch (error) {
       window.alert(error?.message || "Impossible d'envoyer l'email.");
     } finally {
@@ -368,7 +390,7 @@ export default function AdminOrdersPage() {
 
       setDetailEmailFeedback({
         type: 'success',
-        message: `Email envoyé à spupucemail@gmail.com pour ${selectedOrder.id}.`,
+        message: `Email envoyé à [spupucemail@gmail.com](mailto:spupucemail@gmail.com) pour ${selectedOrder.id}.`,
       });
     } catch (error) {
       setDetailEmailFeedback({
@@ -378,6 +400,46 @@ export default function AdminOrdersPage() {
     } finally {
       setEmailSendingFor('');
     }
+  }
+
+  if (!isAuthReady) {
+    return (
+      <>
+        <Head>
+          <title>Commandes - Administration | Crackers by VB</title>
+        </Head>
+
+        <Header />
+
+        <main className={styles.page}>
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingBox}>Vérification de la session...</div>
+          </div>
+        </main>
+
+        <Footer />
+      </>
+    );
+  }
+
+  if (!isAuthenticated || !isAdmin) {
+    return (
+      <>
+        <Head>
+          <title>Commandes - Administration | Crackers by VB</title>
+        </Head>
+
+        <Header />
+
+        <main className={styles.page}>
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingBox}>Redirection en cours...</div>
+          </div>
+        </main>
+
+        <Footer />
+      </>
+    );
   }
 
   return (
@@ -444,7 +506,8 @@ export default function AdminOrdersPage() {
 
                         <div className={styles.orderMeta}>
                           <p>
-                            Client : <strong>{getCustomerFullName(order)}</strong>
+                            Client :{' '}
+                            <strong>{getCustomerFullName(order)}</strong>
                           </p>
                           <p>Date : {order.date}</p>
                           <p>
@@ -456,8 +519,12 @@ export default function AdminOrdersPage() {
 
                       <div className={styles.orderAside}>
                         <div className={styles.orderPriceBlock}>
-                          <p className={styles.orderTotal}>{formatPrice(order.total)}</p>
-                          <p className={styles.paymentMethod}>{order.paymentMethod}</p>
+                          <p className={styles.orderTotal}>
+                            {formatPrice(order.total)}
+                          </p>
+                          <p className={styles.paymentMethod}>
+                            {order.paymentMethod}
+                          </p>
                         </div>
 
                         <button
@@ -533,7 +600,9 @@ export default function AdminOrdersPage() {
                     <h1 className={styles.detailTitle}>
                       Commande {selectedOrder.id}
                     </h1>
-                    <p className={styles.detailDate}>{selectedOrder.placedAtLabel}</p>
+                    <p className={styles.detailDate}>
+                      {selectedOrder.placedAtLabel}
+                    </p>
                   </div>
 
                   <span
@@ -550,16 +619,19 @@ export default function AdminOrdersPage() {
 
                   <div className={styles.infoCard}>
                     <p>
-                      <strong>Nom :</strong> {getCustomerFullName(selectedOrder)}
+                      <strong>Nom :</strong>{' '}
+                      {getCustomerFullName(selectedOrder)}
                     </p>
                     <p>
                       <strong>Email :</strong> {selectedOrder.customer.email}
                     </p>
                     <p>
-                      <strong>Téléphone :</strong> {selectedOrder.customer.phone}
+                      <strong>Téléphone :</strong>{' '}
+                      {selectedOrder.customer.phone}
                     </p>
                     <p>
-                      <strong>Adresse :</strong> {getAddressLabel(selectedOrder)}
+                      <strong>Adresse :</strong>{' '}
+                      {getAddressLabel(selectedOrder)}
                     </p>
                   </div>
                 </div>
@@ -584,7 +656,9 @@ export default function AdminOrdersPage() {
 
                           <div className={styles.itemContent}>
                             <p className={styles.itemName}>{item.name}</p>
-                            <p className={styles.itemMeta}>Quantité : {item.quantity}</p>
+                            <p className={styles.itemMeta}>
+                              Quantité : {item.quantity}
+                            </p>
                             <p className={styles.itemUnitPrice}>
                               {formatPrice(item.unitPrice)} / unité
                             </p>
@@ -609,15 +683,20 @@ export default function AdminOrdersPage() {
                     </div>
                     <div className={styles.paymentRow}>
                       <span>
-                        Frais de port ({selectedOrder.shippingMethod || 'Livraison'})
+                        Frais de port (
+                        {selectedOrder.shippingMethod || 'Livraison'})
                       </span>
-                      <span>{formatPrice(selectedOrder.shippingAmount)}</span>
+                      <span>
+                        {formatPrice(selectedOrder.shippingAmount)}
+                      </span>
                     </div>
                     <div className={styles.paymentRow}>
                       <strong>Mode de paiement</strong>
                       <span>{selectedOrder.paymentMethod}</span>
                     </div>
-                    <div className={`${styles.paymentRow} ${styles.paymentTotalRow}`}>
+                    <div
+                      className={`${styles.paymentRow} ${styles.paymentTotalRow}`}
+                    >
                       <strong>Total</strong>
                       <strong className={styles.paymentTotalValue}>
                         {formatPrice(selectedOrder.total)}
@@ -639,7 +718,10 @@ export default function AdminOrdersPage() {
                       <strong> spupucemail@gmail.com</strong>.
                     </p>
 
-                    <label className={styles.emailLabel} htmlFor="order-email-message">
+                    <label
+                      className={styles.emailLabel}
+                      htmlFor="order-email-message"
+                    >
                       Message
                     </label>
 
@@ -647,7 +729,9 @@ export default function AdminOrdersPage() {
                       id="order-email-message"
                       className={styles.emailTextarea}
                       value={detailEmailMessage}
-                      onChange={(event) => setDetailEmailMessage(event.target.value)}
+                      onChange={(event) =>
+                        setDetailEmailMessage(event.target.value)
+                      }
                       rows={8}
                     />
 
@@ -697,7 +781,10 @@ export default function AdminOrdersPage() {
                             isActive ? styles.statusTabActive : ''
                           }`}
                           onClick={() =>
-                            handleStatusChange(selectedOrder.id, option.value)
+                            handleStatusChange(
+                              selectedOrder.id,
+                              option.value
+                            )
                           }
                         >
                           <Icon aria-hidden="true" />
