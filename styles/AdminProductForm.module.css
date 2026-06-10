@@ -58,6 +58,13 @@
   font-size: 0.8rem;
 }
 
+.optionalHint {
+  margin-left: 8px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-text-soft);
+}
+
 .input,
 .textarea {
   width: 100%;

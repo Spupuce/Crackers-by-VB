@@ -101,11 +101,13 @@ export default function ProductForm({
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
+    const promoPriceValue = formData.get("promoPrice")?.toString().trim() || "";
 
     const payload = {
       name: formData.get("name")?.toString().trim() || "",
       category: formData.get("category")?.toString().trim() || "",
       price: Number(formData.get("price")),
+      promoPrice: promoPriceValue === "" ? null : Number(promoPriceValue),
       description: formData.get("description")?.toString().trim() || "",
       imageUrl: formData.get("imageUrl")?.toString().trim() || "",
       stock: hasColors ? Number(visualStock) || 0 : Number(stockInputValue) || 0,
@@ -176,7 +178,22 @@ export default function ProductForm({
             />
           </div>
 
-          <div className={styles.fieldEmpty} />
+          <div className={styles.field}>
+            <label htmlFor="promoPrice" className={styles.label}>
+              Prix promo (€)
+              <span className={styles.optionalHint}>Optionnel</span>
+            </label>
+            <input
+              id="promoPrice"
+              name="promoPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Ex : 35.00"
+              className={styles.input}
+              defaultValue={initialValues?.promoPrice ?? ""}
+            />
+          </div>
         </div>
 
         <div className={styles.field}>
