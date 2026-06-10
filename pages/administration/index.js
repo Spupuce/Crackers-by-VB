@@ -53,7 +53,8 @@ export default function AdministrationLoginPage() {
     return {
       subtitle: 'Redirection vers l’administration',
       errorMessage: '',
-      successMessage: 'Compte administrateur détecté. Redirection en cours...',
+      successMessage:
+        'Compte administrateur détecté. Redirection en cours...',
       submitLabel: 'Accéder à l’administration',
     };
   };
@@ -79,7 +80,9 @@ export default function AdministrationLoginPage() {
           successMessage={successMessage}
           onSubmit={() => {
             if (!isAuthenticated) {
-              router.push('/connexion?redirect=/administration');
+              router.push(
+                '/connexion?redirect=/administration/stock'
+              );
               return;
             }
 
