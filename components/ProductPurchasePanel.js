@@ -1,6 +1,6 @@
 // components/ProductPurchasePanel.js
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { FiHeart, FiShoppingCart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
@@ -15,9 +15,12 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext';
 import styles from '../styles/ProductDetail.module.css';
 
+function normalizeColorName(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export default function ProductPurchasePanel({ product }) {
   const router = useRouter();
-  const soldOut = isSoldOut(product);
   const hasPromo = hasValidPromoPrice(product);
   const activePrice = getActiveProductPrice(product);
   const basePrice = getProductBasePrice(product);
@@ -30,11 +33,24 @@ export default function ProductPurchasePanel({ product }) {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [notifyError, setNotifyError] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
 
   const { user, isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
   const { items, addToCart, openCart } = useCart();
   const favorite = isFavorite(product.slug);
+
+  const availableColors = useMemo(() => {
+    if (!Array.isArray(product?.colors)) {
+      return [];
+    }
+
+    return product.colors.filter(
+      (color) => color && normalizeColorName(color.name)
+    );
+  }, [product?.colors]);
+
+  const hasColorVariants = availableColors.length > 0;
 
   useEffect(() => {
     if (isAuthenticated && user?.email) {
@@ -45,7 +61,18 @@ export default function ProductPurchasePanel({ product }) {
   useEffect(() => {
     setJustAdded(false);
     setLastAddedQuantity(0);
-  }, [quantity, product?.slug]);
+    setQuantity(1);
+
+    if (!hasColorVariants) {
+      setSelectedColor('');
+      return;
+    }
+
+    const firstAvailableColor =
+      availableColors.find((color) => Number(color.quantity) > 0)?.name || '';
+
+    setSelectedColor(firstAvailableColor);
+  }, [product?.slug, hasColorVariants, availableColors]);
 
   useEffect(() => {
     if (!justAdded) {
@@ -60,10 +87,45 @@ export default function ProductPurchasePanel({ product }) {
     return () => window.clearTimeout(timeout);
   }, [justAdded]);
 
-  const quantityInCart =
-    items.find((item) => item.slug === product.slug)?.quantity || 0;
+  const selectedColorData = useMemo(() => {
+    if (!hasColorVariants || !selectedColor) {
+      return null;
+    }
 
-  const remainingAvailable = Math.max(0, (product.stock || 0) - quantityInCart);
+    return (
+      availableColors.find(
+        (color) => normalizeColorName(color.name) === normalizeColorName(selectedColor)
+      ) || null
+    );
+  }, [availableColors, hasColorVariants, selectedColor]);
+
+  const effectiveStock = hasColorVariants
+    ? Math.max(0, Number(selectedColorData?.quantity || 0))
+    : Math.max(0, Number(product?.stock || 0));
+
+  const quantityInCart = items
+    .filter((item) => {
+      if (item.slug !== product.slug) {
+        return false;
+      }
+
+      if (hasColorVariants) {
+        return normalizeColorName(item.color) === normalizeColorName(selectedColor);
+      }
+
+      return !normalizeColorName(item.color);
+    })
+    .reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+  const remainingAvailable = Math.max(0, effectiveStock - quantityInCart);
+  const soldOut = isSoldOut(product) || effectiveStock <= 0;
+  const requiresColorSelection = hasColorVariants && !selectedColor;
+
+  useEffect(() => {
+    if (quantity > Math.max(remainingAvailable, 1)) {
+      setQuantity(Math.max(1, remainingAvailable || 1));
+    }
+  }, [quantity, remainingAvailable]);
 
   const decreaseQuantity = () => {
     setQuantity((prev) => Math.max(1, prev - 1));
@@ -72,7 +134,7 @@ export default function ProductPurchasePanel({ product }) {
   };
 
   const increaseQuantity = () => {
-    setQuantity((prev) => Math.min(product.stock || 1, prev + 1));
+    setQuantity((prev) => Math.min(Math.max(effectiveStock, 1), prev + 1));
     setJustAdded(false);
     setLastAddedQuantity(0);
   };
@@ -151,7 +213,7 @@ export default function ProductPurchasePanel({ product }) {
   };
 
   function handleAddToCart() {
-    if (!product || soldOut || remainingAvailable <= 0) {
+    if (!product || soldOut || remainingAvailable <= 0 || requiresColorSelection) {
       return;
     }
 
@@ -166,9 +228,10 @@ export default function ProductPurchasePanel({ product }) {
         slug: product.slug,
         name: product.name,
         price: activePrice,
-        stock: product.stock,
-        imageUrl: product.imageUrl,
+        stock: effectiveStock,
+        imageUrl: selectedColorData?.imageUrl || product.imageUrl,
         category: product.category,
+        color: hasColorVariants ? selectedColor : '',
       },
       quantityToAdd
     );
@@ -211,6 +274,48 @@ export default function ProductPurchasePanel({ product }) {
       <div className={styles.separator} />
 
       <p className={styles.description}>{product.description}</p>
+
+      {hasColorVariants && (
+        <div className={styles.quantityBlock}>
+          <p className={styles.quantityLabel}>Couleur</p>
+
+          <div className={styles.actions}>
+            {availableColors.map((color) => {
+              const colorName = normalizeColorName(color.name);
+              const colorStock = Math.max(0, Number(color.quantity || 0));
+              const isSelected =
+                normalizeColorName(selectedColor) === colorName;
+              const isDisabled = colorStock <= 0;
+
+              return (
+                <button
+                  key={colorName}
+                  type="button"
+                  className={`${styles.favoriteButton} ${
+                    isSelected ? styles.favoriteButtonActive : ''
+                  }`}
+                  onClick={() => {
+                    if (isDisabled) {
+                      return;
+                    }
+
+                    setSelectedColor(colorName);
+                    setQuantity(1);
+                    setJustAdded(false);
+                    setLastAddedQuantity(0);
+                  }}
+                  disabled={isDisabled}
+                  aria-pressed={isSelected}
+                >
+                  <span>
+                    {colorName} ({colorStock})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {soldOut ? (
         <div className={styles.notifyBlock}>
@@ -294,7 +399,7 @@ export default function ProductPurchasePanel({ product }) {
           </div>
 
           <p className={styles.stockInfo}>
-            Maximum disponible : {product.stock}
+            Maximum disponible : {effectiveStock}
           </p>
         </div>
       )}
@@ -315,13 +420,15 @@ export default function ProductPurchasePanel({ product }) {
         <button
           type="button"
           className={styles.addToCartButton}
-          disabled={soldOut || remainingAvailable <= 0}
+          disabled={soldOut || remainingAvailable <= 0 || requiresColorSelection}
           onClick={handleAddToCart}
         >
           <FiShoppingCart />
           <span>
             {soldOut
               ? 'Article indisponible'
+              : requiresColorSelection
+              ? 'Choisir une couleur'
               : remainingAvailable <= 0
               ? 'Stock déjà au maximum'
               : 'Ajouter au panier'}
