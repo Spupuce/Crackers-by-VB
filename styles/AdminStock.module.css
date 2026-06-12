@@ -18,6 +18,12 @@
   margin-bottom: 22px;
 }
 
+.topBarActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .welcome {
   font-size: 0.95rem;
   color: var(--color-text-soft);
@@ -34,6 +40,24 @@
   font-weight: 500;
   cursor: pointer;
   box-shadow: 0 8px 18px rgba(230, 159, 106, 0.28);
+}
+
+.secondaryTopButton {
+  height: 46px;
+  padding: 0 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background-color: var(--color-white);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.secondaryTopButton:hover {
+  background-color: var(--color-section);
+  border-color: var(--color-primary);
 }
 
 .panel {
@@ -150,7 +174,31 @@
   gap: 10px;
 }
 
+.priceBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
 .price {
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+.priceOld {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--color-text);
+  text-decoration: line-through;
+}
+
+.pricePromo {
+  margin: 0;
   font-size: 2rem;
   line-height: 1;
   font-weight: 600;
@@ -267,6 +315,32 @@
   padding: 14px 16px;
 }
 
+.infoBoxContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.inlineInfoButton {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  background-color: var(--color-white);
+  color: var(--color-primary-dark);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.inlineInfoButton:hover {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
 /* Bloc réassort */
 
 .restockLine {
@@ -333,34 +407,6 @@
 /* Responsive */
 
 @media (max-width: 900px) {
-  .topBar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .row {
-    flex-direction: column;
-  }
-
-  .right {
-    min-width: 0;
-    width: 100%;
-    align-items: flex-start;
-  }
-
-  .badges {
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 640px) {
-  .page {
-    padding: 36px 16px 64px;
-  }
-
-  .panelTitle {
-    font-size: 1.45rem;
-  }
 
   .price {
     font-size: 1.5rem;

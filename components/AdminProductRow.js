@@ -3,7 +3,12 @@
 import { useMemo } from 'react';
 import { FiEdit2, FiTrash2, FiArchive } from 'react-icons/fi';
 import styles from '../styles/AdminStock.module.css';
-import { isSoldOut } from '../utils/product';
+import {
+  getActiveProductPrice,
+  getProductBasePrice,
+  hasValidPromoPrice,
+  isSoldOut,
+} from '../utils/product';
 
 function getSafeStock(value) {
   const parsed = Number(value);
@@ -34,6 +39,9 @@ export default function AdminProductRow({
 }) {
   const soldOut = isSoldOut(product);
   const isArchived = Boolean(product.isArchived);
+  const hasPromo = hasValidPromoPrice(product);
+  const basePrice = getProductBasePrice(product);
+  const activePrice = getActiveProductPrice(product);
 
   const pendingRequestsCount = Number(product.pendingRequestsCount || 0);
   const hasPendingRequests = pendingRequestsCount > 0;
@@ -120,9 +128,22 @@ export default function AdminProductRow({
       </div>
 
       <div className={styles.right}>
-        <p className={styles.price}>
-          {Number(product.price).toFixed(2)} €
-        </p>
+        <div className={styles.priceBlock}>
+          {hasPromo ? (
+            <>
+              <p className={styles.priceOld}>
+                {basePrice.toFixed(2)} €
+              </p>
+              <p className={styles.pricePromo}>
+                {activePrice.toFixed(2)} €
+              </p>
+            </>
+          ) : (
+            <p className={styles.price}>
+              {basePrice.toFixed(2)} €
+            </p>
+          )}
+        </div>
 
         <div className={styles.badges}>
           {soldOut ? (

@@ -160,6 +160,10 @@ export default function EditProductPage() {
     router.push('/administration/stock');
   }
 
+  function handleBackToStock() {
+    router.push('/administration/stock');
+  }
+
   return (
     <>
       <Head>
@@ -175,13 +179,25 @@ export default function EditProductPage() {
               Modifier un produit existant.
             </p>
 
-            <button
-              type="button"
-              className={styles.addButton}
-              onClick={handleCancel}
-            >
-              Annuler
-            </button>
+            <div className={styles.topBarActions}>
+              {saveFeedback && !saveError ? (
+                <button
+                  type="button"
+                  className={styles.secondaryTopButton}
+                  onClick={handleBackToStock}
+                >
+                  Retour au stock
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                className={styles.addButton}
+                onClick={handleCancel}
+              >
+                Annuler
+              </button>
+            </div>
           </div>
 
           {loadError && (
@@ -205,7 +221,18 @@ export default function EditProductPage() {
               )}
 
               {saveFeedback && (
-                <div className={styles.infoBox}>{saveFeedback}</div>
+                <div className={styles.infoBox}>
+                  <div className={styles.infoBoxContent}>
+                    <span>{saveFeedback}</span>
+                    <button
+                      type="button"
+                      className={styles.inlineInfoButton}
+                      onClick={handleBackToStock}
+                    >
+                      Retour au stock
+                    </button>
+                  </div>
+                </div>
               )}
 
               {notifyFeedback && (
