@@ -94,7 +94,8 @@ export default function ProductPurchasePanel({ product }) {
 
     return (
       availableColors.find(
-        (color) => normalizeColorName(color.name) === normalizeColorName(selectedColor)
+        (color) =>
+          normalizeColorName(color.name) === normalizeColorName(selectedColor)
       ) || null
     );
   }, [availableColors, hasColorVariants, selectedColor]);
@@ -110,7 +111,9 @@ export default function ProductPurchasePanel({ product }) {
       }
 
       if (hasColorVariants) {
-        return normalizeColorName(item.color) === normalizeColorName(selectedColor);
+        return (
+          normalizeColorName(item.color) === normalizeColorName(selectedColor)
+        );
       }
 
       return !normalizeColorName(item.color);
@@ -134,7 +137,7 @@ export default function ProductPurchasePanel({ product }) {
   };
 
   const increaseQuantity = () => {
-    setQuantity((prev) => Math.min(Math.max(effectiveStock, 1), prev + 1));
+    setQuantity((prev) => Math.min(Math.max(remainingAvailable, 1), prev + 1));
     setJustAdded(false);
     setLastAddedQuantity(0);
   };
@@ -213,7 +216,12 @@ export default function ProductPurchasePanel({ product }) {
   };
 
   function handleAddToCart() {
-    if (!product || soldOut || remainingAvailable <= 0 || requiresColorSelection) {
+    if (
+      !product ||
+      soldOut ||
+      remainingAvailable <= 0 ||
+      requiresColorSelection
+    ) {
       return;
     }
 
@@ -276,10 +284,17 @@ export default function ProductPurchasePanel({ product }) {
       <p className={styles.description}>{product.description}</p>
 
       {hasColorVariants && (
-        <div className={styles.quantityBlock}>
-          <p className={styles.quantityLabel}>Couleur</p>
+        <div className={styles.variantBlock}>
+          <div className={styles.variantHeader}>
+            <p className={styles.quantityLabel}>Couleur</p>
+            {selectedColor && (
+              <span className={styles.variantSelected}>
+                {selectedColor}
+              </span>
+            )}
+          </div>
 
-          <div className={styles.actions}>
+          <div className={styles.variantOptions}>
             {availableColors.map((color) => {
               const colorName = normalizeColorName(color.name);
               const colorStock = Math.max(0, Number(color.quantity || 0));
@@ -291,9 +306,9 @@ export default function ProductPurchasePanel({ product }) {
                 <button
                   key={colorName}
                   type="button"
-                  className={`${styles.favoriteButton} ${
-                    isSelected ? styles.favoriteButtonActive : ''
-                  }`}
+                  className={`${styles.variantButton} ${
+                    isSelected ? styles.variantButtonActive : ''
+                  } ${isDisabled ? styles.variantButtonDisabled : ''}`}
                   onClick={() => {
                     if (isDisabled) {
                       return;
@@ -307,8 +322,9 @@ export default function ProductPurchasePanel({ product }) {
                   disabled={isDisabled}
                   aria-pressed={isSelected}
                 >
-                  <span>
-                    {colorName} ({colorStock})
+                  <span className={styles.variantButtonLabel}>{colorName}</span>
+                  <span className={styles.variantButtonStock}>
+                    ({colorStock})
                   </span>
                 </button>
               );
@@ -399,7 +415,7 @@ export default function ProductPurchasePanel({ product }) {
           </div>
 
           <p className={styles.stockInfo}>
-            Maximum disponible : {effectiveStock}
+            Maximum disponible : {remainingAvailable}
           </p>
         </div>
       )}
