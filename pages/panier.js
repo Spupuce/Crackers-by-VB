@@ -212,6 +212,17 @@ function focusFirstInvalidField(errorsObject) {
   }, 250);
 }
 
+function buildCartLineKey(item) {
+  if (item?.cartItemKey) {
+    return item.cartItemKey;
+  }
+
+  const slug = typeof item?.slug === 'string' ? item.slug : '';
+  const color = typeof item?.color === 'string' ? item.color.trim() : '';
+
+  return `${slug}::${color || 'default'}`;
+}
+
 export default function PanierPage() {
   const router = useRouter();
   const { items, cartTotal, clearCart } = useCart();
@@ -579,6 +590,7 @@ export default function PanierPage() {
           items: items.map((item) => ({
             slug: item.slug,
             name: item.name,
+            color: item.color || '',
             quantity: item.quantity,
             price: item.price,
           })),
@@ -1072,7 +1084,7 @@ export default function PanierPage() {
 
                     <div className={styles.itemsList}>
                       {items.map((item) => (
-                        <div key={item.slug} className={styles.itemRow}>
+                        <div key={buildCartLineKey(item)} className={styles.itemRow}>
                           <div className={styles.itemImageWrapper}>
                             {item.imageUrl ? (
                               <img
@@ -1095,6 +1107,11 @@ export default function PanierPage() {
 
                           <div className={styles.itemContent}>
                             <p className={styles.itemName}>{item.name}</p>
+                            {item.color && (
+                              <p className={styles.itemMeta}>
+                                Couleur : {item.color}
+                              </p>
+                            )}
                             <p className={styles.itemMeta}>
                               Quantité : {item.quantity}
                             </p>
