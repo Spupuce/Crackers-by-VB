@@ -26,7 +26,17 @@ export function hasValidPromoPrice(product) {
   }
 
   const price = Number(product.price);
-  const promoPrice = Number(product.promoPrice);
+  const rawPromoPrice = product.promoPrice;
+
+  if (
+    rawPromoPrice === undefined ||
+    rawPromoPrice === null ||
+    rawPromoPrice === ''
+  ) {
+    return false;
+  }
+
+  const promoPrice = Number(rawPromoPrice);
 
   if (Number.isNaN(price) || Number.isNaN(promoPrice)) {
     return false;
