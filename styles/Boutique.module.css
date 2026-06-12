@@ -93,6 +93,27 @@
   color: var(--color-white);
 }
 
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.checkboxInput {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkboxLabel {
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+  line-height: 1.4;
+}
+
 .inputLabel {
   display: block;
   font-size: 0.82rem;

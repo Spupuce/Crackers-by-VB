@@ -1,3 +1,5 @@
+// pages/boutique.js
+
 import { useMemo, useState } from 'react';
 import Head from 'next/head';
 import Header from '../components/Header';
@@ -5,7 +7,11 @@ import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import ShopSidebar from '../components/ShopSidebar';
 import { products as fallbackProducts } from '../data/products';
-import { isDisplayableProduct } from '../utils/product';
+import {
+  getActiveProductPrice,
+  hasValidPromoPrice,
+  isDisplayableProduct,
+} from '../utils/product';
 import styles from '../styles/Boutique.module.css';
 
 const PRICE_RANGE_OPTIONS = {
@@ -107,6 +113,8 @@ export default function BoutiquePage({ products }) {
   const [pendingMaxPrice, setPendingMaxPrice] = useState('');
   const [appliedMinPrice, setAppliedMinPrice] = useState('');
   const [appliedMaxPrice, setAppliedMaxPrice] = useState('');
+  const [pendingPromoOnly, setPendingPromoOnly] = useState(false);
+  const [appliedPromoOnly, setAppliedPromoOnly] = useState(false);
 
   function handleCategoryChange(nextCategory) {
     setSelectedCategory(nextCategory);
@@ -119,6 +127,7 @@ export default function BoutiquePage({ products }) {
   function handleApplyFilters() {
     setAppliedMinPrice(pendingMinPrice);
     setAppliedMaxPrice(pendingMaxPrice);
+    setAppliedPromoOnly(pendingPromoOnly);
   }
 
   function handleResetFilters() {
@@ -128,19 +137,23 @@ export default function BoutiquePage({ products }) {
     setPendingMaxPrice('');
     setAppliedMinPrice('');
     setAppliedMaxPrice('');
+    setPendingPromoOnly(false);
+    setAppliedPromoOnly(false);
   }
 
   const filteredProducts = useMemo(() => {
     return activeProducts.filter((product) => {
+      const activePrice = getActiveProductPrice(product);
       const categoryOk = matchesCategory(product.category, selectedCategory);
       const priceOk = matchesPriceRange(
-        product.price,
+        activePrice,
         selectedPriceRangeKey,
         appliedMinPrice,
         appliedMaxPrice
       );
+      const promoOk = !appliedPromoOnly || hasValidPromoPrice(product);
 
-      return categoryOk && priceOk;
+      return categoryOk && priceOk && promoOk;
     });
   }, [
     activeProducts,
@@ -148,6 +161,7 @@ export default function BoutiquePage({ products }) {
     selectedPriceRangeKey,
     appliedMinPrice,
     appliedMaxPrice,
+    appliedPromoOnly,
   ]);
 
   return (
@@ -181,6 +195,8 @@ export default function BoutiquePage({ products }) {
               maxPrice={pendingMaxPrice}
               onMinPriceChange={setPendingMinPrice}
               onMaxPriceChange={setPendingMaxPrice}
+              promoOnly={pendingPromoOnly}
+              onPromoOnlyChange={setPendingPromoOnly}
               onApplyFilters={handleApplyFilters}
               onResetFilters={handleResetFilters}
             />

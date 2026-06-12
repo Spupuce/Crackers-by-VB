@@ -28,6 +28,8 @@ export default function ShopSidebar({
   maxPrice,
   onMinPriceChange,
   onMaxPriceChange,
+  promoOnly,
+  onPromoOnlyChange,
   onApplyFilters,
   onResetFilters,
 }) {
@@ -70,6 +72,23 @@ export default function ShopSidebar({
             {item.label}
           </button>
         ))}
+      </div>
+
+      <div className={styles.filterBlock}>
+        <h3 className={styles.filterTitle}>Promotions</h3>
+
+        <label className={styles.checkboxRow} htmlFor="promo-only-input">
+          <input
+            id="promo-only-input"
+            type="checkbox"
+            checked={promoOnly}
+            onChange={(e) => onPromoOnlyChange(e.target.checked)}
+            className={styles.checkboxInput}
+          />
+          <span className={styles.checkboxLabel}>
+            Afficher uniquement les promotions
+          </span>
+        </label>
       </div>
 
       <div className={styles.filterBlock}>
