@@ -179,25 +179,13 @@ export default function EditProductPage() {
               Modifier un produit existant.
             </p>
 
-            <div className={styles.topBarActions}>
-              {saveFeedback && !saveError ? (
-                <button
-                  type="button"
-                  className={styles.secondaryTopButton}
-                  onClick={handleBackToStock}
-                >
-                  Retour au stock
-                </button>
-              ) : null}
-
-              <button
-                type="button"
-                className={styles.addButton}
-                onClick={handleCancel}
-              >
-                Annuler
-              </button>
-            </div>
+            <button
+              type="button"
+              className={styles.addButton}
+              onClick={handleCancel}
+            >
+              Annuler
+            </button>
           </div>
 
           {loadError && (
