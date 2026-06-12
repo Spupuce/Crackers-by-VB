@@ -47,8 +47,12 @@ async function markOrderAsPaid(session) {
     throw new Error('Commande introuvable pour cette session Stripe.');
   }
 
-  if (order.status !== 'paid') {
-    order.status = 'paid';
+  if (order.paymentStatus !== 'paid') {
+    order.paymentStatus = 'paid';
+  }
+
+  if (order.status === 'cancelled') {
+    throw new Error("Impossible de marquer comme payée une commande annulée.");
   }
 
   if (stripeSessionId) {

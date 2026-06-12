@@ -87,21 +87,35 @@ async function resolveOrderItemsFromProducts(incomingItems) {
 
 function buildOrderPayload({
   userId,
+  customer,
   resolvedItems,
   normalizedShipping,
   notes,
   status,
+  paymentStatus,
   stripeSessionId = '',
   stripePaymentIntentId = '',
 }) {
-  const totalAmount = resolvedItems.reduce(
+  const subtotalAmount = resolvedItems.reduce(
     (sum, item) => sum + item.unitPrice * item.quantity,
     0
   );
 
+  const shippingAmount = 0;
+  const totalAmount = subtotalAmount + shippingAmount;
+
   return {
     userId,
     status,
+    paymentStatus,
+    customer: {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      phone: customer.phone,
+    },
+    subtotalAmount,
+    shippingAmount,
     totalAmount,
     currency: 'EUR',
     items: resolvedItems,
@@ -243,10 +257,12 @@ export default async function handler(req, res) {
       const simulatedOrder = await Order.create(
         buildOrderPayload({
           userId,
+          customer: normalizedCustomer,
           resolvedItems,
           normalizedShipping,
           notes,
-          status: 'paid',
+          status: 'pending',
+          paymentStatus: 'paid',
           stripeSessionId: 'SIMULATED_SESSION',
           stripePaymentIntentId: 'SIMULATED_PAYMENT',
         })
@@ -264,10 +280,12 @@ export default async function handler(req, res) {
     const pendingOrder = await Order.create(
       buildOrderPayload({
         userId,
+        customer: normalizedCustomer,
         resolvedItems,
         normalizedShipping,
         notes,
         status: 'pending',
+        paymentStatus: 'pending',
       })
     );
 
