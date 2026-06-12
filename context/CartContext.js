@@ -14,6 +14,18 @@ import { useAuth } from './AuthContext';
 const CartContext = createContext(null);
 const CART_STORAGE_KEY = 'crackers-by-vb-cart';
 
+function normalizeColorName(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function buildCartItemKey(input) {
+  const slug =
+    typeof input?.slug === 'string' && input.slug.trim() ? input.slug.trim() : '';
+  const color = normalizeColorName(input?.color);
+
+  return `${slug}::${color || 'default'}`;
+}
+
 function normalizeCartItem(input) {
   if (!input || typeof input !== 'object') return null;
 
@@ -36,10 +48,11 @@ function normalizeCartItem(input) {
     typeof input.category === 'string' && input.category.trim()
       ? input.category.trim()
       : '';
+  const color = normalizeColorName(input.color);
 
   if (!slug || !name || Number.isNaN(price)) return null;
 
-  return {
+  const normalizedItem = {
     slug,
     name,
     price,
@@ -47,6 +60,12 @@ function normalizeCartItem(input) {
     quantity: Number.isNaN(quantity) ? 1 : Math.max(0, Math.floor(quantity)),
     imageUrl,
     category,
+    color,
+  };
+
+  return {
+    ...normalizedItem,
+    cartItemKey: buildCartItemKey(normalizedItem),
   };
 }
 
@@ -87,9 +106,14 @@ function buildCartSyncSignature(cartItems) {
     cartItems
       .map((item) => ({
         slug: item.slug,
+        color: item.color || '',
         quantity: item.quantity,
       }))
-      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .sort((a, b) => {
+        const keyA = `${a.slug}::${a.color}`;
+        const keyB = `${b.slug}::${b.color}`;
+        return keyA.localeCompare(keyB);
+      })
   );
 }
 
@@ -221,6 +245,7 @@ export function CartProvider({ children }) {
         const payload = {
           items: items.map((item) => ({
             slug: item.slug,
+            color: item.color || '',
             quantity: item.quantity,
           })),
         };
@@ -282,7 +307,7 @@ export function CartProvider({ children }) {
 
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex(
-        (item) => item.slug === normalizedProduct.slug
+        (item) => item.cartItemKey === normalizedProduct.cartItemKey
       );
 
       if (existingIndex === -1) {
@@ -325,24 +350,28 @@ export function CartProvider({ children }) {
     });
   }, []);
 
-  const removeFromCart = useCallback((slug) => {
-    if (!slug || typeof slug !== 'string') return;
+  const removeFromCart = useCallback((cartItemKey) => {
+    if (!cartItemKey || typeof cartItemKey !== 'string') return;
 
-    setItems((prevItems) => prevItems.filter((item) => item.slug !== slug));
+    setItems((prevItems) =>
+      prevItems.filter((item) => item.cartItemKey !== cartItemKey)
+    );
   }, []);
 
-  const updateItemQuantity = useCallback((slug, nextQuantity) => {
+  const updateItemQuantity = useCallback((cartItemKey, nextQuantity) => {
     const qty = Number(nextQuantity);
 
-    if (!slug || typeof slug !== 'string' || Number.isNaN(qty)) return;
+    if (!cartItemKey || typeof cartItemKey !== 'string' || Number.isNaN(qty)) {
+      return;
+    }
 
     setItems((prevItems) => {
       if (qty <= 0) {
-        return prevItems.filter((item) => item.slug !== slug);
+        return prevItems.filter((item) => item.cartItemKey !== cartItemKey);
       }
 
       return prevItems.map((item) => {
-        if (item.slug !== slug) {
+        if (item.cartItemKey !== cartItemKey) {
           return item;
         }
 
