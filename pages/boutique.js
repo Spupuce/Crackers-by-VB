@@ -109,12 +109,9 @@ export default function BoutiquePage({ products }) {
 
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   const [selectedPriceRangeKey, setSelectedPriceRangeKey] = useState('all');
-  const [pendingMinPrice, setPendingMinPrice] = useState('');
-  const [pendingMaxPrice, setPendingMaxPrice] = useState('');
-  const [appliedMinPrice, setAppliedMinPrice] = useState('');
-  const [appliedMaxPrice, setAppliedMaxPrice] = useState('');
-  const [pendingPromoOnly, setPendingPromoOnly] = useState(false);
-  const [appliedPromoOnly, setAppliedPromoOnly] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [promoOnly, setPromoOnly] = useState(false);
 
   function handleCategoryChange(nextCategory) {
     setSelectedCategory(nextCategory);
@@ -124,21 +121,12 @@ export default function BoutiquePage({ products }) {
     setSelectedPriceRangeKey(nextPriceRangeKey);
   }
 
-  function handleApplyFilters() {
-    setAppliedMinPrice(pendingMinPrice);
-    setAppliedMaxPrice(pendingMaxPrice);
-    setAppliedPromoOnly(pendingPromoOnly);
-  }
-
   function handleResetFilters() {
     setSelectedCategory('Tous');
     setSelectedPriceRangeKey('all');
-    setPendingMinPrice('');
-    setPendingMaxPrice('');
-    setAppliedMinPrice('');
-    setAppliedMaxPrice('');
-    setPendingPromoOnly(false);
-    setAppliedPromoOnly(false);
+    setMinPrice('');
+    setMaxPrice('');
+    setPromoOnly(false);
   }
 
   const filteredProducts = useMemo(() => {
@@ -148,10 +136,10 @@ export default function BoutiquePage({ products }) {
       const priceOk = matchesPriceRange(
         activePrice,
         selectedPriceRangeKey,
-        appliedMinPrice,
-        appliedMaxPrice
+        minPrice,
+        maxPrice
       );
-      const promoOk = !appliedPromoOnly || hasValidPromoPrice(product);
+      const promoOk = !promoOnly || hasValidPromoPrice(product);
 
       return categoryOk && priceOk && promoOk;
     });
@@ -159,9 +147,9 @@ export default function BoutiquePage({ products }) {
     activeProducts,
     selectedCategory,
     selectedPriceRangeKey,
-    appliedMinPrice,
-    appliedMaxPrice,
-    appliedPromoOnly,
+    minPrice,
+    maxPrice,
+    promoOnly,
   ]);
 
   return (
@@ -191,13 +179,13 @@ export default function BoutiquePage({ products }) {
               onCategoryChange={handleCategoryChange}
               priceRangeKey={selectedPriceRangeKey}
               onPriceRangeKeyChange={handlePriceRangeChange}
-              minPrice={pendingMinPrice}
-              maxPrice={pendingMaxPrice}
-              onMinPriceChange={setPendingMinPrice}
-              onMaxPriceChange={setPendingMaxPrice}
-              promoOnly={pendingPromoOnly}
-              onPromoOnlyChange={setPendingPromoOnly}
-              onApplyFilters={handleApplyFilters}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              onMinPriceChange={setMinPrice}
+              onMaxPriceChange={setMaxPrice}
+              promoOnly={promoOnly}
+              onPromoOnlyChange={setPromoOnly}
+              onApplyFilters={() => {}}
               onResetFilters={handleResetFilters}
             />
 
