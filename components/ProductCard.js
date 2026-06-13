@@ -50,12 +50,33 @@ export default function ProductCard({ product }) {
   }, [product?.colors]);
 
   const hasColorVariants = availableColors.length > 0;
+  const hasSingleAvailableColor = availableColors.length === 1;
+  const singleAvailableColor = hasSingleAvailableColor ? availableColors[0] : null;
+  const singleAvailableColorName = normalizeColorName(singleAvailableColor?.name);
 
   const quantityInCart = items
-    .filter((item) => item.slug === product.slug)
+    .filter((item) => {
+      if (item.slug !== product.slug) {
+        return false;
+      }
+
+      if (hasSingleAvailableColor) {
+        return normalizeColorName(item.color) === singleAvailableColorName;
+      }
+
+      if (hasColorVariants) {
+        return false;
+      }
+
+      return !normalizeColorName(item.color);
+    })
     .reduce((sum, item) => sum + (item.quantity || 0), 0);
 
-  const remainingAvailable = Math.max(0, (product.stock || 0) - quantityInCart);
+  const effectiveStock = hasSingleAvailableColor
+    ? Math.max(0, Number(singleAvailableColor?.quantity || 0))
+    : Math.max(0, Number(product?.stock || 0));
+
+  const remainingAvailable = Math.max(0, effectiveStock - quantityInCart);
 
   useEffect(() => {
     return () => {
@@ -113,7 +134,7 @@ export default function ProductCard({ product }) {
       return;
     }
 
-    if (hasColorVariants) {
+    if (hasColorVariants && !hasSingleAvailableColor) {
       router.push(`/boutique/${product.slug}`);
       return;
     }
@@ -127,13 +148,21 @@ export default function ProductCard({ product }) {
       slug: product.slug,
       name: product.name,
       price: activePrice,
-      stock: product.stock,
-      imageUrl: product.imageUrl,
+      stock: effectiveStock,
+      imageUrl: singleAvailableColor?.imageUrl || product.imageUrl,
       category: product.category,
-      color: '',
+      color: hasSingleAvailableColor ? singleAvailableColorName : '',
     });
 
     showCartMessage('Ajouté au panier', 'success');
+  }
+
+  function getButtonLabel() {
+    if (hasColorVariants && !hasSingleAvailableColor) {
+      return 'Choisir une couleur';
+    }
+
+    return 'Ajouter au panier';
   }
 
   return (
@@ -174,7 +203,7 @@ export default function ProductCard({ product }) {
                     className={styles.addToCartButton}
                     onClick={handleAddToCart}
                   >
-                    {hasColorVariants ? 'Choisir une couleur' : 'Ajouter au panier'}
+                    {getButtonLabel()}
                   </button>
 
                   {cartMessage ? (
