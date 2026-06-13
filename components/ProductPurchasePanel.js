@@ -54,7 +54,6 @@ export default function ProductPurchasePanel({
   }, [product?.colors]);
 
   const hasColorVariants = availableColors.length > 0;
-
   const selectedColor = normalizeColorName(selectedColorProp);
 
   useEffect(() => {
@@ -73,16 +72,18 @@ export default function ProductPurchasePanel({
       return;
     }
 
-    if (selectedColor) {
-      const matchingSelectedColor = availableColors.find(
-        (color) =>
-          normalizeColorName(color.name).toLowerCase() ===
-          selectedColor.toLowerCase()
-      );
+    if (!selectedColor) {
+      return;
+    }
 
-      if (matchingSelectedColor) {
-        return;
-      }
+    const matchingSelectedColor = availableColors.find(
+      (color) =>
+        normalizeColorName(color.name).toLowerCase() ===
+        selectedColor.toLowerCase()
+    );
+
+    if (matchingSelectedColor) {
+      return;
     }
 
     const firstAvailableColor =
@@ -146,7 +147,16 @@ export default function ProductPurchasePanel({
     .reduce((sum, item) => sum + (item.quantity || 0), 0);
 
   const remainingAvailable = Math.max(0, effectiveStock - quantityInCart);
-  const soldOut = isSoldOut(product) || effectiveStock <= 0;
+
+  const hasAnyColorWithStock = hasColorVariants
+    ? availableColors.some((color) => Number(color.quantity) > 0)
+    : false;
+
+  const soldOut =
+    hasColorVariants
+      ? !hasAnyColorWithStock
+      : isSoldOut(product) || effectiveStock <= 0;
+
   const requiresColorSelection = hasColorVariants && !selectedColor;
 
   useEffect(() => {
@@ -313,9 +323,7 @@ export default function ProductPurchasePanel({
           <div className={styles.variantHeader}>
             <p className={styles.quantityLabel}>Couleur</p>
             {selectedColor && (
-              <span className={styles.variantSelected}>
-                {selectedColor}
-              </span>
+              <span className={styles.variantSelected}>{selectedColor}</span>
             )}
           </div>
 
@@ -447,11 +455,7 @@ export default function ProductPurchasePanel({
       )}
 
       {justAdded && (
-        <p
-          className={styles.addedMessage}
-          role="status"
-          aria-live="polite"
-        >
+        <p className={styles.addedMessage} role="status" aria-live="polite">
           {lastAddedQuantity > 1
             ? `${lastAddedQuantity} articles ont bien été ajoutés au panier.`
             : 'L’article a bien été ajouté au panier.'}
