@@ -1,6 +1,6 @@
 // components/ProductCard.js
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FiHeart } from 'react-icons/fi';
@@ -16,6 +16,10 @@ import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext';
 import styles from '../styles/ProductCard.module.css';
+
+function normalizeColorName(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 export default function ProductCard({ product }) {
   const router = useRouter();
@@ -34,8 +38,22 @@ export default function ProductCard({ product }) {
   const [cartMessageType, setCartMessageType] = useState('');
   const cartMessageTimeoutRef = useRef(null);
 
-  const quantityInCart =
-    items.find((item) => item.slug === product.slug)?.quantity || 0;
+  const availableColors = useMemo(() => {
+    if (!Array.isArray(product?.colors)) {
+      return [];
+    }
+
+    return product.colors.filter((color) => {
+      const colorName = normalizeColorName(color?.name);
+      return colorName && Number(color?.quantity || 0) > 0;
+    });
+  }, [product?.colors]);
+
+  const hasColorVariants = availableColors.length > 0;
+
+  const quantityInCart = items
+    .filter((item) => item.slug === product.slug)
+    .reduce((sum, item) => sum + (item.quantity || 0), 0);
 
   const remainingAvailable = Math.max(0, (product.stock || 0) - quantityInCart);
 
@@ -95,6 +113,11 @@ export default function ProductCard({ product }) {
       return;
     }
 
+    if (hasColorVariants) {
+      router.push(`/boutique/${product.slug}`);
+      return;
+    }
+
     if (remainingAvailable <= 0) {
       showCartMessage('Stock maximum atteint', 'error');
       return;
@@ -107,6 +130,7 @@ export default function ProductCard({ product }) {
       stock: product.stock,
       imageUrl: product.imageUrl,
       category: product.category,
+      color: '',
     });
 
     showCartMessage('Ajouté au panier', 'success');
@@ -150,7 +174,7 @@ export default function ProductCard({ product }) {
                     className={styles.addToCartButton}
                     onClick={handleAddToCart}
                   >
-                    Ajouter au panier
+                    {hasColorVariants ? 'Choisir une couleur' : 'Ajouter au panier'}
                   </button>
 
                   {cartMessage ? (

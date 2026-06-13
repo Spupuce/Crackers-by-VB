@@ -6,23 +6,40 @@ import { FiMinus, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import styles from '../styles/CartDrawer.module.css';
 
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function getCartItemKey(item) {
+  if (item?.cartItemKey) {
+    return item.cartItemKey;
+  }
+
+  const slug = normalizeText(item?.slug);
+  const color = normalizeText(item?.color);
+
+  return `${slug}::${color || 'default'}`;
+}
+
 export default function CartDrawer({ isOpen, onClose }) {
   const { items, cartTotal, updateItemQuantity, removeFromCart } = useCart();
-  const [stockLimitBySlug, setStockLimitBySlug] = useState({});
+  const [stockLimitByItemKey, setStockLimitByItemKey] = useState({});
 
   useEffect(() => {
     if (!isOpen) {
-      setStockLimitBySlug({});
+      setStockLimitByItemKey({});
     }
   }, [isOpen]);
 
   useEffect(() => {
-    setStockLimitBySlug((previous) => {
+    setStockLimitByItemKey((previous) => {
       const next = {};
 
       items.forEach((item) => {
-        if (previous[item.slug]) {
-          next[item.slug] = previous[item.slug];
+        const itemKey = getCartItemKey(item);
+
+        if (previous[itemKey]) {
+          next[itemKey] = previous[itemKey];
         }
       });
 
@@ -31,37 +48,43 @@ export default function CartDrawer({ isOpen, onClose }) {
   }, [items]);
 
   function handleDecrease(item) {
-    updateItemQuantity(item.slug, item.quantity - 1);
+    const itemKey = getCartItemKey(item);
 
-    setStockLimitBySlug((previous) => ({
+    updateItemQuantity(itemKey, item.quantity - 1);
+
+    setStockLimitByItemKey((previous) => ({
       ...previous,
-      [item.slug]: false,
+      [itemKey]: false,
     }));
   }
 
   function handleIncrease(item) {
+    const itemKey = getCartItemKey(item);
+
     if (item.stock !== null && item.quantity >= item.stock) {
-      setStockLimitBySlug((previous) => ({
+      setStockLimitByItemKey((previous) => ({
         ...previous,
-        [item.slug]: true,
+        [itemKey]: true,
       }));
       return;
     }
 
-    updateItemQuantity(item.slug, item.quantity + 1);
+    updateItemQuantity(itemKey, item.quantity + 1);
 
-    setStockLimitBySlug((previous) => ({
+    setStockLimitByItemKey((previous) => ({
       ...previous,
-      [item.slug]: false,
+      [itemKey]: false,
     }));
   }
 
   function handleRemove(item) {
-    removeFromCart(item.slug);
+    const itemKey = getCartItemKey(item);
 
-    setStockLimitBySlug((previous) => {
+    removeFromCart(itemKey);
+
+    setStockLimitByItemKey((previous) => {
       const next = { ...previous };
-      delete next[item.slug];
+      delete next[itemKey];
       return next;
     });
   }
@@ -108,66 +131,78 @@ export default function CartDrawer({ isOpen, onClose }) {
             </div>
           ) : (
             <div className={styles.items}>
-              {items.map((item) => (
-                <article key={item.slug} className={styles.item}>
-                  <div className={styles.itemImageWrapper}>
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className={styles.itemImage}
-                    />
-                  </div>
+              {items.map((item) => {
+                const itemKey = getCartItemKey(item);
 
-                  <div className={styles.itemContent}>
-                    <div className={styles.itemTop}>
-                      <div className={styles.itemInfos}>
-                        <h3 className={styles.itemName}>{item.name}</h3>
-                        <p className={styles.itemCategory}>{item.category}</p>
-                        <p className={styles.itemPrice}>
-                          {Number(item.price).toFixed(2)} €
-                        </p>
+                return (
+                  <article key={itemKey} className={styles.item}>
+                    <div className={styles.itemImageWrapper}>
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className={styles.itemImage}
+                      />
+                    </div>
+
+                    <div className={styles.itemContent}>
+                      <div className={styles.itemTop}>
+                        <div className={styles.itemInfos}>
+                          <h3 className={styles.itemName}>{item.name}</h3>
+
+                          <p className={styles.itemCategory}>{item.category}</p>
+
+                          {item.color ? (
+                            <p className={styles.itemVariant}>
+                              Couleur : {item.color}
+                            </p>
+                          ) : null}
+
+                          <p className={styles.itemPrice}>
+                            {Number(item.price).toFixed(2)} €
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={styles.removeButton}
+                          aria-label={`Supprimer ${item.name} du panier`}
+                          onClick={() => handleRemove(item)}
+                        >
+                          <FiTrash2 />
+                        </button>
                       </div>
 
-                      <button
-                        type="button"
-                        className={styles.removeButton}
-                        aria-label={`Supprimer ${item.name} du panier`}
-                        onClick={() => handleRemove(item)}
-                      >
-                        <FiTrash2 />
-                      </button>
+                      <div className={styles.quantityRow}>
+                        <button
+                          type="button"
+                          className={styles.quantityButton}
+                          aria-label={`Retirer une unité de ${item.name}`}
+                          onClick={() => handleDecrease(item)}
+                        >
+                          <FiMinus />
+                        </button>
+
+                        <span className={styles.quantityValue}>{item.quantity}</span>
+
+                        <button
+                          type="button"
+                          className={styles.quantityButton}
+                          aria-label={`Ajouter une unité de ${item.name}`}
+                          onClick={() => handleIncrease(item)}
+                        >
+                          <FiPlus />
+                        </button>
+                      </div>
+
+                      {stockLimitByItemKey[itemKey] ? (
+                        <p className={styles.stockLimitMessage}>
+                          Stock maximum atteint
+                        </p>
+                      ) : null}
                     </div>
-
-                    <div className={styles.quantityRow}>
-                      <button
-                        type="button"
-                        className={styles.quantityButton}
-                        aria-label={`Retirer une unité de ${item.name}`}
-                        onClick={() => handleDecrease(item)}
-                      >
-                        <FiMinus />
-                      </button>
-
-                      <span className={styles.quantityValue}>{item.quantity}</span>
-
-                      <button
-                        type="button"
-                        className={styles.quantityButton}
-                        aria-label={`Ajouter une unité de ${item.name}`}
-                        onClick={() => handleIncrease(item)}
-                      >
-                        <FiPlus />
-                      </button>
-                    </div>
-
-                    {stockLimitBySlug[item.slug] ? (
-                      <p className={styles.stockLimitMessage}>
-                        Stock maximum atteint
-                      </p>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
