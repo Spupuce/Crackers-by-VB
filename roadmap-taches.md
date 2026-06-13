@@ -28,7 +28,7 @@
 - ✅ Vérifier les actions admin sur produits actifs / archivés.
 - ✅ Finaliser la page `/administration/clients`.
 - 🟡 Harmoniser visuellement les pages admin existantes.
-- 🟡 Corriger la logique de stock partagée pour gérer correctement les déclinaisons couleur partout.
+- ✅ Corriger la logique de stock partagée pour gérer correctement les déclinaisons couleur partout.
 - 🟡 Mieux intégrer les demandes de réassort dans l’admin stock.
 
 ---

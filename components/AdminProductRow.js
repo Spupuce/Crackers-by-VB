@@ -1,7 +1,7 @@
 // components/AdminProductRow.js
 
-import { useMemo } from 'react';
-import { FiEdit2, FiTrash2, FiArchive } from 'react-icons/fi';
+import { useMemo, useState } from 'react';
+import { FiEdit2, FiTrash2, FiArchive, FiMail } from 'react-icons/fi';
 import styles from '../styles/AdminStock.module.css';
 import {
   getActiveProductPrice,
@@ -36,12 +36,16 @@ export default function AdminProductRow({
   onUnarchive,
   onEdit,
   onProductRemoved,
+  onProductUpdated,
 }) {
   const soldOut = isSoldOut(product);
   const isArchived = Boolean(product.isArchived);
   const hasPromo = hasValidPromoPrice(product);
   const basePrice = getProductBasePrice(product);
   const activePrice = getActiveProductPrice(product);
+
+  const [isNotifyingRestock, setIsNotifyingRestock] = useState(false);
+  const [restockFeedback, setRestockFeedback] = useState('');
 
   const pendingRequestsCount = Number(product.pendingRequestsCount || 0);
   const hasPendingRequests = pendingRequestsCount > 0;
@@ -92,6 +96,48 @@ export default function AdminProductRow({
     }
   };
 
+  const handleNotifyRestock = async () => {
+    if (!product?._id || isNotifyingRestock) {
+      return;
+    }
+
+    setIsNotifyingRestock(true);
+    setRestockFeedback('');
+
+    try {
+      const response = await fetch(
+        `/api/admin/products/${product._id}/notify-restock`,
+        {
+          method: 'POST',
+        }
+      );
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setRestockFeedback(
+          data?.message || "Erreur lors de l'envoi des notifications."
+        );
+        return;
+      }
+
+      setRestockFeedback(
+        data?.message || 'Notifications de retour en stock envoyées.'
+      );
+
+      if (typeof onProductUpdated === 'function') {
+        onProductUpdated({
+          ...product,
+          pendingRequestsCount: 0,
+        });
+      }
+    } catch (error) {
+      setRestockFeedback("Erreur lors de l'envoi des notifications.");
+    } finally {
+      setIsNotifyingRestock(false);
+    }
+  };
+
   return (
     <div className={styles.row}>
       <div className={styles.left}>
@@ -107,12 +153,37 @@ export default function AdminProductRow({
           <p className={styles.description}>{product.description}</p>
 
           {!isArchived && hasPendingRequests && (
-            <div className={styles.restockLine}>
-              <span className={styles.restockInfo}>
-                {pendingRequestsCount} demande
-                {pendingRequestsCount > 1 ? 's' : ''} en attente
-              </span>
-            </div>
+            <>
+              <div className={styles.restockLine}>
+                <span className={styles.restockInfo}>
+                  <span className={styles.restockInfoIcon}>
+                    <FiMail />
+                  </span>
+                  {pendingRequestsCount} demande
+                  {pendingRequestsCount > 1 ? 's' : ''} en attente
+                </span>
+
+                <button
+                  type="button"
+                  className={styles.restockNotifyButton}
+                  onClick={handleNotifyRestock}
+                  disabled={isNotifyingRestock || totalStock <= 0}
+                >
+                  <FiMail />
+                  {isNotifyingRestock ? 'Envoi...' : 'Notifier maintenant'}
+                </button>
+              </div>
+
+              {totalStock <= 0 && (
+                <p className={styles.restockFeedback}>
+                  Le produit doit être de nouveau en stock avant notification.
+                </p>
+              )}
+
+              {restockFeedback && (
+                <p className={styles.restockFeedback}>{restockFeedback}</p>
+              )}
+            </>
           )}
 
           {normalizedColors.length > 0 && (
