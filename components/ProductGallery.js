@@ -1,13 +1,16 @@
-/* components/ProductGallery.js */
+// components/ProductGallery.js
 
-import { useState } from 'react';
 import styles from '../styles/ProductDetail.module.css';
 
-export default function ProductGallery({ images = [], productName }) {
-  const fallbackImage = images[0] || '';
-  const [activeImage, setActiveImage] = useState(fallbackImage);
+export default function ProductGallery({
+  items = [],
+  productName,
+  activeImage = '',
+  onSelect,
+}) {
+  const fallbackImage = activeImage || items[0]?.imageUrl || '';
 
-  if (!images.length) {
+  if (!fallbackImage) {
     return (
       <div className={styles.gallery}>
         <div className={styles.mainImageWrapper}>
@@ -21,30 +24,34 @@ export default function ProductGallery({ images = [], productName }) {
     <div className={styles.gallery}>
       <div className={styles.mainImageWrapper}>
         <img
-          src={activeImage}
+          src={fallbackImage}
           alt={productName}
           className={styles.mainImage}
         />
       </div>
 
       <div className={styles.thumbnailRow}>
-        {images.map((image, index) => (
-          <button
-            key={`${image}-${index}`}
-            type="button"
-            className={`${styles.thumbnailButton} ${
-              activeImage === image ? styles.thumbnailButtonActive : ''
-            }`}
-            onClick={() => setActiveImage(image)}
-            aria-label={`Voir l’image ${index + 1} de ${productName}`}
-          >
-            <img
-              src={image}
-              alt={`${productName} miniature ${index + 1}`}
-              className={styles.thumbnailImage}
-            />
-          </button>
-        ))}
+        {items.map((item, index) => {
+          const isActive = activeImage === item.imageUrl;
+
+          return (
+            <button
+              key={`${item.type}-${item.imageUrl}-${index}`}
+              type="button"
+              className={`${styles.thumbnailButton} ${
+                isActive ? styles.thumbnailButtonActive : ''
+              }`}
+              onClick={() => onSelect?.(item)}
+              aria-label={`Voir ${item.label.toLowerCase()} de ${productName}`}
+            >
+              <img
+                src={item.imageUrl}
+                alt={`${productName} miniature ${index + 1}`}
+                className={styles.thumbnailImage}
+              />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

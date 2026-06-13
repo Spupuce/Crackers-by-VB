@@ -1,5 +1,6 @@
 // pages/boutique/[slug].js
 
+import { useMemo, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { FiArrowLeft } from 'react-icons/fi';
@@ -10,7 +11,96 @@ import ProductPurchasePanel from '../../components/ProductPurchasePanel';
 import { products as fallbackProducts } from '../../data/products';
 import styles from '../../styles/ProductDetail.module.css';
 
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export default function ProductDetailPage({ product }) {
+  const defaultImage = normalizeText(product?.imageUrl);
+  const [selectedColor, setSelectedColor] = useState('');
+
+  const galleryItems = useMemo(() => {
+    const items = [];
+    const usedImages = new Set();
+
+    if (defaultImage) {
+      items.push({
+        type: 'default',
+        imageUrl: defaultImage,
+        label: 'Image principale',
+        colorName: '',
+      });
+      usedImages.add(defaultImage);
+    }
+
+    if (Array.isArray(product?.colors)) {
+      product.colors.forEach((color) => {
+        const colorName = normalizeText(color?.name);
+        const imageUrl = normalizeText(color?.imageUrl);
+
+        if (!colorName || !imageUrl || usedImages.has(imageUrl)) {
+          return;
+        }
+
+        items.push({
+          type: 'color',
+          imageUrl,
+          label: colorName,
+          colorName,
+        });
+        usedImages.add(imageUrl);
+      });
+    }
+
+    if (Array.isArray(product?.gallery)) {
+      product.gallery.forEach((imageUrl, index) => {
+        const normalizedImage = normalizeText(imageUrl);
+
+        if (!normalizedImage || usedImages.has(normalizedImage)) {
+          return;
+        }
+
+        items.push({
+          type: 'gallery',
+          imageUrl: normalizedImage,
+          label: `Vue ${index + 1}`,
+          colorName: '',
+        });
+        usedImages.add(normalizedImage);
+      });
+    }
+
+    return items;
+  }, [defaultImage, product?.colors, product?.gallery]);
+
+  const selectedGalleryImage = useMemo(() => {
+    if (!selectedColor) {
+      return defaultImage || galleryItems[0]?.imageUrl || '';
+    }
+
+    const matchingItem = galleryItems.find(
+      (item) =>
+        item.type === 'color' &&
+        normalizeText(item.colorName).toLowerCase() ===
+          normalizeText(selectedColor).toLowerCase()
+    );
+
+    return matchingItem?.imageUrl || defaultImage || galleryItems[0]?.imageUrl || '';
+  }, [defaultImage, galleryItems, selectedColor]);
+
+  function handleGallerySelect(item) {
+    if (!item) {
+      return;
+    }
+
+    if (item.type === 'color' && item.colorName) {
+      setSelectedColor(item.colorName);
+      return;
+    }
+
+    setSelectedColor('');
+  }
+
   if (!product) {
     return (
       <>
@@ -52,10 +142,16 @@ export default function ProductDetailPage({ product }) {
 
           <div className={styles.layout}>
             <ProductGallery
-              images={product.gallery?.length ? product.gallery : [product.imageUrl]}
+              items={galleryItems}
               productName={product.name}
+              activeImage={selectedGalleryImage}
+              onSelect={handleGallerySelect}
             />
-            <ProductPurchasePanel product={product} />
+            <ProductPurchasePanel
+              product={product}
+              selectedColor={selectedColor}
+              onSelectedColorChange={setSelectedColor}
+            />
           </div>
         </div>
       </main>

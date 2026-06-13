@@ -19,7 +19,11 @@ function normalizeColorName(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-export default function ProductPurchasePanel({ product }) {
+export default function ProductPurchasePanel({
+  product,
+  selectedColor: selectedColorProp = '',
+  onSelectedColorChange,
+}) {
   const router = useRouter();
   const hasPromo = hasValidPromoPrice(product);
   const activePrice = getActiveProductPrice(product);
@@ -33,7 +37,6 @@ export default function ProductPurchasePanel({ product }) {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [notifyError, setNotifyError] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
 
   const { user, isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
@@ -52,6 +55,8 @@ export default function ProductPurchasePanel({ product }) {
 
   const hasColorVariants = availableColors.length > 0;
 
+  const selectedColor = normalizeColorName(selectedColorProp);
+
   useEffect(() => {
     if (isAuthenticated && user?.email) {
       setNotifyEmail(user.email);
@@ -64,15 +69,33 @@ export default function ProductPurchasePanel({ product }) {
     setQuantity(1);
 
     if (!hasColorVariants) {
-      setSelectedColor('');
+      onSelectedColorChange?.('');
       return;
+    }
+
+    if (selectedColor) {
+      const matchingSelectedColor = availableColors.find(
+        (color) =>
+          normalizeColorName(color.name).toLowerCase() ===
+          selectedColor.toLowerCase()
+      );
+
+      if (matchingSelectedColor) {
+        return;
+      }
     }
 
     const firstAvailableColor =
       availableColors.find((color) => Number(color.quantity) > 0)?.name || '';
 
-    setSelectedColor(firstAvailableColor);
-  }, [product?.slug, hasColorVariants, availableColors]);
+    onSelectedColorChange?.(firstAvailableColor);
+  }, [
+    availableColors,
+    hasColorVariants,
+    onSelectedColorChange,
+    product?.slug,
+    selectedColor,
+  ]);
 
   useEffect(() => {
     if (!justAdded) {
@@ -95,7 +118,8 @@ export default function ProductPurchasePanel({ product }) {
     return (
       availableColors.find(
         (color) =>
-          normalizeColorName(color.name) === normalizeColorName(selectedColor)
+          normalizeColorName(color.name).toLowerCase() ===
+          selectedColor.toLowerCase()
       ) || null
     );
   }, [availableColors, hasColorVariants, selectedColor]);
@@ -112,7 +136,8 @@ export default function ProductPurchasePanel({ product }) {
 
       if (hasColorVariants) {
         return (
-          normalizeColorName(item.color) === normalizeColorName(selectedColor)
+          normalizeColorName(item.color).toLowerCase() ===
+          selectedColor.toLowerCase()
         );
       }
 
@@ -299,7 +324,8 @@ export default function ProductPurchasePanel({ product }) {
               const colorName = normalizeColorName(color.name);
               const colorStock = Math.max(0, Number(color.quantity || 0));
               const isSelected =
-                normalizeColorName(selectedColor) === colorName;
+                normalizeColorName(selectedColor).toLowerCase() ===
+                colorName.toLowerCase();
               const isDisabled = colorStock <= 0;
 
               return (
@@ -314,7 +340,7 @@ export default function ProductPurchasePanel({ product }) {
                       return;
                     }
 
-                    setSelectedColor(colorName);
+                    onSelectedColorChange?.(colorName);
                     setQuantity(1);
                     setJustAdded(false);
                     setLastAddedQuantity(0);
