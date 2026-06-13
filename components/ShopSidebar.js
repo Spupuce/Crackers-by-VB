@@ -30,7 +30,6 @@ export default function ShopSidebar({
   onMaxPriceChange,
   promoOnly,
   onPromoOnlyChange,
-  onApplyFilters,
   onResetFilters,
 }) {
   return (
@@ -120,13 +119,6 @@ export default function ShopSidebar({
       </div>
 
       <div className={styles.filterActions}>
-        <button
-          type="button"
-          className={styles.applyButton}
-          onClick={onApplyFilters}
-        >
-          Appliquer mes filtres
-        </button>
         <button
           type="button"
           className={styles.resetButton}
