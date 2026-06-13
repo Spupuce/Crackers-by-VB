@@ -1,4 +1,36 @@
-/* utils/product.js */
+// utils/product.js
+
+function getSafeStock(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function getColorStock(color) {
+  if (!color || typeof color !== 'object') return 0;
+
+  if (color.quantity !== undefined && color.quantity !== null) {
+    return getSafeStock(color.quantity);
+  }
+
+  if (color.stock !== undefined && color.stock !== null) {
+    return getSafeStock(color.stock);
+  }
+
+  return 0;
+}
+
+function getTotalStock(product) {
+  if (!product) return 0;
+
+  if (Array.isArray(product.colors) && product.colors.length > 0) {
+    return product.colors.reduce(
+      (sum, color) => sum + getColorStock(color),
+      0
+    );
+  }
+
+  return getSafeStock(product.stock);
+}
 
 export function isDisplayableProduct(product) {
   if (!product) {
@@ -13,11 +45,12 @@ export function isDisplayableProduct(product) {
 }
 
 export function isSoldOut(product) {
-  return product.stock <= 0;
+  return getTotalStock(product) <= 0;
 }
 
 export function isLowStock(product) {
-  return product.stock > 0 && product.stock <= 3;
+  const total = getTotalStock(product);
+  return total > 0 && total <= 3;
 }
 
 export function hasValidPromoPrice(product) {
@@ -58,17 +91,19 @@ export function getProductBasePrice(product) {
 }
 
 export function getProductStatus(product) {
-  if (isSoldOut(product)) {
+  const total = getTotalStock(product);
+
+  if (total <= 0) {
     return {
       key: 'sold-out',
       label: 'Article épuisé',
     };
   }
 
-  if (isLowStock(product)) {
+  if (total <= 3) {
     return {
       key: 'low-stock',
-      label: `Plus que ${product.stock} !`,
+      label: `Plus que ${total} !`,
     };
   }
 
@@ -77,3 +112,6 @@ export function getProductStatus(product) {
     label: 'En stock',
   };
 }
+
+// Export interne si besoin ailleurs
+export { getTotalStock };

@@ -21,13 +21,15 @@
   - `/administration`
   - `/administration/stock`
   - `/administration/commandes`
-- 🟡 Vérifier / finaliser `/administration/clients` (redirection OK, page à compléter).
+  - `/administration/clients`
 
 ### 1.3 Finaliser l’administration
 - 🟡 Consolider la page stock.
-- 🟡 Vérifier les actions admin sur produits actifs / archivés.
-- 🟡 Finaliser la page `/administration/clients`.
+- ✅ Vérifier les actions admin sur produits actifs / archivés.
+- ✅ Finaliser la page `/administration/clients`.
 - 🟡 Harmoniser visuellement les pages admin existantes.
+- 🟡 Corriger la logique de stock partagée pour gérer correctement les déclinaisons couleur partout.
+- 🟡 Mieux intégrer les demandes de réassort dans l’admin stock.
 
 ---
 
