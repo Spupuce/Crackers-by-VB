@@ -133,14 +133,29 @@
 }
 
 .itemCategory {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-size: 0.88rem;
   color: var(--color-text-soft);
 }
 
+.itemVariant {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.itemVariantLabel {
+  color: var(--color-text-soft);
+}
+
+.itemVariantValue {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
 .itemPrice {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--color-primary);
 }
@@ -156,6 +171,13 @@
   cursor: pointer;
   padding: 4px;
   flex-shrink: 0;
+}
+
+.itemBottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .quantityRow {
@@ -189,6 +211,14 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--color-text);
+}
+
+.itemLineTotal {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
 }
 
 .stockLimitMessage {
@@ -270,5 +300,14 @@
   .itemImageWrapper {
     width: 72px;
     height: 72px;
+  }
+
+  .itemBottomRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .itemLineTotal {
+    padding-left: 2px;
   }
 }

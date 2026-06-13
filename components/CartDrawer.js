@@ -133,6 +133,7 @@ export default function CartDrawer({ isOpen, onClose }) {
             <div className={styles.items}>
               {items.map((item) => {
                 const itemKey = getCartItemKey(item);
+                const hasColor = Boolean(normalizeText(item.color));
 
                 return (
                   <article key={itemKey} className={styles.item}>
@@ -151,9 +152,14 @@ export default function CartDrawer({ isOpen, onClose }) {
 
                           <p className={styles.itemCategory}>{item.category}</p>
 
-                          {item.color ? (
+                          {hasColor ? (
                             <p className={styles.itemVariant}>
-                              Couleur : {item.color}
+                              <span className={styles.itemVariantLabel}>
+                                Couleur :
+                              </span>{' '}
+                              <span className={styles.itemVariantValue}>
+                                {item.color}
+                              </span>
                             </p>
                           ) : null}
 
@@ -172,26 +178,34 @@ export default function CartDrawer({ isOpen, onClose }) {
                         </button>
                       </div>
 
-                      <div className={styles.quantityRow}>
-                        <button
-                          type="button"
-                          className={styles.quantityButton}
-                          aria-label={`Retirer une unité de ${item.name}`}
-                          onClick={() => handleDecrease(item)}
-                        >
-                          <FiMinus />
-                        </button>
+                      <div className={styles.itemBottomRow}>
+                        <div className={styles.quantityRow}>
+                          <button
+                            type="button"
+                            className={styles.quantityButton}
+                            aria-label={`Retirer une unité de ${item.name}`}
+                            onClick={() => handleDecrease(item)}
+                          >
+                            <FiMinus />
+                          </button>
 
-                        <span className={styles.quantityValue}>{item.quantity}</span>
+                          <span className={styles.quantityValue}>
+                            {item.quantity}
+                          </span>
 
-                        <button
-                          type="button"
-                          className={styles.quantityButton}
-                          aria-label={`Ajouter une unité de ${item.name}`}
-                          onClick={() => handleIncrease(item)}
-                        >
-                          <FiPlus />
-                        </button>
+                          <button
+                            type="button"
+                            className={styles.quantityButton}
+                            aria-label={`Ajouter une unité de ${item.name}`}
+                            onClick={() => handleIncrease(item)}
+                          >
+                            <FiPlus />
+                          </button>
+                        </div>
+
+                        <p className={styles.itemLineTotal}>
+                          {(Number(item.price) * Number(item.quantity)).toFixed(2)} €
+                        </p>
                       </div>
 
                       {stockLimitByItemKey[itemKey] ? (
