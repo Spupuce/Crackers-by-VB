@@ -203,6 +203,9 @@ const MOCK_ORDER_DETAILS = {
   },
 };
 
+const DEFAULT_ORDER_IMAGE =
+  'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=300&q=80';
+
 function formatPrice(value) {
   return `${Number(value).toFixed(2)} €`;
 }
@@ -227,6 +230,57 @@ function getStatusClass(status) {
   return '';
 }
 
+function formatPlacedAtLabel(date) {
+  if (!date || typeof date !== 'string') {
+    return 'Commande enregistrée';
+  }
+
+  const [day, month, year] = date.split('/');
+  const monthNames = [
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
+  ];
+
+  const monthIndex = Number(month) - 1;
+  const safeMonth = monthNames[monthIndex] || month;
+  return `Passée le ${Number(day)} ${safeMonth} ${year}`;
+}
+
+function buildFallbackOrderDetails(order) {
+  const shippingAmount = 0;
+  const subtotal = Number(order?.total) || 0;
+  const itemCount = Math.max(1, Number(order?.itemsCount) || 1);
+  const unitPrice = itemCount > 0 ? subtotal / itemCount : subtotal;
+
+  return {
+    id: order.id,
+    placedAtLabel: formatPlacedAtLabel(order.date),
+    status: order.status,
+    items: Array.from({ length: itemCount }, (_, index) => ({
+      name: itemCount > 1 ? `Article ${index + 1}` : 'Article commandé',
+      quantity: 1,
+      unitPrice,
+      lineTotal: unitPrice,
+      imageUrl: DEFAULT_ORDER_IMAGE,
+    })),
+    subtotal,
+    shippingAmount,
+    total: subtotal + shippingAmount,
+    paymentMethod: order.paymentMethod || 'Mode de paiement à confirmer',
+    shippingMethod: 'Livraison standard',
+  };
+}
+
 export default function AdminClientsPage() {
   const router = useRouter();
   const { isAuthenticated, isAdmin, isAuthReady } = useAuth();
@@ -245,10 +299,17 @@ export default function AdminClientsPage() {
     );
   }, [selectedClient, selectedOrderId]);
 
-  const selectedOrderDetails =
-    selectedOrderId && MOCK_ORDER_DETAILS[selectedOrderId]
-      ? MOCK_ORDER_DETAILS[selectedOrderId]
-      : null;
+  const selectedOrderDetails = useMemo(() => {
+    if (!selectedOrderSummary) {
+      return null;
+    }
+
+    if (MOCK_ORDER_DETAILS[selectedOrderSummary.id]) {
+      return MOCK_ORDER_DETAILS[selectedOrderSummary.id];
+    }
+
+    return buildFallbackOrderDetails(selectedOrderSummary);
+  }, [selectedOrderSummary]);
 
   const totalClients = clients.length;
   const totalOrders = clients.reduce(
@@ -363,9 +424,9 @@ export default function AdminClientsPage() {
                 <h2 className={styles.sectionTitle}>Articles commandés</h2>
 
                 <div className={styles.orderItemsList}>
-                  {selectedOrderDetails.items.map((item) => (
+                  {selectedOrderDetails.items.map((item, index) => (
                     <div
-                      key={`${selectedOrderDetails.id}-${item.name}`}
+                      key={`${selectedOrderDetails.id}-${item.name}-${index}`}
                       className={styles.orderItemRow}
                     >
                       <div className={styles.orderItemLeft}>
@@ -547,16 +608,14 @@ export default function AdminClientsPage() {
                           {getStatusLabel(order.status)}
                         </span>
 
-                        {MOCK_ORDER_DETAILS[order.id] && (
-                          <button
-                            type="button"
-                            className={styles.viewOrderButton}
-                            onClick={() => setSelectedOrderId(order.id)}
-                            aria-label={`Voir la commande ${order.id}`}
-                          >
-                            <FiEye aria-hidden="true" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          className={styles.viewOrderButton}
+                          onClick={() => setSelectedOrderId(order.id)}
+                          aria-label={`Voir la commande ${order.id}`}
+                        >
+                          <FiEye aria-hidden="true" />
+                        </button>
                       </div>
                     </article>
                   ))}
