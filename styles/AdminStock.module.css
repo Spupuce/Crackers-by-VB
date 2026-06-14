@@ -1,3 +1,5 @@
+/* styles/AdminStock.module.css */
+
 .page {
   background-color: var(--color-bg);
   padding: 48px 24px 80px;
@@ -7,6 +9,8 @@
   max-width: 1220px;
   margin: 0 auto;
 }
+
+/* Top bar */
 
 .topBar {
   display: flex;
@@ -37,26 +41,23 @@
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(230, 159, 106, 0.28);
+  box-shadow: 0 8px 18px rgba(66, 37, 13, 0.18);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease,
+    transform 0.15s ease;
 }
 
-.secondaryTopButton {
-  height: 46px;
-  padding: 0 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background-color: var(--color-white);
-  color: var(--color-text);
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+.addButton:hover {
+  background-color: var(--color-primary-dark);
+  box-shadow: 0 10px 24px rgba(66, 37, 13, 0.22);
+  transform: translateY(-1px);
 }
 
-.secondaryTopButton:hover {
-  background-color: var(--color-section);
-  border-color: var(--color-primary);
+.addButton:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 12px rgba(66, 37, 13, 0.16);
 }
+
+/* Panels */
 
 .panel {
   background-color: var(--color-white);
@@ -77,10 +78,12 @@
 }
 
 .panelTitle {
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: var(--color-text);
 }
+
+/* List & rows */
 
 .list {
   display: flex;
@@ -98,6 +101,8 @@
 .row + .row {
   border-top: 1px solid var(--color-border);
 }
+
+/* Left side */
 
 .left {
   display: flex;
@@ -120,7 +125,7 @@
 }
 
 .name {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--color-text);
   margin-bottom: 4px;
@@ -145,6 +150,8 @@
   margin-bottom: 6px;
 }
 
+/* Variants */
+
 .variants {
   display: flex;
   flex-wrap: wrap;
@@ -164,13 +171,17 @@
   font-weight: 500;
 }
 
+/* Right side */
+
 .right {
-  min-width: 170px;
+  min-width: 190px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
 }
+
+/* Prices */
 
 .priceBlock {
   display: flex;
@@ -180,7 +191,7 @@
 }
 
 .price {
-  font-size: 2rem;
+  font-size: 1.6rem;
   line-height: 1;
   font-weight: 600;
   color: var(--color-secondary);
@@ -197,16 +208,18 @@
 
 .pricePromo {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.6rem;
   line-height: 1;
   font-weight: 600;
   color: var(--color-secondary);
 }
 
+/* Stock badges */
+
 .badges {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-end;
 }
 
@@ -216,8 +229,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  padding: 0 12px;
+  min-height: 26px;
+  padding: 0 10px;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 600;
@@ -238,6 +251,8 @@
   color: var(--color-white);
 }
 
+/* Actions */
+
 .actions {
   display: flex;
   gap: 8px;
@@ -256,7 +271,8 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
+  transition: background-color 0.2s ease, opacity 0.2s ease,
+    transform 0.15s ease;
 }
 
 .iconButton {
@@ -265,6 +281,7 @@
 
 .iconButton:hover {
   background-color: var(--color-primary-dark);
+  transform: translateY(-1px);
 }
 
 .archiveButton {
@@ -273,6 +290,7 @@
 
 .archiveButton:hover {
   background-color: var(--color-gray-900);
+  transform: translateY(-1px);
 }
 
 .deleteButton {
@@ -281,6 +299,7 @@
 
 .deleteButton:hover {
   background-color: var(--color-gray-900);
+  transform: translateY(-1px);
 }
 
 .unarchiveButton {
@@ -293,14 +312,17 @@
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.15s ease;
   display: inline-flex;
   align-items: center;
 }
 
 .unarchiveButton:hover {
   background-color: var(--color-primary-dark);
+  transform: translateY(-1px);
 }
+
+/* Info boxes */
 
 .infoBox {
   margin-top: 20px;
@@ -377,8 +399,9 @@
   gap: 6px;
   align-self: flex-end;
   white-space: nowrap;
-  box-shadow: 0 6px 14px rgba(230, 159, 106, 0.22);
-  transition: background-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+  box-shadow: 0 6px 14px rgba(66, 37, 13, 0.18);
+  transition: background-color 0.2s ease, transform 0.15s ease,
+    opacity 0.2s ease;
 }
 
 .restockNotifyButton svg {
@@ -405,11 +428,25 @@
 /* Responsive */
 
 @media (max-width: 900px) {
-  .price {
-    font-size: 1.5rem;
+  .page {
+    padding: 32px 16px 56px;
+  }
+
+  .topBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .right {
+    align-items: flex-start;
+    min-width: 0;
   }
 
   .left {
+    flex-direction: column;
+  }
+
+  .row {
     flex-direction: column;
   }
 
@@ -418,9 +455,35 @@
     height: 84px;
   }
 
-  .restockNotifyButton {
-    height: 34px;
-    padding: 0 12px;
-    font-size: 0.8rem;
+  .price,
+  .pricePromo {
+    font-size: 1.4rem;
+  }
+
+  .badges {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .panelTitle {
+    font-size: 1.2rem;
+  }
+
+  .row {
+    padding: 14px;
+  }
+
+  .addButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .right {
+    width: 100%;
+  }
+
+  .actions {
+    align-self: flex-end;
   }
 }

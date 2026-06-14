@@ -53,17 +53,38 @@ function normalizeIncomingItems(items) {
     .filter(Boolean);
 }
 
+function normalizeEmail(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function getSafeNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function getSafeStock(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-function resolveVariantData(product, colorName) {
+/**
+ * Retourne les données de variante + stock dispo réel.
+ * Si colorName est fourni mais non trouvé dans product.colors,
+ * on remonte un flag invalidColorRequested.
+ */
+function resolveVariantDataWithStock(product, colorName) {
+  const basePrice = getSafeNumber(product.price);
+  const baseImage = typeof product.imageUrl === 'string' ? product.imageUrl : '';
+  const baseStock = getSafeStock(product.stock);
+
   if (!colorName || !Array.isArray(product.colors)) {
     return {
       color: '',
-      unitPrice: Number(product.price),
-      imageUrl: product.imageUrl || '',
+      unitPrice: basePrice,
+      imageUrl: baseImage,
+      availableStock: baseStock,
+      invalidColorRequested: false,
+      requestedColorName: '',
     };
   }
 
@@ -79,32 +100,37 @@ function resolveVariantData(product, colorName) {
   if (!variant) {
     return {
       color: '',
-      unitPrice: Number(product.price),
-      imageUrl: product.imageUrl || '',
+      unitPrice: basePrice,
+      imageUrl: baseImage,
+      availableStock: 0,
+      invalidColorRequested: true,
+      requestedColorName: colorName,
     };
   }
 
-  const variantPrice =
-    variant.price !== undefined && variant.price !== null
-      ? Number(variant.price)
-      : Number(product.price);
-
-  const finalUnitPrice = Number.isFinite(variantPrice) && variantPrice >= 0
-    ? variantPrice
-    : Number(product.price);
-
+  // Pas de prix spécifique par variante dans ton schéma actuel → on garde product.price
   const variantImage =
     typeof variant.imageUrl === 'string' && variant.imageUrl.trim()
       ? variant.imageUrl.trim()
-      : product.imageUrl || '';
+      : baseImage;
+
+  const variantStock = getSafeStock(variant.quantity);
 
   return {
     color: variant.name,
-    unitPrice: finalUnitPrice,
+    unitPrice: basePrice,
     imageUrl: variantImage,
+    availableStock: variantStock,
+    invalidColorRequested: false,
+    requestedColorName: '',
   };
 }
 
+/**
+ * Construit les lignes de commande à partir des produits Mongo,
+ * en vérifiant le stock (produit ou couleur).
+ * Si une incohérence est trouvée, on lève une erreur avec un message clair.
+ */
 async function resolveOrderItemsFromProducts(incomingItems) {
   const slugs = [...new Set(incomingItems.map((item) => item.slug))];
 
@@ -120,22 +146,54 @@ async function resolveOrderItemsFromProducts(incomingItems) {
     const product = productMap.get(incomingItem.slug);
 
     if (!product) {
-      continue;
+      throw new Error(
+        `Le produit "${incomingItem.slug}" n'existe plus ou n'est plus disponible.`
+      );
     }
 
-    const safeQuantity = Number(incomingItem.quantity);
+    const safeQuantity = getSafeNumber(incomingItem.quantity);
 
     if (!Number.isFinite(safeQuantity) || safeQuantity <= 0) {
-      continue;
+      throw new Error(
+        `La quantité demandée pour "${product.name}" est invalide.`
+      );
     }
 
-    const { color, unitPrice, imageUrl } = resolveVariantData(
-      product,
-      incomingItem.color
-    );
+    const {
+      color,
+      unitPrice,
+      imageUrl,
+      availableStock,
+      invalidColorRequested,
+      requestedColorName,
+    } = resolveVariantDataWithStock(product, incomingItem.color);
+
+    if (invalidColorRequested) {
+      throw new Error(
+        `La couleur "${requestedColorName}" n'est plus disponible pour "${product.name}".`
+      );
+    }
 
     if (!Number.isFinite(unitPrice) || unitPrice < 0) {
-      continue;
+      throw new Error(
+        `Le prix du produit "${product.name}" est invalide. Merci de réessayer plus tard.`
+      );
+    }
+
+    if (availableStock <= 0) {
+      throw new Error(
+        `Le produit "${product.name}" n'est plus en stock${
+          color ? ` (couleur "${color}")` : ''
+        }.`
+      );
+    }
+
+    if (safeQuantity > availableStock) {
+      throw new Error(
+        `La quantité demandée pour "${product.name}"${
+          color ? ` (couleur "${color}")` : ''
+        } dépasse le stock disponible (${availableStock} maximum).`
+      );
     }
 
     resolvedItems.push({
@@ -178,8 +236,8 @@ function buildOrderPayload({
     customer: {
       firstName: customer.firstName,
       lastName: customer.lastName,
-      email: customer.email,
-      phone: customer.phone,
+      email: normalizeEmail(customer.email),
+      phone: normalizeText(customer.phone),
     },
     subtotalAmount,
     shippingAmount,
@@ -261,17 +319,17 @@ export default async function handler(req, res) {
     }
 
     const normalizedCustomer = {
-      firstName: normalizeText(customer?.firstName),
-      lastName: normalizeText(customer?.lastName),
-      email: normalizeText(customer?.email),
-      phone: normalizeText(customer?.phone),
+      firstName: normalizeText(customer?.firstName || ''),
+      lastName: normalizeText(customer?.lastName || ''),
+      email: normalizeEmail(customer?.email || ''),
+      phone: normalizeText(customer?.phone || ''),
     };
 
     const normalizedShipping = {
-      address: normalizeText(shipping?.address),
-      city: normalizeText(shipping?.city),
-      zip: normalizeText(shipping?.zip),
-      country: normalizeText(shipping?.country) || 'France',
+      address: normalizeText(shipping?.address || ''),
+      city: normalizeText(shipping?.city || ''),
+      zip: normalizeText(shipping?.zip || ''),
+      country: normalizeText(shipping?.country || '') || 'France',
     };
 
     if (
@@ -304,7 +362,18 @@ export default async function handler(req, res) {
 
     await connectMongo();
 
-    const resolvedItems = await resolveOrderItemsFromProducts(normalizedItems);
+    let resolvedItems;
+    try {
+      resolvedItems = await resolveOrderItemsFromProducts(normalizedItems);
+    } catch (stockError) {
+      return res.status(400).json({
+        ok: false,
+        code: 'STOCK_ERROR',
+        message:
+          stockError?.message ||
+          'Certains produits ne sont plus disponibles en quantité suffisante.',
+      });
+    }
 
     if (!resolvedItems.length) {
       return res.status(400).json({
@@ -322,6 +391,7 @@ export default async function handler(req, res) {
     const successUrl = `${origin}/panier?checkout=success`;
     const cancelUrl = `${origin}/panier?checkout=cancel`;
 
+    // Mode simulation (sans clé Stripe)
     if (!stripeSecretKey) {
       const simulatedOrder = await Order.create(
         buildOrderPayload({

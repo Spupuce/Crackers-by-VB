@@ -4,6 +4,7 @@ import { buffer } from 'micro';
 import mongoose from 'mongoose';
 import { connectMongo } from '../../../lib/mongodb';
 import Order from '../../../models/Order';
+import Product from '../../../models/Product';
 
 export const config = {
   api: {
@@ -25,6 +26,63 @@ function getStripeClient() {
   return new Stripe(stripeSecretKey, {
     apiVersion: '2023-10-16',
   });
+}
+
+async function decrementStockForOrder(order) {
+  if (!Array.isArray(order.items) || order.items.length === 0) {
+    return;
+  }
+
+  for (const item of order.items) {
+    if (!item.productId || !mongoose.Types.ObjectId.isValid(String(item.productId))) {
+      // Pas de productId fiable → on ignore cette ligne pour le stock
+      // (la commande reste néanmoins marquée payée)
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+
+    const product = await Product.findById(item.productId);
+
+    if (!product) {
+      // Produit supprimé ou introuvable → on ne décrémente rien
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+
+    const orderedQty = Number(item.quantity) || 0;
+    if (orderedQty <= 0) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+
+    // Variante couleur
+    if (item.color && Array.isArray(product.colors) && product.colors.length > 0) {
+      const normalizedColorName = String(item.color).trim().toLowerCase();
+
+      const colorVariant = product.colors.find((c) => {
+        if (!c || !c.name) return false;
+        return String(c.name).trim().toLowerCase() === normalizedColorName;
+      });
+
+      if (colorVariant) {
+        const currentQty = Number(colorVariant.quantity) || 0;
+        const newQty = Math.max(currentQty - orderedQty, 0);
+
+        colorVariant.quantity = newQty;
+
+        // Optionnel : on peut aussi ajuster le stock global si tu veux qu'il reflète
+        // la somme des couleurs. Ici on le laisse tel quel pour ne pas casser
+        // une logique déjà en place ailleurs.
+      }
+    } else {
+      // Pas de couleur → décrément stock global
+      const currentStock = Number(product.stock) || 0;
+      const newStock = Math.max(currentStock - orderedQty, 0);
+      product.stock = newStock;
+    }
+
+    await product.save();
+  }
 }
 
 async function markOrderAsPaid(session) {
@@ -53,12 +111,18 @@ async function markOrderAsPaid(session) {
 
   const alreadyPaid =
     order.paymentStatus === 'paid' &&
-    (!stripePaymentIntentId || order.stripePaymentIntentId === stripePaymentIntentId) &&
+    (!stripePaymentIntentId ||
+      order.stripePaymentIntentId === stripePaymentIntentId) &&
     (!stripeSessionId || order.stripeSessionId === stripeSessionId);
 
   if (alreadyPaid) {
+    // Webhook dupliqué, on ne refait rien
     return;
   }
+
+  // On décrémente le stock AVANT de marquer la commande comme payée
+  // mais dans la même transaction logique.
+  await decrementStockForOrder(order);
 
   order.paymentStatus = 'paid';
 
