@@ -1,8 +1,8 @@
-/* styles/FeaturedProducts.module.css */
 .section {
   padding: 12px 24px 110px;
   background-color: var(--color-white);
 }
+
 .container {
   max-width: 1220px;
   margin: 0 auto;
@@ -90,9 +90,27 @@
   gap: 12px;
 }
 
+.priceBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
 .price {
   font-size: 0.98rem;
   font-weight: 500;
+  color: var(--color-secondary);
+}
+
+.priceOld {
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+  text-decoration: line-through;
+}
+
+.pricePromo {
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--color-secondary);
 }
 
@@ -120,6 +138,10 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .shopButton:hover {
@@ -130,13 +152,6 @@
 .cardLink {
   display: block;
   color: inherit;
-  text-decoration: none;
-}
-
-.shopButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   text-decoration: none;
 }
 

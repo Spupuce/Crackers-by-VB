@@ -1,7 +1,11 @@
-// components/FeaturedProducts.js
-
 import Link from 'next/link';
-import { getProductStatus, isSoldOut } from '../utils/product';
+import {
+  getActiveProductPrice,
+  getProductBasePrice,
+  getProductStatus,
+  hasValidPromoPrice,
+  isSoldOut,
+} from '../utils/product';
 import styles from '../styles/FeaturedProducts.module.css';
 
 export default function FeaturedProducts({ products = [] }) {
@@ -23,9 +27,15 @@ export default function FeaturedProducts({ products = [] }) {
           {safeProducts.map((product) => {
             const status = getProductStatus(product);
             const soldOut = isSoldOut(product);
+            const hasPromo = hasValidPromoPrice(product);
+            const activePrice = getActiveProductPrice(product);
+            const basePrice = getProductBasePrice(product);
 
             return (
-              <article className={styles.card} key={product._id || product.slug}>
+              <article
+                className={styles.card}
+                key={product._id || product.slug}
+              >
                 <Link href={`/boutique/${product.slug}`} passHref>
                   <a className={styles.cardLink}>
                     <div className={styles.imageWrapper}>
@@ -44,9 +54,23 @@ export default function FeaturedProducts({ products = [] }) {
                       <p className={styles.category}>{product.category}</p>
 
                       <div className={styles.meta}>
-                        <span className={styles.price}>
-                          {Number(product.price).toFixed(2)} €
-                        </span>
+                        <div className={styles.priceBlock}>
+                          {hasPromo ? (
+                            <>
+                              <span className={styles.priceOld}>
+                                {basePrice.toFixed(2)} €
+                              </span>
+                              <span className={styles.pricePromo}>
+                                {activePrice.toFixed(2)} €
+                              </span>
+                            </>
+                          ) : (
+                            <span className={styles.price}>
+                              {basePrice.toFixed(2)} €
+                            </span>
+                          )}
+                        </div>
+
                         {!soldOut ? (
                           <span className={styles.stock}>{status.label}</span>
                         ) : null}
@@ -60,7 +84,9 @@ export default function FeaturedProducts({ products = [] }) {
         </div>
 
         <div className={styles.buttonWrapper}>
-          <Link href="/boutique" passHref><a className={styles.shopButton}>Voir toute la boutique</a></Link>
+          <Link href="/boutique" passHref>
+            <a className={styles.shopButton}>Voir toute la boutique</a>
+          </Link>
         </div>
       </div>
     </section>
