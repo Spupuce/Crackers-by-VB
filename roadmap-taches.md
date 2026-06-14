@@ -79,10 +79,10 @@
 - 🟡 Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
 
 ### 3.3 Simulation d’achat de bout en bout
-- 🔴 Se connecter avec un compte utilisateur de test.
-- 🔴 Vérifier l’ajout au panier, l’accès à `/panier` et à `/mon-compte`.
+- ✅ Se connecter avec un compte utilisateur de test.
+- ✅ Vérifier l’ajout au panier, l’accès à `/panier` et à `/mon-compte`.
 - ✅ Tester le flux de paiement succès.
-- 🔴 Tester le flux d’annulation.
+- ✅ Tester le flux d’annulation.
 - 🟡 Vérifier la logique panier / compte / commandes après retour Stripe.
 - ✅ Corriger le non-vidage du panier après retour checkout=success.
 - ✅ Corriger l’affichage du bouton “Découvrir la boutique” dans l’état panier vide.
