@@ -56,8 +56,8 @@
 - ✅ Permettre de revenir à la photo générique sans casser la fiche produit.
 - ✅ Empêcher l’ajout au panier tant qu’aucune couleur n’est choisie sur un produit à variantes.
 - ✅ Garder un état “En stock” au niveau produit quand au moins une couleur est disponible.
-- 🟡 Vérifier la cohérence complète de l’affichage variante/couleur sur le drawer panier.
-- 🟡 Vérifier la cohérence complète de l’affichage variante/couleur sur la page `/panier`.
+- ✅ Vérifier la cohérence complète de l’affichage variante/couleur sur le drawer panier.
+- ✅ Vérifier la cohérence complète de l’affichage variante/couleur sur la page `/panier`.
 
 ---
 

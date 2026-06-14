@@ -1,5 +1,3 @@
-// pages/panier.js
-
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -566,7 +564,8 @@ export default function PanierPage() {
     setSubmitError('');
     setSubmitInfo('');
 
-    const { isValid, trimmedContact, trimmedShipping, nextErrors } = validateForm();
+    const { isValid, trimmedContact, trimmedShipping, nextErrors } =
+      validateForm();
 
     if (!isValid) {
       setSubmitError(
@@ -649,7 +648,7 @@ export default function PanierPage() {
 
       <main className={internalStyles.page}>
         <div className={internalStyles.container}>
-          <Link href="/" legacyBehavior>
+          <Link href="/boutique" legacyBehavior>
             <a className={internalStyles.backLink}>
               <span className={internalStyles.backLinkContent}>
                 <FiArrowLeft aria-hidden="true" />
@@ -1074,7 +1073,9 @@ export default function PanierPage() {
                 </div>
 
                 <aside className={styles.summaryColumn}>
-                  <section className={`${internalStyles.card} ${styles.summaryCard}`}>
+                  <section
+                    className={`${internalStyles.card} ${styles.summaryCard}`}
+                  >
                     <div className={styles.summaryHeader}>
                       <h2 className={styles.sectionTitle}>Récapitulatif</h2>
                       <span className={styles.summaryBadge}>
@@ -1084,7 +1085,10 @@ export default function PanierPage() {
 
                     <div className={styles.itemsList}>
                       {items.map((item) => (
-                        <div key={buildCartLineKey(item)} className={styles.itemRow}>
+                        <div
+                          key={buildCartLineKey(item)}
+                          className={styles.itemRow}
+                        >
                           <div className={styles.itemImageWrapper}>
                             {item.imageUrl ? (
                               <img
