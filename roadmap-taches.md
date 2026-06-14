@@ -24,7 +24,7 @@
   - `/administration/clients`
 
 ### 1.3 Finaliser l’administration
-- 🟡 Consolider la page stock(harmonisation visuelle globale avec les autres pages admin).
+- 🟡 Consolider la page stock (harmonisation visuelle globale avec les autres pages admin).
 - ✅ Vérifier les actions admin sur produits actifs / archivés.
 - ✅ Finaliser la page `/administration/clients`.
 - 🟡 Harmoniser visuellement les pages admin existantes.
@@ -65,9 +65,9 @@
 
 ### 3.1 Intégration Stripe
 - 🔴 Intégrer les clés de test dans les variables d’environnement locales.
-- 🔴 Vérifier que la clé secrète est utilisée uniquement côté serveur.
-- 🔴 Configurer les URLs de retour `success` et `cancel` cohérentes avec `/panier`.
-- 🔴 Créer le webhook Stripe de test.
+- ✅ Vérifier que la clé secrète est utilisée uniquement côté serveur.
+- ✅ Configurer les URLs de retour `success` et `cancel` cohérentes avec `/panier`.
+- 🟡 Créer le webhook Stripe de test.
 - 🔴 Écouter au minimum `checkout.session.completed`.
 - 🔴 Vérifier qu’un paiement test Stripe redirige correctement vers le site.
 

@@ -35,6 +35,11 @@ function normalizeIncomingItems(items) {
 
       const quantity = Number(item.quantity);
 
+      const color =
+        typeof item.color === 'string' && item.color.trim()
+          ? item.color.trim()
+          : '';
+
       if (!slug || !Number.isFinite(quantity) || quantity <= 0) {
         return null;
       }
@@ -42,9 +47,62 @@ function normalizeIncomingItems(items) {
       return {
         slug,
         quantity: Math.max(1, Math.floor(quantity)),
+        color,
       };
     })
     .filter(Boolean);
+}
+
+function getSafeStock(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function resolveVariantData(product, colorName) {
+  if (!colorName || !Array.isArray(product.colors)) {
+    return {
+      color: '',
+      unitPrice: Number(product.price),
+      imageUrl: product.imageUrl || '',
+    };
+  }
+
+  const normalizedColorName = colorName.trim().toLowerCase();
+
+  const variant =
+    product.colors.find((c) => {
+      if (!c || typeof c !== 'object') return false;
+      if (!c.name) return false;
+      return String(c.name).trim().toLowerCase() === normalizedColorName;
+    }) || null;
+
+  if (!variant) {
+    return {
+      color: '',
+      unitPrice: Number(product.price),
+      imageUrl: product.imageUrl || '',
+    };
+  }
+
+  const variantPrice =
+    variant.price !== undefined && variant.price !== null
+      ? Number(variant.price)
+      : Number(product.price);
+
+  const finalUnitPrice = Number.isFinite(variantPrice) && variantPrice >= 0
+    ? variantPrice
+    : Number(product.price);
+
+  const variantImage =
+    typeof variant.imageUrl === 'string' && variant.imageUrl.trim()
+      ? variant.imageUrl.trim()
+      : product.imageUrl || '';
+
+  return {
+    color: variant.name,
+    unitPrice: finalUnitPrice,
+    imageUrl: variantImage,
+  };
 }
 
 async function resolveOrderItemsFromProducts(incomingItems) {
@@ -65,10 +123,18 @@ async function resolveOrderItemsFromProducts(incomingItems) {
       continue;
     }
 
-    const safePrice = Number(product.price);
     const safeQuantity = Number(incomingItem.quantity);
 
-    if (!Number.isFinite(safePrice) || safePrice < 0 || safeQuantity <= 0) {
+    if (!Number.isFinite(safeQuantity) || safeQuantity <= 0) {
+      continue;
+    }
+
+    const { color, unitPrice, imageUrl } = resolveVariantData(
+      product,
+      incomingItem.color
+    );
+
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
       continue;
     }
 
@@ -76,9 +142,10 @@ async function resolveOrderItemsFromProducts(incomingItems) {
       productId: product._id,
       name: product.name,
       slug: product.slug,
+      color,
       quantity: safeQuantity,
-      unitPrice: safePrice,
-      imageUrl: product.imageUrl || '',
+      unitPrice,
+      imageUrl,
     });
   }
 
@@ -138,10 +205,12 @@ function buildStripeLineItems(resolvedItems) {
     price_data: {
       currency: 'eur',
       product_data: {
-        name: item.name,
+        name: item.color ? `${item.name} - ${item.color}` : item.name,
+        images: item.imageUrl ? [item.imageUrl] : undefined,
         metadata: {
           slug: item.slug,
           productId: String(item.productId),
+          color: item.color || '',
         },
       },
       unit_amount: Math.round(item.unitPrice * 100),
@@ -293,7 +362,7 @@ export default async function handler(req, res) {
       const stripe = getStripeClient(stripeSecretKey);
       const lineItems = buildStripeLineItems(resolvedItems);
 
-      const session = await stripe.checkout.sessions.create({
+      const stripeSession = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
         line_items: lineItems,
@@ -313,15 +382,15 @@ export default async function handler(req, res) {
         },
       });
 
-      pendingOrder.stripeSessionId = session.id;
+      pendingOrder.stripeSessionId = stripeSession.id;
       await pendingOrder.save();
 
       return res.status(200).json({
         ok: true,
         code: 'SESSION_CREATED',
-        sessionId: session.id,
+        sessionId: stripeSession.id,
         orderId: pendingOrder._id,
-        url: session.url,
+        url: stripeSession.url,
       });
     } catch (stripeError) {
       await Order.deleteOne({ _id: pendingOrder._id });
