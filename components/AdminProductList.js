@@ -1,5 +1,3 @@
-// components/AdminProductList.js
-
 import { useEffect, useState } from 'react';
 import AdminProductRow from './AdminProductRow';
 import styles from '../styles/AdminStock.module.css';
@@ -10,6 +8,7 @@ export default function AdminProductList({
   onDelete,
   onUnarchive,
   onEdit,
+  onProductUpdated,
 }) {
   const [items, setItems] = useState(products || []);
 
@@ -17,12 +16,14 @@ export default function AdminProductList({
     setItems(products || []);
   }, [products]);
 
-  const handleProductUpdated = (updatedProduct) => {
+  const handleProductUpdatedLocal = (updatedProduct) => {
     setItems((prev) =>
-      prev.map((item) =>
-        item._id === updatedProduct._id ? updatedProduct : item
-      )
+      prev.map((item) => (item._id === updatedProduct._id ? updatedProduct : item))
     );
+
+    if (typeof onProductUpdated === 'function') {
+      onProductUpdated(updatedProduct);
+    }
   };
 
   const handleProductRemoved = (removedProductId) => {
@@ -39,7 +40,7 @@ export default function AdminProductList({
           onDelete={onDelete}
           onUnarchive={onUnarchive}
           onEdit={onEdit}
-          onProductUpdated={handleProductUpdated}
+          onProductUpdated={handleProductUpdatedLocal}
           onProductRemoved={handleProductRemoved}
         />
       ))}

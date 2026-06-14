@@ -24,7 +24,7 @@
   - `/administration/clients`
 
 ### 1.3 Finaliser l’administration
-- 🟡 Consolider la page stock.
+- 🟡 Consolider la page stock(harmonisation visuelle globale avec les autres pages admin).
 - ✅ Vérifier les actions admin sur produits actifs / archivés.
 - ✅ Finaliser la page `/administration/clients`.
 - 🟡 Harmoniser visuellement les pages admin existantes.
@@ -42,13 +42,13 @@
 
 ### 2.2 Affichage promo côté front
 - ✅ Afficher le prix normal barré et le prix promo quand un prix promo est renseigné.
-- 🟡 Vérifier cet affichage sur la page boutique, la fiche produit et toutes les cartes produit concernées.
+- ✅ Vérifier cet affichage sur la page boutique, la fiche produit et toutes les cartes produit concernées.
 - 🟡 S’assurer que les calculs restent cohérents partout.
 
 ### 2.3 Filtre “prix promo” sur la boutique
 - ✅ Permettre de filtrer uniquement les produits en promotion.
-- 🟡 Vérifier la compatibilité avec les autres filtres existants.
-- 🟡 Valider définitivement si le filtrage reste dynamique ou passe par un bouton d’application global.
+- ✅ Vérifier la compatibilité avec les autres filtres existants.
+- ✅ Valider définitivement si le filtrage reste dynamique ou passe par un bouton d’application global.
 
 ### 2.4 Variantes couleur et galerie produit
 - ✅ Permettre l’ajout au panier par couleur sur la fiche produit.

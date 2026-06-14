@@ -1,11 +1,9 @@
-// pages/administration/stock.js
-
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import AdminProductRow from '../../components/AdminProductRow';
+import AdminProductList from '../../components/AdminProductList';
 import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/AdminStock.module.css';
 
@@ -48,9 +46,7 @@ export default function AdminStockPage() {
   }
 
   useEffect(() => {
-    if (!isAuthReady) {
-      return;
-    }
+    if (!isAuthReady) return;
 
     if (!isAuthenticated) {
       router.replace('/connexion?redirect=/administration/stock');
@@ -74,16 +70,12 @@ export default function AdminStockPage() {
   }
 
   function handleProductUpdated(updatedProduct) {
-    if (!updatedProduct?._id) {
-      return;
-    }
+    if (!updatedProduct?._id) return;
 
     if (updatedProduct.isArchived) {
       setArchivedProducts((prev) =>
         prev.map((product) =>
-          product._id === updatedProduct._id
-            ? { ...product, ...updatedProduct }
-            : product
+          product._id === updatedProduct._id ? { ...product, ...updatedProduct } : product
         )
       );
       return;
@@ -91,9 +83,7 @@ export default function AdminStockPage() {
 
     setActiveProducts((prev) =>
       prev.map((product) =>
-        product._id === updatedProduct._id
-          ? { ...product, ...updatedProduct }
-          : product
+        product._id === updatedProduct._id ? { ...product, ...updatedProduct } : product
       )
     );
   }
@@ -106,20 +96,16 @@ export default function AdminStockPage() {
 
       const updatedProduct = await response.json().catch(() => null);
 
-      if (!response.ok) {
-        return;
-      }
+      if (!response.ok) return;
 
-      setActiveProducts((prev) =>
-        prev.filter((item) => item._id !== product._id)
-      );
+      setActiveProducts((prev) => prev.filter((item) => item._id !== product._id));
 
       setArchivedProducts((prev) => [
         updatedProduct || { ...product, isArchived: true },
         ...prev,
       ]);
     } catch (error) {
-      // tu pourras afficher une erreur UI ici ensuite
+      // erreur silencieuse pour l'instant
     }
   }
 
@@ -131,20 +117,16 @@ export default function AdminStockPage() {
 
       const updatedProduct = await response.json().catch(() => null);
 
-      if (!response.ok) {
-        return;
-      }
+      if (!response.ok) return;
 
-      setArchivedProducts((prev) =>
-        prev.filter((item) => item._id !== product._id)
-      );
+      setArchivedProducts((prev) => prev.filter((item) => item._id !== product._id));
 
       setActiveProducts((prev) => [
         updatedProduct || { ...product, isArchived: false },
         ...prev,
       ]);
     } catch (error) {
-      // tu pourras afficher une erreur UI ici ensuite
+      // erreur silencieuse pour l'instant
     }
   }
 
@@ -153,22 +135,16 @@ export default function AdminStockPage() {
       'Êtes-vous sûre de vouloir supprimer définitivement ce produit ? Cette action est irréversible.'
     );
 
-    if (!confirmed) {
-      return false;
-    }
+    if (!confirmed) return false;
 
     try {
       const response = await fetch(`/api/admin/products/${product._id}`, {
         method: 'DELETE',
       });
 
-      if (!response.ok) {
-        return false;
-      }
+      if (!response.ok) return false;
 
-      setArchivedProducts((prev) =>
-        prev.filter((item) => item._id !== product._id)
-      );
+      setArchivedProducts((prev) => prev.filter((item) => item._id !== product._id));
 
       return true;
     } catch (error) {
@@ -247,9 +223,7 @@ export default function AdminStockPage() {
           )}
 
           {isLoading && (
-            <div className={styles.infoBox}>
-              Chargement des produits...
-            </div>
+            <div className={styles.infoBox}>Chargement des produits...</div>
           )}
 
           {!isLoading && (
@@ -261,23 +235,18 @@ export default function AdminStockPage() {
                   </h1>
                 </div>
 
-                <div className={styles.list}>
-                  {activeProducts.length === 0 && (
-                    <div className={styles.infoBox}>
-                      Aucun produit actif pour le moment.
-                    </div>
-                  )}
-
-                  {activeProducts.map((product) => (
-                    <AdminProductRow
-                      key={product._id}
-                      product={product}
-                      onEdit={handleEdit}
-                      onArchive={handleArchive}
-                      onProductUpdated={handleProductUpdated}
-                    />
-                  ))}
-                </div>
+                {activeProducts.length === 0 ? (
+                  <div className={styles.infoBox}>
+                    Aucun produit actif pour le moment.
+                  </div>
+                ) : (
+                  <AdminProductList
+                    products={activeProducts}
+                    onArchive={handleArchive}
+                    onEdit={handleEdit}
+                    onProductUpdated={handleProductUpdated}
+                  />
+                )}
               </section>
 
               <section className={styles.panel}>
@@ -287,23 +256,19 @@ export default function AdminStockPage() {
                   </h2>
                 </div>
 
-                <div className={styles.list}>
-                  {archivedProducts.length === 0 && (
-                    <div className={styles.infoBox}>
-                      Aucun produit archivé pour le moment.
-                    </div>
-                  )}
-
-                  {archivedProducts.map((product) => (
-                    <AdminProductRow
-                      key={product._id}
-                      product={product}
-                      onUnarchive={handleUnarchive}
-                      onDelete={handleDelete}
-                      onProductUpdated={handleProductUpdated}
-                    />
-                  ))}
-                </div>
+                {archivedProducts.length === 0 ? (
+                  <div className={styles.infoBox}>
+                    Aucun produit archivé pour le moment.
+                  </div>
+                ) : (
+                  <AdminProductList
+                    products={archivedProducts}
+                    onUnarchive={handleUnarchive}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                    onProductUpdated={handleProductUpdated}
+                  />
+                )}
               </section>
 
               <div className={styles.infoBox}>
