@@ -29,7 +29,7 @@ function getStripeClient() {
 
 async function markOrderAsPaid(session) {
   const orderId = session?.metadata?.order_id;
-  const stripeSessionId = session?.id || '';
+  const stripeSessionId = typeof session?.id === 'string' ? session.id : '';
   const stripePaymentIntentId =
     typeof session?.payment_intent === 'string' ? session.payment_intent : '';
 
@@ -47,13 +47,20 @@ async function markOrderAsPaid(session) {
     throw new Error('Commande introuvable pour cette session Stripe.');
   }
 
-  if (order.paymentStatus !== 'paid') {
-    order.paymentStatus = 'paid';
-  }
-
   if (order.status === 'cancelled') {
     throw new Error("Impossible de marquer comme payée une commande annulée.");
   }
+
+  const alreadyPaid =
+    order.paymentStatus === 'paid' &&
+    (!stripePaymentIntentId || order.stripePaymentIntentId === stripePaymentIntentId) &&
+    (!stripeSessionId || order.stripeSessionId === stripeSessionId);
+
+  if (alreadyPaid) {
+    return;
+  }
+
+  order.paymentStatus = 'paid';
 
   if (stripeSessionId) {
     order.stripeSessionId = stripeSessionId;

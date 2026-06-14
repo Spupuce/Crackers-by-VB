@@ -64,26 +64,28 @@
 ## 3. Paiement et commandes
 
 ### 3.1 Intégration Stripe
-- 🔴 Intégrer les clés de test dans les variables d’environnement locales.
+- ✅ Intégrer les clés de test dans les variables d’environnement locales.
 - ✅ Vérifier que la clé secrète est utilisée uniquement côté serveur.
 - ✅ Configurer les URLs de retour `success` et `cancel` cohérentes avec `/panier`.
-- 🟡 Créer le webhook Stripe de test.
-- 🔴 Écouter au minimum `checkout.session.completed`.
-- 🔴 Vérifier qu’un paiement test Stripe redirige correctement vers le site.
+- ✅ Créer le webhook Stripe de test.
+- ✅ Écouter au minimum `checkout.session.completed`.
+- 🟡 Vérifier qu’un paiement test Stripe redirige correctement vers le site.
 
 ### 3.2 Stockage des commandes
-- 🔴 Brancher la création de commande via le webhook Stripe.
-- 🔴 Enregistrer les lignes produits (quantité, prix unitaire, total, image).
-- 🔴 Lier la commande à l’utilisateur connecté.
-- 🔴 Éviter les doublons si Stripe renvoie plusieurs événements.
-- 🔴 Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
+- 🟡 Brancher la création de commande via le webhook Stripe.
+- ✅ Enregistrer les lignes produits (quantité, prix unitaire, total, image).
+- ✅ Lier la commande à l’utilisateur connecté.
+- 🟡 Éviter les doublons si Stripe renvoie plusieurs événements.
+- 🟡 Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
 
 ### 3.3 Simulation d’achat de bout en bout
 - 🔴 Se connecter avec un compte utilisateur de test.
 - 🔴 Vérifier l’ajout au panier, l’accès à `/panier` et à `/mon-compte`.
-- 🔴 Tester le flux de paiement succès.
+- ✅ Tester le flux de paiement succès.
 - 🔴 Tester le flux d’annulation.
-- 🔴 Vérifier la logique panier / compte / commandes après retour Stripe.
+- 🟡 Vérifier la logique panier / compte / commandes après retour Stripe.
+- ✅ Corriger le non-vidage du panier après retour checkout=success.
+- ✅ Corriger l’affichage du bouton “Découvrir la boutique” dans l’état panier vide.
 - 🔴 Vérifier le comportement non connecté.
 - 🔴 Vérifier les erreurs serveur Stripe / API.
 

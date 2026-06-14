@@ -387,8 +387,18 @@ export function CartProvider({ children }) {
   }, []);
 
   const clearCart = useCallback(() => {
+    lastSyncedSignatureRef.current = '__CLEARING_CART__';
     setItems([]);
-  }, []);
+    setIsCartOpen(false);
+
+    if (typeof window !== 'undefined' && !isAuthenticated) {
+      try {
+        window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
+      } catch (error) {
+        console.error('Impossible de vider le panier sauvegardé.', error);
+      }
+    }
+  }, [isAuthenticated]);
 
   const cartCount = useMemo(
     () => items.reduce((sum, item) => sum + (item.quantity || 0), 0),
