@@ -100,6 +100,7 @@
 - ✅ Ajouter l’action “Supprimer mon compte” dans la page mon-compte.
 - ✅ Demander le mot de passe actuel avant suppression définitive.
 - 🔴 Ajouter la suppression des commandes quand le modèle Order sera réellement branché.
+- 🔴 Définir la règle métier : supprimer les commandes ou conserver l’historique en anonymisant le lien utilisateur.
 - 🔴 Tester la suppression complète avec un compte de test.
 
 ### 4.2 Cohérence des données visibles

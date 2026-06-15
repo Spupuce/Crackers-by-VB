@@ -48,7 +48,20 @@ const OrderSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false,
+      default: null,
+      index: true,
+    },
+
+    isUserDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    anonymizedAt: {
+      type: Date,
+      default: null,
       index: true,
     },
 
