@@ -1,3 +1,5 @@
+// pages/panier.js
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -557,7 +559,10 @@ export default function PanierPage() {
         'Vous devez être connectée pour finaliser votre commande.'
       );
 
-      router.push('/connexion');
+      const redirectUrl = `/connexion?redirect=${encodeURIComponent(
+        '/panier'
+      )}`;
+      router.push(redirectUrl);
       return;
     }
 
