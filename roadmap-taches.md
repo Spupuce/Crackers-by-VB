@@ -94,14 +94,21 @@
 ## 4. Compte utilisateur et données liées
 
 ### 4.1 Suppression propre des données liées
-- 🔴 Recenser les données liées à un utilisateur : profil, favoris, panier serveur, commandes futures, demandes éventuelles.
-- 🔴 Vérifier ce qui est déjà supprimé aujourd’hui dans MongoDB et ce qui reste orphelin.
-- 🔴 Ajouter la suppression des commandes quand le modèle `Order` sera branché.
+- ✅ Ajouter une route API sécurisée de suppression de compte avec confirmation par mot de passe.
+- ✅ Supprimer le document utilisateur en base lors de la suppression du compte.
+- ✅ Supprimer les demandes de réassort associées à l’email du compte supprimé.
+- ✅ Ajouter l’action “Supprimer mon compte” dans la page mon-compte.
+- ✅ Demander le mot de passe actuel avant suppression définitive.
+- 🔴 Ajouter la suppression des commandes quand le modèle Order sera réellement branché.
 - 🔴 Tester la suppression complète avec un compte de test.
 
 ### 4.2 Cohérence des données visibles
-- 🔴 Vérifier qu’aucune donnée supprimée ne reste visible sur `mon-compte`, favoris ou panier.
-- 🔴 Contrôler la cohérence entre compte, favoris, panier et commandes.
+- ✅ Déconnecter automatiquement l’utilisateur après suppression du compte.
+- ✅ Rediriger l’utilisateur vers l’accueil après suppression du compte.
+- 🔴 Vérifier qu’aucune donnée supprimée ne reste visible sur mon-compte.
+- 🔴 Vérifier qu’aucune donnée supprimée ne reste visible dans les favoris.
+- 🔴 Vérifier qu’aucune donnée supprimée ne reste visible dans le panier.
+- 🔴 Contrôler la cohérence entre compte, favoris, panier et commandes après suppression.
 
 ---
 
