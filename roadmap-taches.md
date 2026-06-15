@@ -36,14 +36,14 @@
 ## 2. Produits, stock et promotions
 
 ### 2.1 Prix promo dans l’administration produit
-- 🔴 Ajouter un champ `prix promo` à droite du prix dans le formulaire produit.
-- 🔴 Définir si la valeur est optionnelle et comment elle est stockée en base.
-- 🔴 Vérifier l’impact sur la création, l’édition, l’affichage admin et les API produits.
+- ✅ Ajouter un champ `prix promo` à droite du prix dans le formulaire produit.
+- ✅ Définir si la valeur est optionnelle et comment elle est stockée en base.
+- ✅ Vérifier l’impact sur la création, l’édition, l’affichage admin et les API produits.
 
 ### 2.2 Affichage promo côté front
 - ✅ Afficher le prix normal barré et le prix promo quand un prix promo est renseigné.
 - ✅ Vérifier cet affichage sur la page boutique, la fiche produit et toutes les cartes produit concernées.
-- 🟡 S’assurer que les calculs restent cohérents partout.
+- ✅ S’assurer que les calculs restent cohérents partout.
 
 ### 2.3 Filtre “prix promo” sur la boutique
 - ✅ Permettre de filtrer uniquement les produits en promotion.
