@@ -1,5 +1,3 @@
-// pages/api/cart/index.js
-
 import { connectMongo } from '../../../lib/mongodb';
 import { getSessionFromRequest } from '../../../lib/session';
 import User from '../../../models/User';
@@ -7,6 +5,39 @@ import Product from '../../../models/Product';
 
 function normalizeColorName(value) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function hasValidPromoPrice(product) {
+  if (!product) {
+    return false;
+  }
+
+  const price = Number(product.price);
+  const rawPromoPrice = product.promoPrice;
+
+  if (
+    rawPromoPrice === undefined ||
+    rawPromoPrice === null ||
+    rawPromoPrice === ''
+  ) {
+    return false;
+  }
+
+  const promoPrice = Number(rawPromoPrice);
+
+  if (Number.isNaN(price) || Number.isNaN(promoPrice)) {
+    return false;
+  }
+
+  return promoPrice >= 0 && promoPrice < price;
+}
+
+function getActiveProductPrice(product) {
+  if (hasValidPromoPrice(product)) {
+    return Number(product.promoPrice);
+  }
+
+  return Number(product?.price) || 0;
 }
 
 function sanitizeIncomingCartItems(input) {
@@ -87,7 +118,8 @@ async function buildResolvedCartForUser(userId) {
     }
 
     const plainProduct = product.toObject();
-    const hasColorVariants = Array.isArray(plainProduct.colors) && plainProduct.colors.length > 0;
+    const hasColorVariants =
+      Array.isArray(plainProduct.colors) && plainProduct.colors.length > 0;
 
     let resolvedStock = null;
     let resolvedImageUrl = plainProduct.imageUrl || '';
@@ -128,7 +160,7 @@ async function buildResolvedCartForUser(userId) {
     resolvedItems.push({
       slug: plainProduct.slug,
       name: plainProduct.name,
-      price: plainProduct.price,
+      price: getActiveProductPrice(plainProduct),
       stock: resolvedStock,
       quantity: safeQuantity,
       imageUrl: resolvedImageUrl,
