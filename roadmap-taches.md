@@ -99,17 +99,17 @@
 - ✅ Supprimer les demandes de réassort associées à l’email du compte supprimé.
 - ✅ Ajouter l’action “Supprimer mon compte” dans la page mon-compte.
 - ✅ Demander le mot de passe actuel avant suppression définitive.
-- 🔴 Ajouter la suppression des commandes quand le modèle Order sera réellement branché.
-- 🔴 Définir la règle métier : supprimer les commandes ou conserver l’historique en anonymisant le lien utilisateur.
+- ✅ Conserver les commandes en anonymisant le lien utilisateur et les données personnelles.
+- ✅ Définir la règle métier : supprimer les commandes ou conserver l’historique en anonymisant le lien utilisateur.
 - 🔴 Tester la suppression complète avec un compte de test.
 
 ### 4.2 Cohérence des données visibles
 - ✅ Déconnecter automatiquement l’utilisateur après suppression du compte.
 - ✅ Rediriger l’utilisateur vers l’accueil après suppression du compte.
 - 🔴 Vérifier qu’aucune donnée supprimée ne reste visible sur mon-compte.
-- 🔴 Vérifier qu’aucune donnée supprimée ne reste visible dans les favoris.
-- 🔴 Vérifier qu’aucune donnée supprimée ne reste visible dans le panier.
-- 🔴 Contrôler la cohérence entre compte, favoris, panier et commandes après suppression.
+- ✅ Vérifier qu’aucune donnée supprimée ne reste visible dans les favoris.
+- ✅ Vérifier qu’aucune donnée supprimée ne reste visible dans le panier.
+- ✅ Contrôler la cohérence entre compte, favoris, panier et commandes après suppression.
 
 ---
 
