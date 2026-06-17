@@ -86,6 +86,10 @@ export default function MonComptePage() {
 
   useEffect(() => {
     if (isAuthReady && !isAuthenticated) {
+      setOrders([]);
+      setSelectedOrder(null);
+      setIsLoadingOrders(false);
+      setOrdersErrorMessage('');
       router.replace('/connexion');
     }
   }, [isAuthReady, isAuthenticated, router]);
@@ -263,8 +267,12 @@ export default function MonComptePage() {
       });
     } catch (error) {
     } finally {
+      setOrders([]);
+      setSelectedOrder(null);
+      setOrdersErrorMessage('');
+      setIsLoadingOrders(false);
       logout();
-      router.push('/');
+      router.replace('/');
       setIsLoggingOut(false);
     }
   };
@@ -485,13 +493,25 @@ export default function MonComptePage() {
         return;
       }
 
+      setOrders([]);
+      setSelectedOrder(null);
+      setOrdersErrorMessage('');
+      setIsLoadingOrders(false);
+
       setDeletePassword('');
       setDeleteErrorMessage('');
-      setDeleteSuccessMessage('Votre compte a bien été supprimé.');
+      setDeleteSuccessMessage('');
       setIsDeleteSectionOpen(false);
+      setIsPasswordOpen(false);
+      setPasswordValues(buildInitialPasswordForm());
+      setPasswordErrorMessage('');
+      setPasswordSuccessMessage('');
+      setErrorMessage('');
+      setSuccessMessage('');
+      setIsEditing(false);
 
       logout();
-      router.push('/');
+      router.replace('/');
     } catch (error) {
       setDeleteErrorMessage(
         'Une erreur est survenue lors de la suppression du compte.'
