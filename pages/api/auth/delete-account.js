@@ -36,13 +36,13 @@ async function anonymizeUserOrders(user) {
         firstName: 'Compte',
         lastName: 'supprimé',
         email: buildAnonymizedOrderEmail(order._id),
-        phone: '',
+        phone: 'Donnée supprimée',
       };
 
       order.shippingAddress = {
         addressLine1: 'Adresse supprimée',
         addressLine2: '',
-        postalCode: '',
+        postalCode: '00000',
         city: 'Ville supprimée',
         country: 'France',
       };
@@ -137,6 +137,8 @@ export default async function handler(req, res) {
         : 'Votre compte ainsi que vos demandes de réassort associées ont bien été supprimés.',
     });
   } catch (error) {
+    console.error('DELETE_ACCOUNT_ERROR', error);
+
     return res.status(500).json({
       message: 'Une erreur est survenue lors de la suppression du compte.',
     });
