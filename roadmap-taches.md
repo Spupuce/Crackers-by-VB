@@ -101,12 +101,12 @@
 - ✅ Demander le mot de passe actuel avant suppression définitive.
 - ✅ Conserver les commandes en anonymisant le lien utilisateur et les données personnelles.
 - ✅ Définir la règle métier : supprimer les commandes ou conserver l’historique en anonymisant le lien utilisateur.
-- 🔴 Tester la suppression complète avec un compte de test.
+- ✅ Tester la suppression complète avec un compte de test.
 
 ### 4.2 Cohérence des données visibles
 - ✅ Déconnecter automatiquement l’utilisateur après suppression du compte.
 - ✅ Rediriger l’utilisateur vers l’accueil après suppression du compte.
-- 🔴 Vérifier qu’aucune donnée supprimée ne reste visible sur mon-compte.
+- ✅ Vérifier qu’aucune donnée supprimée ne reste visible sur mon-compte.
 - ✅ Vérifier qu’aucune donnée supprimée ne reste visible dans les favoris.
 - ✅ Vérifier qu’aucune donnée supprimée ne reste visible dans le panier.
 - ✅ Contrôler la cohérence entre compte, favoris, panier et commandes après suppression.
