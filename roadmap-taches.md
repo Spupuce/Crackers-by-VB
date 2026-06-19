@@ -24,10 +24,10 @@
   - `/administration/clients`
 
 ### 1.3 Finaliser l’administration
-- 🟡 Consolider la page stock (harmonisation visuelle globale avec les autres pages admin).
+- ✅ Consolider la page stock (harmonisation visuelle globale avec les autres pages admin).
 - ✅ Vérifier les actions admin sur produits actifs / archivés.
 - ✅ Finaliser la page `/administration/clients`.
-- 🟡 Harmoniser visuellement les pages admin existantes.
+- ✅ Harmoniser visuellement les pages admin existantes.
 - ✅ Corriger la logique de stock partagée pour gérer correctement les déclinaisons couleur partout.
 - ✅ Mieux intégrer les demandes de réassort dans l’admin stock.
 
