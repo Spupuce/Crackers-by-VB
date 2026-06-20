@@ -69,14 +69,14 @@
 - ✅ Configurer les URLs de retour `success` et `cancel` cohérentes avec `/panier`.
 - ✅ Créer le webhook Stripe de test.
 - ✅ Écouter au minimum `checkout.session.completed`.
-- 🟡 Vérifier qu’un paiement test Stripe redirige correctement vers le site.
+- ✅ Vérifier qu’un paiement test Stripe redirige correctement vers le site.
 
 ### 3.2 Stockage des commandes
-- 🟡 Brancher la création de commande via le webhook Stripe.
+- ✅ Brancher la création de commande via le webhook Stripe.
 - ✅ Enregistrer les lignes produits (quantité, prix unitaire, total, image).
 - ✅ Lier la commande à l’utilisateur connecté.
 - 🟡 Éviter les doublons si Stripe renvoie plusieurs événements.
-- 🟡 Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
+- ✅ Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
 
 ### 3.3 Simulation d’achat de bout en bout
 - ✅ Se connecter avec un compte utilisateur de test.
@@ -84,10 +84,24 @@
 - ✅ Tester le flux de paiement succès.
 - ✅ Tester le flux d’annulation.
 - 🟡 Vérifier la logique panier / compte / commandes après retour Stripe.
-- 🟡 Corriger le non-vidage du panier après retour checkout=success.
+- ✅ Corriger le non-vidage du panier après retour checkout=success.
 - ✅ Corriger l’affichage du bouton “Découvrir la boutique” dans l’état panier vide.
 - 🔴 Vérifier le comportement non connecté.
 - 🔴 Vérifier les erreurs serveur Stripe / API.
+
+### 3.4 Frais de port
+- 🔴 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
+- 🔴 Intégrer le calcul des frais de port dans le panier.
+- 🔴 Répercuter les frais de port dans la session Stripe.
+- 🔴 Stocker le montant des frais de port dans la commande.
+- 🔴 Afficher distinctement sous-total, livraison et total dans /panier, Stripe, mon-compte et l’administration.
+- 🔴 Vérifier la cohérence des frais de port entre front, webhook et MongoDB.
+
+### 3.5 Commandes admin
+- 🔴 Afficher les commandes Stripe réelles dans /administration/commandes.
+- 🔴 Vérifier la compatibilité entre les commandes seedées et les commandes MongoDB réelles.
+- 🔴 Harmoniser les statuts réels (pending, paid, processing, etc.) avec les filtres visuels admin.
+- 🔴 Vérifier le tri par date et l’affichage du client, du total et du paiement.
 
 ---
 
@@ -122,6 +136,9 @@
 - 🔴 Vérifier les formulaires et messages d’erreur.
 - 🔴 Vérifier les comportements mobile / desktop.
 - 🔴 Dresser une liste précise des bugs restants.
+- 🔴 Vérifier l’affichage des commandes réelles côté administration.
+- 🔴 Vérifier qu’une commande payée apparaît aussi côté compte client.
+- 🔴 Tester un rejeu webhook Stripe pour contrôler l’anti-doublon.
 
 ### 5.2 Audit
 - 🔴 Audit UX du parcours achat.
