@@ -387,7 +387,7 @@ export function CartProvider({ children }) {
   }, []);
 
   const clearCart = useCallback(() => {
-    lastSyncedSignatureRef.current = '__CLEARING_CART__';
+    lastSyncedSignatureRef.current = '[]';
     setItems([]);
     setIsCartOpen(false);
 
