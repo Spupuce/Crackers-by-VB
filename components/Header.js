@@ -81,12 +81,24 @@ export default function Header({ products = [] }) {
     handleCloseSearch();
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     closeMenu();
     handleCloseSearch();
     closeCart();
-    logout();
-    router.push('/');
+
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      // On ignore l’erreur réseau, le logout front reste prioritaire
+    } finally {
+      logout();
+      router.push('/');
+    }
   }
 
   useEffect(() => {
@@ -325,7 +337,9 @@ export default function Header({ products = [] }) {
                   onClick={handleToggleCart}
                 >
                   <FiShoppingCart aria-hidden="true" />
-                  {cartCount > 0 && <span className={styles.badge}>{cartCount}</span>}
+                  {cartCount > 0 && (
+                    <span className={styles.badge}>{cartCount}</span>
+                  )}
                 </button>
               )}
 
@@ -349,7 +363,11 @@ export default function Header({ products = [] }) {
               aria-controls="header-navigation"
               onClick={() => setMenuOpen(!menuOpen)}
             >
-              {menuOpen ? <FiX aria-hidden="true" /> : <FiMenu aria-hidden="true" />}
+              {menuOpen ? (
+                <FiX aria-hidden="true" />
+              ) : (
+                <FiMenu aria-hidden="true" />
+              )}
             </button>
           </div>
         </div>

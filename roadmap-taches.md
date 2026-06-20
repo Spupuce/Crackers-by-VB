@@ -24,10 +24,10 @@
   - `/administration/clients`
 
 ### 1.3 Finaliser l’administration
-- 🟡 Consolider la page stock (harmonisation visuelle globale avec les autres pages admin).
+- ✅ Consolider la page stock (harmonisation visuelle globale avec les autres pages admin).
 - ✅ Vérifier les actions admin sur produits actifs / archivés.
 - ✅ Finaliser la page `/administration/clients`.
-- 🟡 Harmoniser visuellement les pages admin existantes.
+- ✅ Harmoniser visuellement les pages admin existantes.
 - ✅ Corriger la logique de stock partagée pour gérer correctement les déclinaisons couleur partout.
 - ✅ Mieux intégrer les demandes de réassort dans l’admin stock.
 
@@ -36,14 +36,14 @@
 ## 2. Produits, stock et promotions
 
 ### 2.1 Prix promo dans l’administration produit
-- 🔴 Ajouter un champ `prix promo` à droite du prix dans le formulaire produit.
-- 🔴 Définir si la valeur est optionnelle et comment elle est stockée en base.
-- 🔴 Vérifier l’impact sur la création, l’édition, l’affichage admin et les API produits.
+- ✅ Ajouter un champ `prix promo` à droite du prix dans le formulaire produit.
+- ✅ Définir si la valeur est optionnelle et comment elle est stockée en base.
+- ✅ Vérifier l’impact sur la création, l’édition, l’affichage admin et les API produits.
 
 ### 2.2 Affichage promo côté front
 - ✅ Afficher le prix normal barré et le prix promo quand un prix promo est renseigné.
 - ✅ Vérifier cet affichage sur la page boutique, la fiche produit et toutes les cartes produit concernées.
-- 🟡 S’assurer que les calculs restent cohérents partout.
+- ✅ S’assurer que les calculs restent cohérents partout.
 
 ### 2.3 Filtre “prix promo” sur la boutique
 - ✅ Permettre de filtrer uniquement les produits en promotion.
@@ -94,14 +94,22 @@
 ## 4. Compte utilisateur et données liées
 
 ### 4.1 Suppression propre des données liées
-- 🔴 Recenser les données liées à un utilisateur : profil, favoris, panier serveur, commandes futures, demandes éventuelles.
-- 🔴 Vérifier ce qui est déjà supprimé aujourd’hui dans MongoDB et ce qui reste orphelin.
-- 🔴 Ajouter la suppression des commandes quand le modèle `Order` sera branché.
-- 🔴 Tester la suppression complète avec un compte de test.
+- ✅ Ajouter une route API sécurisée de suppression de compte avec confirmation par mot de passe.
+- ✅ Supprimer le document utilisateur en base lors de la suppression du compte.
+- ✅ Supprimer les demandes de réassort associées à l’email du compte supprimé.
+- ✅ Ajouter l’action “Supprimer mon compte” dans la page mon-compte.
+- ✅ Demander le mot de passe actuel avant suppression définitive.
+- ✅ Conserver les commandes en anonymisant le lien utilisateur et les données personnelles.
+- ✅ Définir la règle métier : supprimer les commandes ou conserver l’historique en anonymisant le lien utilisateur.
+- ✅ Tester la suppression complète avec un compte de test.
 
 ### 4.2 Cohérence des données visibles
-- 🔴 Vérifier qu’aucune donnée supprimée ne reste visible sur `mon-compte`, favoris ou panier.
-- 🔴 Contrôler la cohérence entre compte, favoris, panier et commandes.
+- ✅ Déconnecter automatiquement l’utilisateur après suppression du compte.
+- ✅ Rediriger l’utilisateur vers l’accueil après suppression du compte.
+- ✅ Vérifier qu’aucune donnée supprimée ne reste visible sur mon-compte.
+- ✅ Vérifier qu’aucune donnée supprimée ne reste visible dans les favoris.
+- ✅ Vérifier qu’aucune donnée supprimée ne reste visible dans le panier.
+- ✅ Contrôler la cohérence entre compte, favoris, panier et commandes après suppression.
 
 ---
 

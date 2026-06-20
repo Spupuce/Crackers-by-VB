@@ -5,18 +5,75 @@ import { connectMongo } from '../../../lib/mongodb';
 import { getSessionFromRequest, clearSessionCookie } from '../../../lib/session';
 import User from '../../../models/User';
 import RestockRequest from '../../../models/RestockRequest';
+import Order from '../../../models/Order';
 
-async function deleteUserRelatedData(user) {
-  if (!user?.email) {
-    return;
+function buildAnonymizedOrderEmail(orderId) {
+  return `deleted-order-${String(orderId)}@anonymized.local`;
+}
+
+async function anonymizeUserOrders(user) {
+  if (!user?._id) {
+    return 0;
   }
 
-  await RestockRequest.deleteMany({
-    email: user.email,
+  const orders = await Order.find({
+    userId: user._id,
   });
 
-  // À compléter plus tard quand les commandes seront réellement stockées en base.
-  // Exemple : suppression ou anonymisation des commandes liées au compte.
+  if (!orders.length) {
+    return 0;
+  }
+
+  const anonymizedAt = new Date();
+
+  await Promise.all(
+    orders.map(async (order) => {
+      order.userId = null;
+      order.isUserDeleted = true;
+      order.anonymizedAt = anonymizedAt;
+
+      order.customer = {
+        firstName: 'Compte',
+        lastName: 'supprimé',
+        email: buildAnonymizedOrderEmail(order._id),
+        phone: 'Donnée supprimée',
+      };
+
+      order.shippingAddress = {
+        addressLine1: 'Adresse supprimée',
+        addressLine2: '',
+        postalCode: '00000',
+        city: 'Ville supprimée',
+        country: 'France',
+      };
+
+      order.notes = '';
+
+      await order.save();
+    })
+  );
+
+  return orders.length;
+}
+
+async function deleteUserRelatedData(user) {
+  let deletedRestockRequestsCount = 0;
+  let anonymizedOrdersCount = 0;
+
+  if (user?.email) {
+    const deleteRestockResult = await RestockRequest.deleteMany({
+      email: user.email,
+    });
+
+    deletedRestockRequestsCount = deleteRestockResult?.deletedCount || 0;
+  }
+
+  anonymizedOrdersCount = await anonymizeUserOrders(user);
+
+  return {
+    deletedRestockRequestsCount,
+    anonymizedOrdersCount,
+  };
 }
 
 export default async function handler(req, res) {
@@ -67,16 +124,21 @@ export default async function handler(req, res) {
       });
     }
 
-    await deleteUserRelatedData(user);
+    const relatedDataResult = await deleteUserRelatedData(user);
     await User.findByIdAndDelete(user._id);
 
     clearSessionCookie(res);
 
+    const hasAnonymizedOrders = relatedDataResult.anonymizedOrdersCount > 0;
+
     return res.status(200).json({
-      message:
-        'Votre compte ainsi que vos demandes de réassort associées ont bien été supprimés.',
+      message: hasAnonymizedOrders
+        ? 'Votre compte a bien été supprimé. Vos demandes de réassort associées ont été supprimées et vos commandes passées ont été conservées sous une forme anonymisée.'
+        : 'Votre compte ainsi que vos demandes de réassort associées ont bien été supprimés.',
     });
   } catch (error) {
+    console.error('DELETE_ACCOUNT_ERROR', error);
+
     return res.status(500).json({
       message: 'Une erreur est survenue lors de la suppression du compte.',
     });
