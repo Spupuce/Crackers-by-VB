@@ -67,13 +67,46 @@ function getSafeStock(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
+function hasValidPromoPrice(product) {
+  if (!product) {
+    return false;
+  }
+
+  const price = Number(product.price);
+  const rawPromoPrice = product.promoPrice;
+
+  if (
+    rawPromoPrice === undefined ||
+    rawPromoPrice === null ||
+    rawPromoPrice === ''
+  ) {
+    return false;
+  }
+
+  const promoPrice = Number(rawPromoPrice);
+
+  if (Number.isNaN(price) || Number.isNaN(promoPrice)) {
+    return false;
+  }
+
+  return promoPrice >= 0 && promoPrice < price;
+}
+
+function getActiveProductPrice(product) {
+  if (hasValidPromoPrice(product)) {
+    return Number(product.promoPrice);
+  }
+
+  return getSafeNumber(product?.price);
+}
+
 /**
  * Retourne les données de variante + stock dispo réel.
  * Si colorName est fourni mais non trouvé dans product.colors,
  * on remonte un flag invalidColorRequested.
  */
 function resolveVariantDataWithStock(product, colorName) {
-  const basePrice = getSafeNumber(product.price);
+  const basePrice = getActiveProductPrice(product);
   const baseImage = typeof product.imageUrl === 'string' ? product.imageUrl : '';
   const baseStock = getSafeStock(product.stock);
 
@@ -108,7 +141,6 @@ function resolveVariantDataWithStock(product, colorName) {
     };
   }
 
-  // Pas de prix spécifique par variante dans ton schéma actuel → on garde product.price
   const variantImage =
     typeof variant.imageUrl === 'string' && variant.imageUrl.trim()
       ? variant.imageUrl.trim()
@@ -391,7 +423,6 @@ export default async function handler(req, res) {
     const successUrl = `${origin}/panier?checkout=success`;
     const cancelUrl = `${origin}/panier?checkout=cancel`;
 
-    // Mode simulation (sans clé Stripe)
     if (!stripeSecretKey) {
       const simulatedOrder = await Order.create(
         buildOrderPayload({
