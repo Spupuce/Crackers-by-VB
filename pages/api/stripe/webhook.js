@@ -70,9 +70,8 @@ async function decrementStockForOrder(order) {
 
         colorVariant.quantity = newQty;
 
-        // Optionnel : on peut aussi ajuster le stock global si tu veux qu'il reflète
-        // la somme des couleurs. Ici on le laisse tel quel pour ne pas casser
-        // une logique déjà en place ailleurs.
+        // Ici, on ne touche pas au stock global product.stock
+        // pour ne pas casser une logique déjà en place ailleurs.
       }
     } else {
       // Pas de couleur → décrément stock global
@@ -86,6 +85,12 @@ async function decrementStockForOrder(order) {
 }
 
 async function markOrderAsPaid(session) {
+  // Optionnel mais plus robuste : ne traiter que les sessions réellement payées
+  if (session.payment_status && session.payment_status !== 'paid') {
+    // On ne fait rien si Stripe nous envoie autre chose que 'paid'
+    return;
+  }
+
   const orderId = session?.metadata?.order_id;
   const stripeSessionId = typeof session?.id === 'string' ? session.id : '';
   const stripePaymentIntentId =
@@ -117,11 +122,11 @@ async function markOrderAsPaid(session) {
 
   if (alreadyPaid) {
     // Webhook dupliqué, on ne refait rien
+    // Utile pour debug si besoin :
+    // console.log('WEBHOOK_DUPLICATE_IGNORED', { orderId: order._id });
     return;
   }
 
-  // On décrémente le stock AVANT de marquer la commande comme payée
-  // mais dans la même transaction logique.
   await decrementStockForOrder(order);
 
   order.paymentStatus = 'paid';
