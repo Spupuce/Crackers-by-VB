@@ -126,6 +126,7 @@ export function CartProvider({ children }) {
 
   const hasInitializedAuthCartRef = useRef(false);
   const isLoadingServerCartRef = useRef(false);
+  const isClearingServerCartRef = useRef(false);
   const previousIsAuthenticatedRef = useRef(false);
   const lastSyncedSignatureRef = useRef('[]');
 
@@ -174,6 +175,7 @@ export function CartProvider({ children }) {
     if (!isAuthenticated) {
       hasInitializedAuthCartRef.current = false;
       isLoadingServerCartRef.current = false;
+      isClearingServerCartRef.current = false;
       lastSyncedSignatureRef.current = '[]';
 
       if (wasAuthenticated) {
@@ -228,7 +230,11 @@ export function CartProvider({ children }) {
       return;
     }
 
-    if (!hasInitializedAuthCartRef.current || isLoadingServerCartRef.current) {
+    if (
+      !hasInitializedAuthCartRef.current ||
+      isLoadingServerCartRef.current ||
+      isClearingServerCartRef.current
+    ) {
       return;
     }
 
@@ -386,7 +392,7 @@ export function CartProvider({ children }) {
     });
   }, []);
 
-  const clearCart = useCallback(() => {
+  const clearCart = useCallback(async () => {
     lastSyncedSignatureRef.current = '[]';
     setItems([]);
     setIsCartOpen(false);
@@ -397,6 +403,40 @@ export function CartProvider({ children }) {
       } catch (error) {
         console.error('Impossible de vider le panier sauvegardé.', error);
       }
+
+      return;
+    }
+
+    if (!isAuthenticated) {
+      return;
+    }
+
+    try {
+      isClearingServerCartRef.current = true;
+
+      const response = await fetch('/api/cart', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items: [] }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || 'Impossible de vider le panier utilisateur.'
+        );
+      }
+
+      const resolvedItems = sanitizeStoredCartItems(data?.items);
+      lastSyncedSignatureRef.current = buildCartSyncSignature(resolvedItems);
+      setItems(resolvedItems);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      isClearingServerCartRef.current = false;
     }
   }, [isAuthenticated]);
 
