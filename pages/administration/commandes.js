@@ -32,175 +32,8 @@ const STATUS_OPTIONS = [
   { value: 'delivered', label: 'Livrée', icon: FiCheckCircle },
 ];
 
-const INITIAL_ORDERS = [
-  {
-    id: 'CMD-2024-001',
-    customer: {
-      firstName: 'Marie',
-      lastName: 'Dubois',
-      email: 'marie.dubois@email.com',
-      phone: '06 12 34 56 78',
-    },
-    shippingAddress: {
-      addressLine1: '12 rue de la Paix',
-      addressLine2: '',
-      postalCode: '75001',
-      city: 'Paris',
-      country: 'France',
-    },
-    date: '05/06/2024',
-    placedAtLabel: 'Passée le 5 juin 2024',
-    itemsCount: 2,
-    subtotal: 179,
-    shippingAmount: 5.9,
-    total: 184.9,
-    paymentMethod: 'Carte bancaire',
-    status: 'pending',
-    trackingNumber: '',
-    trackingUrl: '',
-    shippingMethod: 'Point relais',
-    items: [
-      {
-        name: 'Pull tricoté main',
-        quantity: 1,
-        unitPrice: 89,
-        lineTotal: 89,
-        imageUrl:
-          'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=300&q=80',
-      },
-      {
-        name: 'Écharpe tricotée',
-        quantity: 2,
-        unitPrice: 45,
-        lineTotal: 90,
-        imageUrl:
-          'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=300&q=80',
-      },
-    ],
-  },
-  {
-    id: 'CMD-2024-002',
-    customer: {
-      firstName: 'Sophie',
-      lastName: 'Martin',
-      email: 'sophie.martin@email.com',
-      phone: '06 98 76 54 32',
-    },
-    shippingAddress: {
-      addressLine1: '4 avenue Victor Hugo',
-      addressLine2: '',
-      postalCode: '69002',
-      city: 'Lyon',
-      country: 'France',
-    },
-    date: '04/06/2024',
-    placedAtLabel: 'Passée le 4 juin 2024',
-    itemsCount: 1,
-    subtotal: 41,
-    shippingAmount: 5.9,
-    total: 46.9,
-    paymentMethod: 'PayPal',
-    status: 'preparing',
-    trackingNumber: '',
-    trackingUrl: '',
-    shippingMethod: 'Point relais',
-    items: [
-      {
-        name: 'Bonnet crochet',
-        quantity: 1,
-        unitPrice: 41,
-        lineTotal: 41,
-        imageUrl:
-          'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=300&q=80',
-      },
-    ],
-  },
-  {
-    id: 'CMD-2024-003',
-    customer: {
-      firstName: 'Julie',
-      lastName: 'Petit',
-      email: 'julie.petit@email.com',
-      phone: '06 55 44 33 22',
-    },
-    shippingAddress: {
-      addressLine1: '27 rue des Tilleuls',
-      addressLine2: '',
-      postalCode: '33000',
-      city: 'Bordeaux',
-      country: 'France',
-    },
-    date: '03/06/2024',
-    placedAtLabel: 'Passée le 3 juin 2024',
-    itemsCount: 2,
-    subtotal: 110.1,
-    shippingAmount: 5.9,
-    total: 116,
-    paymentMethod: 'Virement bancaire',
-    status: 'shipped',
-    trackingNumber: 'FR123456789',
-    trackingUrl: '',
-    shippingMethod: 'Mondial Relay',
-    items: [
-      {
-        name: 'Sac crocheté',
-        quantity: 1,
-        unitPrice: 68,
-        lineTotal: 68,
-        imageUrl:
-          'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=300&q=80',
-      },
-      {
-        name: 'Pochette artisanale',
-        quantity: 1,
-        unitPrice: 42.1,
-        lineTotal: 42.1,
-        imageUrl:
-          'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=300&q=80',
-      },
-    ],
-  },
-  {
-    id: 'CMD-2024-004',
-    customer: {
-      firstName: 'Claire',
-      lastName: 'Rousseau',
-      email: 'claire.rousseau@email.com',
-      phone: '06 11 22 33 44',
-    },
-    shippingAddress: {
-      addressLine1: '8 place du marché',
-      addressLine2: '',
-      postalCode: '44000',
-      city: 'Nantes',
-      country: 'France',
-    },
-    date: '01/06/2024',
-    placedAtLabel: 'Passée le 1 juin 2024',
-    itemsCount: 1,
-    subtotal: 44,
-    shippingAmount: 5.9,
-    total: 49.9,
-    paymentMethod: 'Carte bancaire',
-    status: 'delivered',
-    trackingNumber: '',
-    trackingUrl: '',
-    shippingMethod: 'Point relais',
-    items: [
-      {
-        name: 'Doudou lapin',
-        quantity: 1,
-        unitPrice: 44,
-        lineTotal: 44,
-        imageUrl:
-          'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=300&q=80',
-      },
-    ],
-  },
-];
-
 function formatPrice(value) {
-  return `${Number(value).toFixed(2)} €`;
+  return `${Number(value || 0).toFixed(2)} €`;
 }
 
 function getStatusLabel(status) {
@@ -246,12 +79,105 @@ function getDefaultEmailMessage(order) {
   }.\nStatut actuel : ${statusLabel}.\n\nBelle journée,\nCrackers by VB`;
 }
 
+function formatOrderDate(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleDateString('fr-FR');
+}
+
+function formatPlacedAtLabel(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return `Passée le ${date.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })}`;
+}
+
+function getPaymentMethodLabel(order) {
+  if (order.paymentStatus === 'paid') {
+    return 'Carte bancaire';
+  }
+
+  if (order.paymentStatus === 'pending') {
+    return 'Paiement en attente';
+  }
+
+  if (order.paymentStatus === 'failed') {
+    return 'Paiement échoué';
+  }
+
+  if (order.paymentStatus === 'refunded') {
+    return 'Paiement remboursé';
+  }
+
+  return 'Paiement';
+}
+
+function normalizeAdminOrder(apiOrder) {
+  const items = Array.isArray(apiOrder?.items)
+    ? apiOrder.items.map((item) => ({
+        name: item.name || '',
+        quantity: Number(item.quantity || 0),
+        unitPrice: Number(item.unitPrice || 0),
+        lineTotal: Number(item.unitPrice || 0) * Number(item.quantity || 0),
+        imageUrl: item.imageUrl || '',
+        color: item.color || '',
+      }))
+    : [];
+
+  return {
+    id: apiOrder.orderNumber || apiOrder._id || '',
+    sourceId: apiOrder._id || '',
+    customer: {
+      firstName: apiOrder.customer?.firstName || '',
+      lastName: apiOrder.customer?.lastName || '',
+      email: apiOrder.customer?.email || '',
+      phone: apiOrder.customer?.phone || '',
+    },
+    shippingAddress: {
+      addressLine1: apiOrder.shippingAddress?.addressLine1 || '',
+      addressLine2: apiOrder.shippingAddress?.addressLine2 || '',
+      postalCode: apiOrder.shippingAddress?.postalCode || '',
+      city: apiOrder.shippingAddress?.city || '',
+      country: apiOrder.shippingAddress?.country || '',
+    },
+    date: formatOrderDate(apiOrder.createdAt),
+    placedAtLabel: formatPlacedAtLabel(apiOrder.createdAt),
+    itemsCount: items.reduce((sum, item) => sum + item.quantity, 0),
+    subtotal: Number(apiOrder.subtotalAmount || 0),
+    shippingAmount: Number(apiOrder.shippingAmount || 0),
+    total: Number(apiOrder.totalAmount || 0),
+    paymentMethod: getPaymentMethodLabel(apiOrder),
+    paymentStatus: apiOrder.paymentStatus || 'pending',
+    status: apiOrder.status || 'pending',
+    trackingNumber: apiOrder.shipping?.trackingNumber || '',
+    trackingUrl: apiOrder.shipping?.trackingUrl || '',
+    shippingMethod:
+      apiOrder.shipping?.method || apiOrder.shipping?.carrier || 'Livraison',
+    items,
+  };
+}
+
 export default function AdminOrdersPage() {
   const router = useRouter();
   const { isAuthenticated, isAdmin, isAuthReady } = useAuth();
 
   const [activeFilter, setActiveFilter] = useState('all');
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const [orders, setOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [emailSendingFor, setEmailSendingFor] = useState('');
   const [detailEmailMessage, setDetailEmailMessage] = useState('');
@@ -259,6 +185,8 @@ export default function AdminOrdersPage() {
     type: '',
     message: '',
   });
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [ordersError, setOrdersError] = useState('');
 
   const selectedOrder =
     orders.find((order) => order.id === selectedOrderId) || null;
@@ -279,6 +207,59 @@ export default function AdminOrdersPage() {
   }, [isAuthReady, isAuthenticated, isAdmin, router]);
 
   useEffect(() => {
+    if (!isAuthReady || !isAuthenticated || !isAdmin) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadOrders() {
+      setIsLoadingOrders(true);
+      setOrdersError('');
+
+      try {
+        const response = await fetch('/api/admin/orders');
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message || 'Impossible de récupérer les commandes.'
+          );
+        }
+
+        if (isCancelled) {
+          return;
+        }
+
+        const nextOrders = Array.isArray(data?.orders)
+          ? data.orders.map(normalizeAdminOrder)
+          : [];
+
+        setOrders(nextOrders);
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+
+        setOrders([]);
+        setOrdersError(
+          error?.message || 'Impossible de charger les commandes.'
+        );
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingOrders(false);
+        }
+      }
+    }
+
+    loadOrders();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isAuthReady, isAuthenticated, isAdmin]);
+
+  useEffect(() => {
     if (!selectedOrder) {
       setDetailEmailMessage('');
       setDetailEmailFeedback({ type: '', message: '' });
@@ -288,6 +269,18 @@ export default function AdminOrdersPage() {
     setDetailEmailMessage(getDefaultEmailMessage(selectedOrder));
     setDetailEmailFeedback({ type: '', message: '' });
   }, [selectedOrderId, selectedOrder]);
+
+  useEffect(() => {
+    if (!selectedOrderId) {
+      return;
+    }
+
+    const orderStillExists = orders.some((order) => order.id === selectedOrderId);
+
+    if (!orderStillExists) {
+      setSelectedOrderId(null);
+    }
+  }, [orders, selectedOrderId]);
 
   const filteredOrders = useMemo(() => {
     if (activeFilter === 'all') {
@@ -347,7 +340,7 @@ export default function AdminOrdersPage() {
       }
 
       window.alert(
-        `Email envoyé pour ${order.id} à [spupucemail@gmail.com](mailto:spupucemail@gmail.com).`
+        `Email envoyé pour ${order.id} à spupucemail@gmail.com.`
       );
     } catch (error) {
       window.alert(error?.message || "Impossible d'envoyer l'email.");
@@ -390,7 +383,7 @@ export default function AdminOrdersPage() {
 
       setDetailEmailFeedback({
         type: 'success',
-        message: `Email envoyé à [spupucemail@gmail.com](mailto:spupucemail@gmail.com) pour ${selectedOrder.id}.`,
+        message: `Email envoyé à spupucemail@gmail.com pour ${selectedOrder.id}.`,
       });
     } catch (error) {
       setDetailEmailFeedback({
@@ -488,98 +481,116 @@ export default function AdminOrdersPage() {
                 })}
               </div>
 
-              <div className={styles.ordersList}>
-                {filteredOrders.map((order) => (
-                  <article key={order.id} className={styles.orderCard}>
-                    <div className={styles.orderTop}>
-                      <div className={styles.orderMain}>
-                        <div className={styles.orderHeaderRow}>
-                          <h2 className={styles.orderNumber}>{order.id}</h2>
-                          <span
-                            className={`${styles.statusBadge} ${
-                              styles[`status-${order.status}`]
-                            }`}
-                          >
-                            {getStatusLabel(order.status)}
-                          </span>
+              {isLoadingOrders ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingBox}>
+                    Chargement des commandes...
+                  </div>
+                </div>
+              ) : ordersError ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingBox}>{ordersError}</div>
+                </div>
+              ) : filteredOrders.length === 0 ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingBox}>
+                    Aucune commande ne correspond au filtre sélectionné.
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.ordersList}>
+                  {filteredOrders.map((order) => (
+                    <article key={order.id} className={styles.orderCard}>
+                      <div className={styles.orderTop}>
+                        <div className={styles.orderMain}>
+                          <div className={styles.orderHeaderRow}>
+                            <h2 className={styles.orderNumber}>{order.id}</h2>
+                            <span
+                              className={`${styles.statusBadge} ${
+                                styles[`status-${order.status}`]
+                              }`}
+                            >
+                              {getStatusLabel(order.status)}
+                            </span>
+                          </div>
+
+                          <div className={styles.orderMeta}>
+                            <p>
+                              Client :{' '}
+                              <strong>{getCustomerFullName(order)}</strong>
+                            </p>
+                            <p>Date : {order.date || '—'}</p>
+                            <p>
+                              {order.itemsCount} article
+                              {order.itemsCount > 1 ? 's' : ''}
+                            </p>
+                          </div>
                         </div>
 
-                        <div className={styles.orderMeta}>
-                          <p>
-                            Client :{' '}
-                            <strong>{getCustomerFullName(order)}</strong>
-                          </p>
-                          <p>Date : {order.date}</p>
-                          <p>
-                            {order.itemsCount} article
-                            {order.itemsCount > 1 ? 's' : ''}
-                          </p>
+                        <div className={styles.orderAside}>
+                          <div className={styles.orderPriceBlock}>
+                            <p className={styles.orderTotal}>
+                              {formatPrice(order.total)}
+                            </p>
+                            <p className={styles.paymentMethod}>
+                              {order.paymentMethod}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            className={styles.viewButton}
+                            aria-label={`Voir la commande ${order.id}`}
+                            onClick={() => setSelectedOrderId(order.id)}
+                          >
+                            <FiEye aria-hidden="true" />
+                          </button>
                         </div>
                       </div>
 
-                      <div className={styles.orderAside}>
-                        <div className={styles.orderPriceBlock}>
-                          <p className={styles.orderTotal}>
-                            {formatPrice(order.total)}
-                          </p>
-                          <p className={styles.paymentMethod}>
-                            {order.paymentMethod}
-                          </p>
-                        </div>
+                      <div className={styles.separator} />
+
+                      <div className={styles.orderActions}>
+                        <select
+                          className={styles.statusSelect}
+                          value={order.status}
+                          onChange={(event) =>
+                            handleStatusChange(order.id, event.target.value)
+                          }
+                          aria-label={`Changer le statut de la commande ${order.id}`}
+                        >
+                          {STATUS_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
 
                         <button
                           type="button"
-                          className={styles.viewButton}
-                          aria-label={`Voir la commande ${order.id}`}
-                          onClick={() => setSelectedOrderId(order.id)}
+                          className={styles.emailButton}
+                          onClick={() => handleEmail(order)}
+                          disabled={emailSendingFor === order.id}
                         >
-                          <FiEye aria-hidden="true" />
+                          <FiMail aria-hidden="true" />
+                          <span>
+                            {emailSendingFor === order.id
+                              ? 'Envoi en cours...'
+                              : 'Envoyer un email'}
+                          </span>
                         </button>
+
+                        {order.trackingNumber ? (
+                          <span className={styles.trackingBadge}>
+                            <FiTruck aria-hidden="true" />
+                            <span>Suivi : {order.trackingNumber}</span>
+                          </span>
+                        ) : null}
                       </div>
-                    </div>
-
-                    <div className={styles.separator} />
-
-                    <div className={styles.orderActions}>
-                      <select
-                        className={styles.statusSelect}
-                        value={order.status}
-                        onChange={(event) =>
-                          handleStatusChange(order.id, event.target.value)
-                        }
-                        aria-label={`Changer le statut de la commande ${order.id}`}
-                      >
-                        {STATUS_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-
-                      <button
-                        type="button"
-                        className={styles.emailButton}
-                        onClick={() => handleEmail(order)}
-                        disabled={emailSendingFor === order.id}
-                      >
-                        <FiMail aria-hidden="true" />
-                        <span>
-                          {emailSendingFor === order.id
-                            ? 'Envoi en cours...'
-                            : 'Envoyer un email'}
-                        </span>
-                      </button>
-
-                      {order.trackingNumber ? (
-                        <span className={styles.trackingBadge}>
-                          <FiTruck aria-hidden="true" />
-                          <span>Suivi : {order.trackingNumber}</span>
-                        </span>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
-              </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
           </>
         ) : (
@@ -601,7 +612,7 @@ export default function AdminOrdersPage() {
                       Commande {selectedOrder.id}
                     </h1>
                     <p className={styles.detailDate}>
-                      {selectedOrder.placedAtLabel}
+                      {selectedOrder.placedAtLabel || 'Date indisponible'}
                     </p>
                   </div>
 
@@ -627,7 +638,7 @@ export default function AdminOrdersPage() {
                     </p>
                     <p>
                       <strong>Téléphone :</strong>{' '}
-                      {selectedOrder.customer.phone}
+                      {selectedOrder.customer.phone || '—'}
                     </p>
                     <p>
                       <strong>Adresse :</strong>{' '}
@@ -642,22 +653,25 @@ export default function AdminOrdersPage() {
                   <div className={styles.itemsList}>
                     {selectedOrder.items.map((item) => (
                       <div
-                        key={`${selectedOrder.id}-${item.name}`}
+                        key={`${selectedOrder.id}-${item.name}-${item.color || ''}`}
                         className={styles.itemCard}
                       >
                         <div className={styles.itemLeft}>
                           <div className={styles.itemImageWrapper}>
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className={styles.itemImage}
-                            />
+                            {item.imageUrl ? (
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className={styles.itemImage}
+                              />
+                            ) : null}
                           </div>
 
                           <div className={styles.itemContent}>
                             <p className={styles.itemName}>{item.name}</p>
                             <p className={styles.itemMeta}>
                               Quantité : {item.quantity}
+                              {item.color ? ` • Couleur : ${item.color}` : ''}
                             </p>
                             <p className={styles.itemUnitPrice}>
                               {formatPrice(item.unitPrice)} / unité
@@ -686,9 +700,7 @@ export default function AdminOrdersPage() {
                         Frais de port (
                         {selectedOrder.shippingMethod || 'Livraison'})
                       </span>
-                      <span>
-                        {formatPrice(selectedOrder.shippingAmount)}
-                      </span>
+                      <span>{formatPrice(selectedOrder.shippingAmount)}</span>
                     </div>
                     <div className={styles.paymentRow}>
                       <strong>Mode de paiement</strong>

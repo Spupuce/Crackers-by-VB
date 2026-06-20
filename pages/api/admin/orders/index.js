@@ -1,7 +1,7 @@
 // pages/api/admin/orders/index.js
 
 import { connectMongo } from '../../../../lib/mongodb';
-import { getSessionUser } from '../../../../lib/session';
+import { requireAdminSession } from '../../../../lib/session';
 import Order from '../../../../models/Order';
 
 function serializeOrder(order) {
@@ -66,17 +66,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sessionUser = await getSessionUser(req, res);
+    const adminSession = requireAdminSession(req);
 
-    if (!sessionUser) {
+    if (!adminSession) {
       return res.status(401).json({
-        ok: false,
-        message: 'Authentification requise.',
-      });
-    }
-
-    if (sessionUser.role !== 'admin') {
-      return res.status(403).json({
         ok: false,
         message: 'Accès administrateur requis.',
       });
@@ -84,9 +77,7 @@ export default async function handler(req, res) {
 
     await connectMongo();
 
-    const orders = await Order.find({})
-      .sort({ createdAt: -1 })
-      .lean();
+    const orders = await Order.find({}).sort({ createdAt: -1 }).lean();
 
     return res.status(200).json({
       ok: true,

@@ -77,6 +77,8 @@
 - ✅ Lier la commande à l’utilisateur connecté.
 - 🟡 Éviter les doublons si Stripe renvoie plusieurs événements.
 - ✅ Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
+- 🔴 Rendre persistant le changement de statut des commandes depuis /administration/commandes
+- 🔴 Vérifier la cohérence entre le statut de commande et les champs associés (shippedAt, deliveredAt, trackingNumber, trackingUrl)
 
 ### 3.3 Simulation d’achat de bout en bout
 - ✅ Se connecter avec un compte utilisateur de test.
@@ -88,6 +90,11 @@
 - ✅ Corriger l’affichage du bouton “Découvrir la boutique” dans l’état panier vide.
 - 🔴 Vérifier le comportement non connecté.
 - 🔴 Vérifier les erreurs serveur Stripe / API.
+- 🔴 Permettre la commande sans création de compte
+- 🔴 Vérifier le parcours complet invité : panier, checkout, paiement Stripe, retour succès / annulation
+- 🔴 Créer la commande MongoDB sans userId quand l’acheteur n’est pas connecté
+- 🔴 Vérifier que les emails, l’adresse de livraison et les lignes de commande restent correctement enregistrés pour un invité
+- 🔴 Définir le comportement post-achat pour proposer la création de compte sans la rendre obligatoire
 
 ### 3.4 Frais de port
 - 🔴 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
@@ -147,6 +154,7 @@
 - 🔴 Audit accessibilité de base : labels, focus, lisibilité, messages d’erreur.
 - 🔴 Audit robustesse : cas limites, erreurs serveur, navigation.
 - 🔴 Prioriser les corrections avant déploiement.
+- 🔴 Vérifier la cohérence du tunnel invité vs connecté (panier, paiement, commande, compte)
 
 ### 5.3 Déploiement sur o2switch
 - 🔴 Préparer l’environnement de production.
