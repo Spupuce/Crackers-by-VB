@@ -187,6 +187,11 @@ export default function AdminOrdersPage() {
   });
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   const [ordersError, setOrdersError] = useState('');
+  const [statusUpdatingFor, setStatusUpdatingFor] = useState('');
+  const [statusFeedback, setStatusFeedback] = useState({
+    type: '',
+    message: '',
+  });
 
   const selectedOrder =
     orders.find((order) => order.id === selectedOrderId) || null;
@@ -300,17 +305,83 @@ export default function AdminOrdersPage() {
     };
   }, [orders]);
 
-  function handleStatusChange(orderId, nextStatus) {
-    setOrders((currentOrders) =>
-      currentOrders.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              status: nextStatus,
-            }
-          : order
-      )
-    );
+  async function handleStatusChange(orderId, nextStatus) {
+    const targetOrder = orders.find((order) => order.id === orderId);
+
+    if (!targetOrder || !targetOrder.sourceId) {
+      setStatusFeedback({
+        type: 'error',
+        message: 'Commande introuvable pour la mise à jour du statut.',
+      });
+      return;
+    }
+
+    if (targetOrder.status === nextStatus) {
+      return;
+    }
+
+    setStatusUpdatingFor(orderId);
+    setStatusFeedback({ type: '', message: '' });
+
+    try {
+      const response = await fetch(`/api/admin/orders/${targetOrder.sourceId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: nextStatus,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || 'Impossible de mettre à jour le statut.'
+        );
+      }
+
+      const updatedStatus = data?.order?.status || nextStatus;
+      const updatedTrackingNumber =
+        data?.order?.shipping?.trackingNumber ?? targetOrder.trackingNumber;
+      const updatedTrackingUrl =
+        data?.order?.shipping?.trackingUrl ?? targetOrder.trackingUrl;
+      const updatedShippingMethod =
+        data?.order?.shipping?.method ||
+        data?.order?.shipping?.carrier ||
+        targetOrder.shippingMethod;
+
+      setOrders((currentOrders) =>
+        currentOrders.map((order) =>
+          order.id === orderId
+            ? {
+                ...order,
+                status: updatedStatus,
+                trackingNumber: updatedTrackingNumber,
+                trackingUrl: updatedTrackingUrl,
+                shippingMethod: updatedShippingMethod,
+              }
+            : order
+        )
+      );
+
+      setStatusFeedback({
+        type: 'success',
+        message: `Statut de la commande ${targetOrder.id} mis à jour en "${getStatusLabel(
+          updatedStatus
+        )}".`,
+      });
+    } catch (error) {
+      setStatusFeedback({
+        type: 'error',
+        message:
+          error?.message ||
+          'Impossible de mettre à jour le statut de la commande.',
+      });
+    } finally {
+      setStatusUpdatingFor('');
+    }
   }
 
   async function handleEmail(order) {
@@ -339,9 +410,7 @@ export default function AdminOrdersPage() {
         throw new Error(data?.message || "L'envoi de l'email a échoué.");
       }
 
-      window.alert(
-        `Email envoyé pour ${order.id} à spupucemail@gmail.com.`
-      );
+      window.alert(`Email envoyé pour ${order.id} à spupucemail@gmail.com.`);
     } catch (error) {
       window.alert(error?.message || "Impossible d'envoyer l'email.");
     } finally {
@@ -481,6 +550,14 @@ export default function AdminOrdersPage() {
                 })}
               </div>
 
+              {statusFeedback.message ? (
+                <div
+                  className={`${styles.loadingContainer} ${styles.statusFeedbackWrapper || ''}`}
+                >
+                  <div className={styles.loadingBox}>{statusFeedback.message}</div>
+                </div>
+              ) : null}
+
               {isLoadingOrders ? (
                 <div className={styles.loadingContainer}>
                   <div className={styles.loadingBox}>
@@ -516,8 +593,7 @@ export default function AdminOrdersPage() {
 
                           <div className={styles.orderMeta}>
                             <p>
-                              Client :{' '}
-                              <strong>{getCustomerFullName(order)}</strong>
+                              Client : <strong>{getCustomerFullName(order)}</strong>
                             </p>
                             <p>Date : {order.date || '—'}</p>
                             <p>
@@ -558,6 +634,7 @@ export default function AdminOrdersPage() {
                             handleStatusChange(order.id, event.target.value)
                           }
                           aria-label={`Changer le statut de la commande ${order.id}`}
+                          disabled={statusUpdatingFor === order.id}
                         >
                           {STATUS_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -570,7 +647,10 @@ export default function AdminOrdersPage() {
                           type="button"
                           className={styles.emailButton}
                           onClick={() => handleEmail(order)}
-                          disabled={emailSendingFor === order.id}
+                          disabled={
+                            emailSendingFor === order.id ||
+                            statusUpdatingFor === order.id
+                          }
                         >
                           <FiMail aria-hidden="true" />
                           <span>
@@ -580,7 +660,12 @@ export default function AdminOrdersPage() {
                           </span>
                         </button>
 
-                        {order.trackingNumber ? (
+                        {statusUpdatingFor === order.id ? (
+                          <span className={styles.trackingBadge}>
+                            <FiClock aria-hidden="true" />
+                            <span>Mise à jour...</span>
+                          </span>
+                        ) : order.trackingNumber ? (
                           <span className={styles.trackingBadge}>
                             <FiTruck aria-hidden="true" />
                             <span>Suivi : {order.trackingNumber}</span>
@@ -780,10 +865,23 @@ export default function AdminOrdersPage() {
                 <div className={styles.detailSection}>
                   <h2 className={styles.sectionTitle}>Modifier le statut</h2>
 
+                  {statusFeedback.message ? (
+                    <p
+                      className={`${styles.emailFeedback} ${
+                        statusFeedback.type === 'success'
+                          ? styles.emailFeedbackSuccess
+                          : styles.emailFeedbackError
+                      }`}
+                    >
+                      {statusFeedback.message}
+                    </p>
+                  ) : null}
+
                   <div className={styles.statusTabs}>
                     {STATUS_OPTIONS.map((option) => {
                       const Icon = option.icon;
                       const isActive = selectedOrder.status === option.value;
+                      const isUpdating = statusUpdatingFor === selectedOrder.id;
 
                       return (
                         <button
@@ -798,6 +896,7 @@ export default function AdminOrdersPage() {
                               option.value
                             )
                           }
+                          disabled={isUpdating}
                         >
                           <Icon aria-hidden="true" />
                           <span>{option.label}</span>
