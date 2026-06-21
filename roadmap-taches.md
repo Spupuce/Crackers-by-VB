@@ -77,7 +77,7 @@
 - ✅ Lier la commande à l’utilisateur connecté.
 - 🟡 Éviter les doublons si Stripe renvoie plusieurs événements.
 - ✅ Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
-- 🔴 Rendre persistant le changement de statut des commandes depuis /administration/commandes
+- 🟡 Rendre persistant le changement de statut des commandes depuis /administration/commandes
 - 🔴 Vérifier la cohérence entre le statut de commande et les champs associés (shippedAt, deliveredAt, trackingNumber, trackingUrl)
 
 ### 3.3 Simulation d’achat de bout en bout
