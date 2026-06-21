@@ -42,6 +42,7 @@ export default function ProductPurchasePanel({
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [notifyError, setNotifyError] = useState('');
+  const [notifyAlreadyExists, setNotifyAlreadyExists] = useState(false);
 
   const { user, isAuthenticated, isAuthReady } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
@@ -71,6 +72,10 @@ export default function ProductPurchasePanel({
     setJustAdded(false);
     setLastAddedQuantity(0);
     setQuantity(1);
+    setShowNotifyForm(false);
+    setNotifySuccess(false);
+    setNotifyError('');
+    setNotifyAlreadyExists(false);
 
     if (!hasColorVariants) {
       onSelectedColorChange?.('');
@@ -196,6 +201,10 @@ export default function ProductPurchasePanel({
   };
 
   const handleOpenNotifyForm = () => {
+    if (notifyAlreadyExists) {
+      return;
+    }
+
     setShowNotifyForm(true);
     setNotifySuccess(false);
     setNotifyError('');
@@ -204,6 +213,7 @@ export default function ProductPurchasePanel({
   const handleCancelNotify = () => {
     setShowNotifyForm(false);
     setNotifyError('');
+    setNotifySuccess(false);
   };
 
   const handleSubmitNotify = async (event) => {
@@ -217,6 +227,7 @@ export default function ProductPurchasePanel({
 
     setNotifyError('');
     setNotifySuccess(false);
+    setNotifyAlreadyExists(false);
 
     if (!product?.slug) {
       setNotifyError(
@@ -252,6 +263,7 @@ export default function ProductPurchasePanel({
 
       if (data?.alreadyExists) {
         setNotifySuccess(false);
+        setNotifyAlreadyExists(true);
         setNotifyError(
           'Une demande existe déjà pour cette adresse e-mail pour ce produit.'
         );
@@ -260,9 +272,11 @@ export default function ProductPurchasePanel({
       }
 
       setNotifySuccess(true);
+      setNotifyAlreadyExists(false);
       setShowNotifyForm(false);
       setNotifyError('');
     } catch (error) {
+      setNotifyAlreadyExists(false);
       setNotifyError(
         error.message ||
           "Une erreur s'est produite. Merci de réessayer dans quelques instants."
@@ -412,8 +426,11 @@ export default function ProductPurchasePanel({
               type="button"
               className={styles.notifyButton}
               onClick={handleOpenNotifyForm}
+              disabled={notifyAlreadyExists}
             >
-              Me prévenir quand disponible
+              {notifyAlreadyExists
+                ? 'Demande déjà enregistrée'
+                : 'Me prévenir quand disponible'}
             </button>
           ) : (
             <form
@@ -443,7 +460,13 @@ export default function ProductPurchasePanel({
                   className={styles.notifyInput}
                   placeholder="Votre adresse e-mail"
                   value={notifyEmail}
-                  onChange={(event) => setNotifyEmail(event.target.value)}
+                  onChange={(event) => {
+                    setNotifyEmail(event.target.value);
+                    if (notifyAlreadyExists) {
+                      setNotifyAlreadyExists(false);
+                      setNotifyError('');
+                    }
+                  }}
                   autoComplete="email"
                   required
                 />
