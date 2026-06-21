@@ -59,6 +59,12 @@
 - ✅ Vérifier la cohérence complète de l’affichage variante/couleur sur le drawer panier.
 - ✅ Vérifier la cohérence complète de l’affichage variante/couleur sur la page `/panier`.
 
+### 2.5 Réassort et notifications email
+- 🟡 Valider le tunnel complet “Me prévenir quand disponible” → demande enregistrée → admin stock → “Notifier maintenant”
+- 🔴 Vérifier l’envoi réel des notifications de retour en stock sur différentes messageries, dont Gmail
+- 🔴 Clarifier la règle métier : notifier immédiatement à la remise en stock ou uniquement via action admin “Notifier maintenant”
+- 🟡 Vérifier qu’une même demande de réassort n’est pas notifiée plusieurs fois après envoi
+
 ---
 
 ## 3. Paiement et commandes
@@ -77,7 +83,7 @@
 - ✅ Lier la commande à l’utilisateur connecté.
 - 🟡 Éviter les doublons si Stripe renvoie plusieurs événements.
 - ✅ Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
-- 🟡 Rendre persistant le changement de statut des commandes depuis /administration/commandes
+- ✅ Rendre persistant le changement de statut des commandes depuis /administration/commandes
 - 🔴 Vérifier la cohérence entre le statut de commande et les champs associés (shippedAt, deliveredAt, trackingNumber, trackingUrl)
 
 ### 3.3 Simulation d’achat de bout en bout
@@ -95,6 +101,8 @@
 - 🔴 Créer la commande MongoDB sans userId quand l’acheteur n’est pas connecté
 - 🔴 Vérifier que les emails, l’adresse de livraison et les lignes de commande restent correctement enregistrés pour un invité
 - 🔴 Définir le comportement post-achat pour proposer la création de compte sans la rendre obligatoire
+- 🔴 Vérifier l’envoi réel des emails liés aux commandes depuis l’administration
+- 🔴 Vérifier la délivrabilité des emails transactionnels sur Gmail
 
 ### 3.4 Frais de port
 - 🔴 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
@@ -105,7 +113,7 @@
 - 🔴 Vérifier la cohérence des frais de port entre front, webhook et MongoDB.
 
 ### 3.5 Commandes admin
-- 🔴 Afficher les commandes Stripe réelles dans /administration/commandes.
+- ✅ Afficher les commandes Stripe réelles dans /administration/commandes.
 - 🔴 Vérifier la compatibilité entre les commandes seedées et les commandes MongoDB réelles.
 - 🔴 Harmoniser les statuts réels (pending, paid, processing, etc.) avec les filtres visuels admin.
 - 🔴 Vérifier le tri par date et l’affichage du client, du total et du paiement.
@@ -155,6 +163,10 @@
 - 🔴 Audit robustesse : cas limites, erreurs serveur, navigation.
 - 🔴 Prioriser les corrections avant déploiement.
 - 🔴 Vérifier la cohérence du tunnel invité vs connecté (panier, paiement, commande, compte)
+- 🔴 Audit de la délivrabilité email (SMTP, expéditeur, SPF, DKIM, DMARC, spam Gmail)
+- 🔴 Vérifier la cohérence entre emails de contact, emails de commande et emails de retour en stock
+- 🔴 Harmoniser les contenus des emails de commande et de retour en stock
+- 🔴 Définir quels emails restent manuels et lesquels doivent devenir automatiques
 
 ### 5.3 Déploiement sur o2switch
 - 🔴 Préparer l’environnement de production.
