@@ -1,79 +1,77 @@
-// pages/api/products/[slug]/restock-requests.js
-
 import { connectMongo } from '../../../../lib/mongodb';
 import Product from '../../../../models/Product';
 import RestockRequest from '../../../../models/RestockRequest';
 
-function isValidEmail(email) {
-  return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+function isValidEmail(value) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const email = value.trim().toLowerCase();
+
+  if (!email) {
+    return false;
+  }
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Méthode non autorisée.' });
-  }
+  await connectMongo();
 
-  try {
-    await connectMongo();
+  const { slug } = req.query;
 
-    const { slug } = req.query;
-    const email =
-      typeof req.body?.email === 'string'
-        ? req.body.email.trim().toLowerCase()
-        : '';
+  if (req.method === 'POST') {
+    try {
+      const product = await Product.findOne({
+        slug,
+        isArchived: false,
+      });
 
-    if (!slug) {
-      return res.status(400).json({ message: 'Slug produit manquant.' });
-    }
+      if (!product) {
+        return res.status(404).json({
+          message: 'Produit introuvable.',
+        });
+      }
 
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ message: 'Adresse e-mail invalide.' });
-    }
+      const email = req.body?.email?.trim().toLowerCase();
 
-    const product = await Product.findOne({
-      slug,
-      isArchived: false,
-    });
+      if (!isValidEmail(email)) {
+        return res.status(400).json({
+          message: 'Merci de renseigner une adresse e-mail valide.',
+        });
+      }
 
-    if (!product) {
-      return res.status(404).json({ message: 'Produit introuvable.' });
-    }
+      const existingRequest = await RestockRequest.findOne({
+        product: product._id,
+        email,
+        notifiedAt: null,
+      });
 
-    const existingRequest = await RestockRequest.findOne({
-      product: product._id,
-      email,
-      notifiedAt: null,
-    });
+      if (existingRequest) {
+        return res.status(200).json({
+          message: 'Une demande existe déjà pour cette adresse e-mail.',
+          alreadyExists: true,
+        });
+      }
 
-    if (existingRequest) {
-      return res.status(200).json({
-        message: 'Une demande existe déjà pour cette adresse e-mail.',
-        alreadyExists: true,
+      await RestockRequest.create({
+        product: product._id,
+        email,
+      });
+
+      return res.status(201).json({
+        message: 'Votre demande a bien été enregistrée.',
+        alreadyExists: false,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Erreur lors de l'enregistrement de la demande.",
       });
     }
-
-    const request = await RestockRequest.create({
-      product: product._id,
-      email,
-    });
-
-    return res.status(201).json({
-      message: 'Demande de réassort enregistrée.',
-      requestId: request._id,
-      alreadyExists: false,
-    });
-  } catch (error) {
-    if (error?.code === 11000) {
-      return res.status(200).json({
-        message: 'Une demande existe déjà pour cette adresse e-mail.',
-        alreadyExists: true,
-      });
-    }
-
-    console.error('POST /api/products/[slug]/restock-requests error:', error);
-
-    return res.status(500).json({
-      message: "Erreur lors de l'enregistrement de la demande de réassort.",
-    });
   }
+
+  return res.status(405).json({
+    message: 'Méthode non autorisée.',
+  });
 }
