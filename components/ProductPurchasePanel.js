@@ -1,5 +1,3 @@
-// components/ProductPurchasePanel.js
-
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { FiHeart, FiShoppingCart } from 'react-icons/fi';
@@ -17,6 +15,13 @@ import styles from '../styles/ProductDetail.module.css';
 
 function normalizeColorName(value) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function isValidEmail(value) {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
 }
 
 export default function ProductPurchasePanel({
@@ -201,7 +206,15 @@ export default function ProductPurchasePanel({
     setNotifyError('');
   };
 
-  const handleSubmitNotify = async () => {
+  const handleSubmitNotify = async (event) => {
+    if (event && typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
+
+    if (notifyLoading) {
+      return;
+    }
+
     setNotifyError('');
     setNotifySuccess(false);
 
@@ -212,7 +225,7 @@ export default function ProductPurchasePanel({
       return;
     }
 
-    if (!notifyEmail || !notifyEmail.includes('@')) {
+    if (!isValidEmail(notifyEmail)) {
       setNotifyError('Merci de renseigner une adresse e-mail valide.');
       return;
     }
@@ -235,6 +248,15 @@ export default function ProductPurchasePanel({
 
       if (!response.ok) {
         throw new Error(data?.message || 'Erreur lors de la demande.');
+      }
+
+      if (data?.alreadyExists) {
+        setNotifySuccess(false);
+        setNotifyError(
+          'Une demande existe déjà pour cette adresse e-mail pour ce produit.'
+        );
+        setShowNotifyForm(false);
+        return;
       }
 
       setNotifySuccess(true);
@@ -394,7 +416,11 @@ export default function ProductPurchasePanel({
               Me prévenir quand disponible
             </button>
           ) : (
-            <div className={styles.notifyForm}>
+            <form
+              className={styles.notifyForm}
+              onSubmit={handleSubmitNotify}
+              noValidate
+            >
               <div className={styles.notifyFormControls}>
                 <button
                   type="button"
@@ -404,16 +430,26 @@ export default function ProductPurchasePanel({
                   Annuler
                 </button>
 
+                <label
+                  htmlFor="notify-email"
+                  className={styles.notifyLabel}
+                >
+                  Adresse e-mail
+                </label>
+
                 <input
+                  id="notify-email"
                   type="email"
                   className={styles.notifyInput}
                   placeholder="Votre adresse e-mail"
                   value={notifyEmail}
                   onChange={(event) => setNotifyEmail(event.target.value)}
+                  autoComplete="email"
+                  required
                 />
 
                 <button
-                  type="button"
+                  type="submit"
                   className={styles.notifySubmit}
                   onClick={handleSubmitNotify}
                   disabled={notifyLoading}
@@ -421,7 +457,7 @@ export default function ProductPurchasePanel({
                   {notifyLoading ? 'Envoi en cours...' : 'Envoyer la demande'}
                 </button>
               </div>
-            </div>
+            </form>
           )}
         </div>
       ) : (
@@ -458,7 +494,7 @@ export default function ProductPurchasePanel({
         <p className={styles.addedMessage} role="status" aria-live="polite">
           {lastAddedQuantity > 1
             ? `${lastAddedQuantity} articles ont bien été ajoutés au panier.`
-            : 'L’article a bien été ajouté au panier.'}
+            : "L’article a bien été ajouté au panier."}
         </p>
       )}
 
