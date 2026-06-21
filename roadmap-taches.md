@@ -60,7 +60,7 @@
 - ✅ Vérifier la cohérence complète de l’affichage variante/couleur sur la page `/panier`.
 
 ### 2.5 Réassort et notifications email
-- 🟡 Valider le tunnel complet “Me prévenir quand disponible” → demande enregistrée → admin stock → “Notifier maintenant”
+- ✅ Valider le tunnel complet “Me prévenir quand disponible” → demande enregistrée → admin stock → “Notifier maintenant”
 - 🔴 Vérifier l’envoi réel des notifications de retour en stock sur différentes messageries, dont Gmail
 - 🔴 Clarifier la règle métier : notifier immédiatement à la remise en stock ou uniquement via action admin “Notifier maintenant”
 - 🟡 Vérifier qu’une même demande de réassort n’est pas notifiée plusieurs fois après envoi
