@@ -1,5 +1,3 @@
-// models/RestockRequest.js
-
 import mongoose from 'mongoose';
 
 const restockRequestSchema = new mongoose.Schema(
@@ -16,6 +14,10 @@ const restockRequestSchema = new mongoose.Schema(
       lowercase: true,
     },
     notifiedAt: {
+      type: Date,
+      default: null,
+    },
+    notificationProcessingAt: {
       type: Date,
       default: null,
     },
