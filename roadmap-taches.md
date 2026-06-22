@@ -183,6 +183,7 @@
 - 🔴 Vérifier la cohérence entre emails de contact, emails de commande et emails de retour en stock
 - 🔴 Harmoniser les contenus des emails de commande et de retour en stock
 - 🔴 Définir quels emails restent manuels et lesquels doivent devenir automatiques
+- 🔴 Vérifier la délivrabilité des emails de retour en stock vers Gmail (SPF, DKIM, DMARC, réputation IP).
 
 ### 5.3 Déploiement sur o2switch
 - 🔴 Préparer l’environnement de production.
