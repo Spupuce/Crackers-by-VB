@@ -1,5 +1,4 @@
 // components/ProductGallery.js
-
 import styles from '../styles/ProductDetail.module.css';
 
 export default function ProductGallery({
@@ -7,6 +6,8 @@ export default function ProductGallery({
   productName,
   activeImage = '',
   onSelect,
+  showSoldOutBadge = false,
+  soldOutBadgeText = '',
 }) {
   const fallbackImage = activeImage || items[0]?.imageUrl || '';
 
@@ -23,6 +24,12 @@ export default function ProductGallery({
   return (
     <div className={styles.gallery}>
       <div className={styles.mainImageWrapper}>
+        {showSoldOutBadge && soldOutBadgeText && (
+          <div className={styles.mainImageBadge}>
+            {soldOutBadgeText}
+          </div>
+        )}
+
         <img
           src={fallbackImage}
           alt={productName}

@@ -1,5 +1,4 @@
 // pages/boutique/[slug].js
-
 import { useMemo, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -18,6 +17,37 @@ function normalizeText(value) {
 export default function ProductDetailPage({ product }) {
   const defaultImage = normalizeText(product?.imageUrl);
   const [selectedColor, setSelectedColor] = useState('');
+
+  const availableColors = useMemo(() => {
+    if (!Array.isArray(product?.colors)) {
+      return [];
+    }
+
+    return product.colors
+      .map((color) => ({
+        ...color,
+        name: normalizeText(color?.name),
+        quantity: Math.max(0, Number(color?.quantity || 0)),
+      }))
+      .filter((color) => color.name);
+  }, [product?.colors]);
+
+  const selectedColorData = useMemo(() => {
+    if (!selectedColor) {
+      return null;
+    }
+
+    return (
+      availableColors.find(
+        (color) =>
+          normalizeText(color.name).toLowerCase() ===
+          normalizeText(selectedColor).toLowerCase()
+      ) || null
+    );
+  }, [availableColors, selectedColor]);
+
+  const shouldShowSelectedColorSoldOutBadge =
+    !!selectedColor && !!selectedColorData && selectedColorData.quantity <= 0;
 
   const galleryItems = useMemo(() => {
     const items = [];
@@ -146,6 +176,8 @@ export default function ProductDetailPage({ product }) {
               productName={product.name}
               activeImage={selectedGalleryImage}
               onSelect={handleGallerySelect}
+              showSoldOutBadge={shouldShowSelectedColorSoldOutBadge}
+              soldOutBadgeText="Rupture sur cette couleur"
             />
             <ProductPurchasePanel
               product={product}
