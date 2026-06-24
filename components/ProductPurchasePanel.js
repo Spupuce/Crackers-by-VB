@@ -1,3 +1,4 @@
+// components/ProductPurchasePanel.js
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { FiHeart, FiShoppingCart } from 'react-icons/fi';
@@ -167,6 +168,14 @@ export default function ProductPurchasePanel({
       ? !hasAnyColorWithStock
       : isSoldOut(product) || effectiveStock <= 0;
 
+  const selectedColorSoldOut =
+    hasColorVariants && selectedColor
+      ? Math.max(0, Number(selectedColorData?.quantity || 0)) <= 0
+      : false;
+
+  const shouldShowNotifyForSelectedColor =
+    hasColorVariants && !!selectedColor && selectedColorSoldOut;
+
   const requiresColorSelection = hasColorVariants && !selectedColor;
 
   useEffect(() => {
@@ -236,6 +245,11 @@ export default function ProductPurchasePanel({
       return;
     }
 
+    if (hasColorVariants && !selectedColor) {
+      setNotifyError('Merci de sélectionner une couleur.');
+      return;
+    }
+
     if (!isValidEmail(notifyEmail)) {
       setNotifyError('Merci de renseigner une adresse e-mail valide.');
       return;
@@ -251,7 +265,10 @@ export default function ProductPurchasePanel({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email: notifyEmail }),
+          body: JSON.stringify({
+            email: notifyEmail,
+            color: hasColorVariants ? selectedColor : '',
+          }),
         }
       );
 
@@ -265,7 +282,9 @@ export default function ProductPurchasePanel({
         setNotifySuccess(false);
         setNotifyAlreadyExists(true);
         setNotifyError(
-          'Une demande existe déjà pour cette adresse e-mail pour ce produit.'
+          hasColorVariants
+            ? 'Une demande existe déjà pour cette couleur et cette adresse e-mail.'
+            : 'Une demande existe déjà pour cette adresse e-mail pour ce produit.'
         );
         setShowNotifyForm(false);
         return;
@@ -291,7 +310,8 @@ export default function ProductPurchasePanel({
       !product ||
       soldOut ||
       remainingAvailable <= 0 ||
-      requiresColorSelection
+      requiresColorSelection ||
+      selectedColorSoldOut
     ) {
       return;
     }
@@ -370,7 +390,7 @@ export default function ProductPurchasePanel({
               const isSelected =
                 normalizeColorName(selectedColor).toLowerCase() ===
                 colorName.toLowerCase();
-              const isDisabled = colorStock <= 0;
+              const isDisabled = false;
 
               return (
                 <button
@@ -378,16 +398,16 @@ export default function ProductPurchasePanel({
                   type="button"
                   className={`${styles.variantButton} ${
                     isSelected ? styles.variantButtonActive : ''
-                  } ${isDisabled ? styles.variantButtonDisabled : ''}`}
+                  } ${colorStock <= 0 ? styles.variantButtonDisabled : ''}`}
                   onClick={() => {
-                    if (isDisabled) {
-                      return;
-                    }
-
                     onSelectedColorChange?.(colorName);
                     setQuantity(1);
                     setJustAdded(false);
                     setLastAddedQuantity(0);
+                    setShowNotifyForm(false);
+                    setNotifySuccess(false);
+                    setNotifyError('');
+                    setNotifyAlreadyExists(false);
                   }}
                   disabled={isDisabled}
                   aria-pressed={isSelected}
@@ -403,12 +423,12 @@ export default function ProductPurchasePanel({
         </div>
       )}
 
-      {soldOut ? (
+      {soldOut || shouldShowNotifyForSelectedColor ? (
         <div className={styles.notifyBlock}>
           <p className={styles.notifyText}>
-            Cet article est actuellement en rupture de stock. Vous pouvez me
-            signaler votre intérêt et je vous contacterai dès qu&apos;il sera à
-            nouveau disponible.
+            {shouldShowNotifyForSelectedColor
+              ? `La couleur ${selectedColor} est actuellement en rupture de stock. Vous pouvez me signaler votre intérêt et je vous contacterai dès qu’elle sera à nouveau disponible.`
+              : "Cet article est actuellement en rupture de stock. Vous pouvez me signaler votre intérêt et je vous contacterai dès qu&apos;il sera à nouveau disponible."}
           </p>
 
           {notifySuccess && (
@@ -525,7 +545,12 @@ export default function ProductPurchasePanel({
         <button
           type="button"
           className={styles.addToCartButton}
-          disabled={soldOut || remainingAvailable <= 0 || requiresColorSelection}
+          disabled={
+            soldOut ||
+            remainingAvailable <= 0 ||
+            requiresColorSelection ||
+            selectedColorSoldOut
+          }
           onClick={handleAddToCart}
         >
           <FiShoppingCart />
@@ -534,6 +559,8 @@ export default function ProductPurchasePanel({
               ? 'Article indisponible'
               : requiresColorSelection
               ? 'Choisir une couleur'
+              : selectedColorSoldOut
+              ? 'Couleur indisponible'
               : remainingAvailable <= 0
               ? 'Stock déjà au maximum'
               : 'Ajouter au panier'}
