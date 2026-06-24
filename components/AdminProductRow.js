@@ -1,5 +1,4 @@
 // components/AdminProductRow.js
-
 import { useMemo, useState } from 'react';
 import { FiEdit2, FiTrash2, FiArchive, FiMail } from 'react-icons/fi';
 import styles from '../styles/AdminStock.module.css';
@@ -29,6 +28,10 @@ function getColorStock(color) {
   return 0;
 }
 
+function normalizeColorName(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export default function AdminProductRow({
   product,
   onArchive,
@@ -55,7 +58,7 @@ export default function AdminProductRow({
 
     return product.colors.map((color, index) => ({
       key: `${color?.name || 'couleur'}-${index}`,
-      name: color?.name || 'Couleur',
+      name: normalizeColorName(color?.name) || 'Couleur',
       stock: getColorStock(color),
     }));
   }, [product.colors]);
@@ -67,6 +70,33 @@ export default function AdminProductRow({
 
     return getSafeStock(product.stock);
   }, [normalizedColors, product.stock]);
+
+  const pendingRequestsByColor = useMemo(() => {
+    if (!Array.isArray(product.pendingRequests)) {
+      return [];
+    }
+
+    const grouped = product.pendingRequests.reduce((acc, request, index) => {
+      const colorName = normalizeColorName(request?.color) || 'Sans couleur';
+      const existing = acc.find((entry) => entry.color === colorName);
+
+      if (existing) {
+        existing.count += 1;
+        existing.requests.push(request);
+      } else {
+        acc.push({
+          key: `${colorName}-${index}`,
+          color: colorName,
+          count: 1,
+          requests: [request],
+        });
+      }
+
+      return acc;
+    }, []);
+
+    return grouped;
+  }, [product.pendingRequests]);
 
   const handleEdit = () => {
     if (typeof onEdit === 'function') {
@@ -96,8 +126,26 @@ export default function AdminProductRow({
     }
   };
 
-  const handleNotifyRestock = async () => {
+  const handleNotifyRestock = async (color) => {
     if (!product?._id || isNotifyingRestock) {
+      return;
+    }
+
+    const normalizedColor = normalizeColorName(color);
+
+    if (!normalizedColor) {
+      setRestockFeedback('Couleur introuvable pour cette notification.');
+      return;
+    }
+
+    const matchingColor = normalizedColors.find(
+      (entry) => entry.name.toLowerCase() === normalizedColor.toLowerCase()
+    );
+
+    if (!matchingColor || matchingColor.stock <= 0) {
+      setRestockFeedback(
+        'La couleur doit être de nouveau en stock avant notification.'
+      );
       return;
     }
 
@@ -109,6 +157,10 @@ export default function AdminProductRow({
         `/api/admin/products/${product._id}/notify-restock`,
         {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ color: normalizedColor }),
         }
       );
 
@@ -122,13 +174,22 @@ export default function AdminProductRow({
       }
 
       setRestockFeedback(
-        data?.message || 'Notifications de retour en stock envoyées.'
+        data?.message || `Notifications envoyées pour la couleur ${normalizedColor}.`
       );
+
+      const remainingPendingRequests = Array.isArray(product.pendingRequests)
+        ? product.pendingRequests.filter(
+            (request) =>
+              normalizeColorName(request?.color).toLowerCase() !==
+              normalizedColor.toLowerCase()
+          )
+        : [];
 
       if (typeof onProductUpdated === 'function') {
         onProductUpdated({
           ...product,
-          pendingRequestsCount: 0,
+          pendingRequests: remainingPendingRequests,
+          pendingRequestsCount: remainingPendingRequests.length,
         });
       }
     } catch (error) {
@@ -162,22 +223,50 @@ export default function AdminProductRow({
                   {pendingRequestsCount} demande
                   {pendingRequestsCount > 1 ? 's' : ''} en attente
                 </span>
+              </div>
 
+              {pendingRequestsByColor.length > 0 ? (
+                <div className={styles.restockRequestsList}>
+                  {pendingRequestsByColor.map((entry) => {
+                    const matchingColor = normalizedColors.find(
+                      (color) =>
+                        color.name.toLowerCase() === entry.color.toLowerCase()
+                    );
+                    const colorStock = matchingColor ? matchingColor.stock : 0;
+                    const canNotify = colorStock > 0;
+
+                    return (
+                      <div key={entry.key} className={styles.restockRequestItem}>
+                        <span className={styles.restockInfo}>
+                          Couleur : {entry.color} — {entry.count} demande
+                          {entry.count > 1 ? 's' : ''}
+                        </span>
+
+                        <button
+                          type="button"
+                          className={styles.restockNotifyButton}
+                          onClick={() => handleNotifyRestock(entry.color)}
+                          disabled={isNotifyingRestock || !canNotify}
+                        >
+                          <FiMail />
+                          {isNotifyingRestock
+                            ? 'Envoi...'
+                            : `Notifier ${entry.color}`}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
                 <button
                   type="button"
                   className={styles.restockNotifyButton}
-                  onClick={handleNotifyRestock}
-                  disabled={isNotifyingRestock || totalStock <= 0}
+                  onClick={() => handleNotifyRestock('')}
+                  disabled
                 >
                   <FiMail />
-                  {isNotifyingRestock ? 'Envoi...' : 'Notifier maintenant'}
+                  Notifier maintenant
                 </button>
-              </div>
-
-              {totalStock <= 0 && (
-                <p className={styles.restockFeedback}>
-                  Le produit doit être de nouveau en stock avant notification.
-                </p>
               )}
 
               {restockFeedback && (
