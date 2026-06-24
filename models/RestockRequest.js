@@ -1,3 +1,4 @@
+// models/RestockRequest.js
 import mongoose from 'mongoose';
 
 const restockRequestSchema = new mongoose.Schema(
@@ -6,6 +7,11 @@ const restockRequestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
       required: true,
+    },
+    color: {
+      type: String,
+      required: true,
+      trim: true,
     },
     email: {
       type: String,
@@ -28,7 +34,7 @@ const restockRequestSchema = new mongoose.Schema(
 );
 
 restockRequestSchema.index(
-  { product: 1, email: 1, notifiedAt: 1 },
+  { product: 1, color: 1, email: 1, notifiedAt: 1 },
   { unique: true }
 );
 
