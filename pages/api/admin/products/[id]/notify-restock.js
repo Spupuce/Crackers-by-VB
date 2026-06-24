@@ -1,9 +1,12 @@
 // pages/api/admin/products/[id]/notify-restock.js
-
 import { connectMongo } from '../../../../../lib/mongodb';
 import Product from '../../../../../models/Product';
 import RestockRequest from '../../../../../models/RestockRequest';
 import nodemailer from 'nodemailer';
+
+function normalizeColorName(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 function getTransporter() {
   const host = process.env.SMTP_HOST;
@@ -40,13 +43,16 @@ function getProductUrl(product) {
     : `/boutique/${product.slug}`;
 }
 
-function buildMailText(product) {
+function buildMailText(product, color) {
   const shopName = process.env.MAIL_FROM_NAME || 'Crackers by VB';
   const productUrl = getProductUrl(product);
+  const normalizedColor = normalizeColorName(color);
 
   return `Bonjour,
 
-Le produit "${product.name}" est de nouveau disponible sur la boutique.
+Le produit "${product.name}"${
+    normalizedColor ? ` en couleur "${normalizedColor}"` : ''
+  } est de nouveau disponible sur la boutique.
 
 Vous pouvez le retrouver ici :
 ${productUrl}
@@ -81,11 +87,20 @@ export default async function handler(req, res) {
     await connectMongo();
 
     const { id } = req.query;
+    const requestedColor = normalizeColorName(req.body?.color);
     const mailFromAddress = process.env.MAIL_FROM_ADDRESS;
     const mailFromName = process.env.MAIL_FROM_NAME || 'Crackers by VB';
 
     if (!mailFromAddress) {
       throw new Error('MAIL_FROM_ADDRESS est manquant.');
+    }
+
+    if (!requestedColor) {
+      return res.status(400).json({
+        message: 'La couleur à notifier est obligatoire.',
+        sentCount: 0,
+        failedCount: 0,
+      });
     }
 
     const product = await Product.findById(id);
@@ -94,38 +109,98 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: 'Produit introuvable.' });
     }
 
-    const requests = await RestockRequest.find({
-      product: product._id,
-      notifiedAt: null,
-    });
+    const matchingColor = Array.isArray(product.colors)
+      ? product.colors.find(
+          (color) =>
+            normalizeColorName(color?.name).toLowerCase() ===
+            requestedColor.toLowerCase()
+        )
+      : null;
 
-    if (requests.length === 0) {
-      return res.status(200).json({
-        message: 'Aucune demande en attente pour ce produit.',
+    const colorStock = matchingColor ? Number(matchingColor.quantity || 0) : 0;
+
+    if (!matchingColor) {
+      return res.status(400).json({
+        message: 'Couleur introuvable pour ce produit.',
         sentCount: 0,
         failedCount: 0,
       });
     }
 
+    if (colorStock <= 0) {
+      return res.status(400).json({
+        message: 'La couleur doit être de nouveau en stock avant notification.',
+        sentCount: 0,
+        failedCount: 0,
+      });
+    }
+
+    const requests = await RestockRequest.find({
+      product: product._id,
+      color: requestedColor,
+      notifiedAt: null,
+    });
+
+    if (requests.length === 0) {
+      return res.status(200).json({
+        message: `Aucune demande en attente pour la couleur ${requestedColor}.`,
+        sentCount: 0,
+        failedCount: 0,
+      });
+    }
+
+    const processingDate = new Date();
+
+    const claimedRequests = await RestockRequest.find({
+      product: product._id,
+      color: requestedColor,
+      notifiedAt: null,
+      $or: [
+        { notificationProcessingAt: null },
+        { notificationProcessingAt: { $exists: false } },
+      ],
+    });
+
+    if (claimedRequests.length === 0) {
+      return res.status(200).json({
+        message: 'Une notification est déjà en cours pour cette couleur.',
+        sentCount: 0,
+        failedCount: 0,
+      });
+    }
+
+    const claimedIds = claimedRequests.map((request) => request._id);
+
+    await RestockRequest.updateMany(
+      {
+        _id: { $in: claimedIds },
+      },
+      {
+        $set: { notificationProcessingAt: processingDate },
+      }
+    );
+
     const transporter = getTransporter();
     await transporter.verify();
 
     const sentRequestIds = [];
+    const failedRequestIds = [];
     const failedEmails = [];
 
-    for (const request of requests) {
+    for (const request of claimedRequests) {
       try {
         const info = await transporter.sendMail({
           from: `"${mailFromName}" <${mailFromAddress}>`,
           to: request.email,
-          subject: `${product.name} est de nouveau disponible`,
-          text: buildMailText(product),
+          subject: `${product.name} (${requestedColor}) est de nouveau disponible`,
+          text: buildMailText(product, requestedColor),
         });
 
         console.log('RESTOCK_MAIL_RESULT:', {
           productId: String(product._id),
           requestId: String(request._id),
           email: request.email,
+          color: requestedColor,
           messageId: info?.messageId || null,
           accepted: info?.accepted || [],
           rejected: info?.rejected || [],
@@ -135,11 +210,13 @@ export default async function handler(req, res) {
         if (isAcceptedResult(info, request.email)) {
           sentRequestIds.push(request._id);
         } else {
+          failedRequestIds.push(request._id);
           failedEmails.push(request.email);
           console.error('RESTOCK_MAIL_NOT_ACCEPTED:', {
             productId: String(product._id),
             requestId: String(request._id),
             email: request.email,
+            color: requestedColor,
             messageId: info?.messageId || null,
             accepted: info?.accepted || [],
             rejected: info?.rejected || [],
@@ -147,11 +224,13 @@ export default async function handler(req, res) {
           });
         }
       } catch (error) {
+        failedRequestIds.push(request._id);
         failedEmails.push(request.email);
         console.error('RESTOCK_MAIL_SEND_ERROR:', {
           productId: String(product._id),
           requestId: String(request._id),
           email: request.email,
+          color: requestedColor,
           error: error?.message || error,
           code: error?.code || null,
           command: error?.command || null,
@@ -167,7 +246,21 @@ export default async function handler(req, res) {
           _id: { $in: sentRequestIds },
         },
         {
-          $set: { notifiedAt: new Date() },
+          $set: {
+            notifiedAt: new Date(),
+            notificationProcessingAt: null,
+          },
+        }
+      );
+    }
+
+    if (failedRequestIds.length > 0) {
+      await RestockRequest.updateMany(
+        {
+          _id: { $in: failedRequestIds },
+        },
+        {
+          $set: { notificationProcessingAt: null },
         }
       );
     }
@@ -177,7 +270,7 @@ export default async function handler(req, res) {
 
     if (sentCount === 0) {
       return res.status(500).json({
-        message: "Aucune notification n'a pu être envoyée.",
+        message: `Aucune notification n'a pu être envoyée pour la couleur ${requestedColor}.`,
         sentCount: 0,
         failedCount,
       });
@@ -185,14 +278,14 @@ export default async function handler(req, res) {
 
     if (failedCount > 0) {
       return res.status(200).json({
-        message: `${sentCount} notification(s) acceptée(s), ${failedCount} en échec.`,
+        message: `${sentCount} notification(s) acceptée(s) pour ${requestedColor}, ${failedCount} en échec.`,
         sentCount,
         failedCount,
       });
     }
 
     return res.status(200).json({
-      message: `${sentCount} notification(s) acceptée(s).`,
+      message: `${sentCount} notification(s) acceptée(s) pour ${requestedColor}.`,
       sentCount,
       failedCount: 0,
     });
