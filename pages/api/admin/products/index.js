@@ -1,5 +1,4 @@
 // pages/api/admin/products/index.js
-
 import { connectMongo } from '../../../../lib/mongodb';
 import Product from '../../../../models/Product';
 import RestockRequest from '../../../../models/RestockRequest';
@@ -98,31 +97,38 @@ export default async function handler(req, res) {
 
       const products = await Product.find(filter).sort({ createdAt: -1 });
 
-      const pendingRequests = await RestockRequest.aggregate([
-        {
-          $match: {
-            notifiedAt: null,
-          },
-        },
-        {
-          $group: {
-            _id: '$product',
-            count: { $sum: 1 },
-          },
-        },
-      ]);
+      const pendingRequests = await RestockRequest.find({
+        notifiedAt: null,
+      })
+        .select('product email color createdAt')
+        .lean();
 
-      const pendingRequestsMap = new Map(
-        pendingRequests.map((item) => [String(item._id), item.count])
-      );
+      const pendingRequestsMap = pendingRequests.reduce((acc, request) => {
+        const productId = String(request.product);
+
+        if (!acc.has(productId)) {
+          acc.set(productId, []);
+        }
+
+        acc.get(productId).push({
+          _id: request._id,
+          email: request.email,
+          color: request.color || '',
+          createdAt: request.createdAt,
+        });
+
+        return acc;
+      }, new Map());
 
       const enrichedProducts = products.map((product) => {
         const plainProduct = product.toObject();
+        const productPendingRequests =
+          pendingRequestsMap.get(String(product._id)) || [];
 
         return {
           ...plainProduct,
-          pendingRequestsCount:
-            pendingRequestsMap.get(String(product._id)) || 0,
+          pendingRequestsCount: productPendingRequests.length,
+          pendingRequests: productPendingRequests,
         };
       });
 
