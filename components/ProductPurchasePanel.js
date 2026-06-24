@@ -163,10 +163,9 @@ export default function ProductPurchasePanel({
     ? availableColors.some((color) => Number(color.quantity) > 0)
     : false;
 
-  const soldOut =
-    hasColorVariants
-      ? !hasAnyColorWithStock
-      : isSoldOut(product) || effectiveStock <= 0;
+  const soldOut = hasColorVariants
+    ? !hasAnyColorWithStock
+    : isSoldOut(product) || effectiveStock <= 0;
 
   const selectedColorSoldOut =
     hasColorVariants && selectedColor
@@ -174,9 +173,15 @@ export default function ProductPurchasePanel({
       : false;
 
   const shouldShowNotifyForSelectedColor =
-    hasColorVariants && !!selectedColor && selectedColorSoldOut;
+    hasColorVariants && !!selectedColor && selectedColorSoldOut && !soldOut;
 
   const requiresColorSelection = hasColorVariants && !selectedColor;
+
+  const stockBadgeLabel = soldOut
+    ? 'Article épuisé'
+    : shouldShowNotifyForSelectedColor
+    ? 'Couleur épuisée'
+    : 'En stock';
 
   useEffect(() => {
     if (quantity > Math.max(remainingAvailable, 1)) {
@@ -363,11 +368,15 @@ export default function ProductPurchasePanel({
           )}
         </div>
 
-        {soldOut ? (
-          <span className={styles.soldOutBadge}>Article épuisé</span>
-        ) : (
-          <span className={styles.stockBadge}>En stock</span>
-        )}
+        <span
+          className={
+            soldOut || shouldShowNotifyForSelectedColor
+              ? styles.soldOutBadge
+              : styles.stockBadge
+          }
+        >
+          {stockBadgeLabel}
+        </span>
       </div>
 
       <div className={styles.separator} />
@@ -423,12 +432,12 @@ export default function ProductPurchasePanel({
         </div>
       )}
 
-      {soldOut || shouldShowNotifyForSelectedColor ? (
+      {(soldOut || shouldShowNotifyForSelectedColor) ? (
         <div className={styles.notifyBlock}>
           <p className={styles.notifyText}>
             {shouldShowNotifyForSelectedColor
               ? `La couleur ${selectedColor} est actuellement en rupture de stock. Vous pouvez me signaler votre intérêt et je vous contacterai dès qu’elle sera à nouveau disponible.`
-              : "Cet article est actuellement en rupture de stock. Vous pouvez me signaler votre intérêt et je vous contacterai dès qu&apos;il sera à nouveau disponible."}
+              : "Cet article est actuellement en rupture de stock. Vous pouvez me signaler votre intérêt et je vous contacterai dès qu'il sera à nouveau disponible."}
           </p>
 
           {notifySuccess && (
@@ -494,7 +503,6 @@ export default function ProductPurchasePanel({
                 <button
                   type="submit"
                   className={styles.notifySubmit}
-                  onClick={handleSubmitNotify}
                   disabled={notifyLoading}
                 >
                   {notifyLoading ? 'Envoi en cours...' : 'Envoyer la demande'}

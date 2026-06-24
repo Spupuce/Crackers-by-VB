@@ -78,6 +78,7 @@ Lorsqu’une couleur revient en stock, l’action admin “Notifier maintenant�
 - 🟡 Empêcher les doublons uniquement pour une même demande active sur le même produit, la même couleur et la même adresse e-mail.
 - 🟡 Ajouter la couleur concernée dans le modèle `RestockRequest`.
 - 🟡 Adapter l’API de demande de réassort pour enregistrer la couleur sélectionnée.
+- 🔴 Faire apparaître le bouton de demande de notification quand la couleur sélectionnée est épuisée
 - 🔴 Permettre l’affichage du bouton “Me prévenir quand disponible” pour une couleur épuisée même si d’autres couleurs du produit sont encore en stock.
 - 🔴 Définir clairement le comportement UI quand une couleur est épuisée : couleur désactivée seule, couleur sélectionnable avec état “rupture”, ou action dédiée de demande de réassort.
 - 🔴 Vérifier le comportement si aucune couleur n’est sélectionnée au moment de la demande.
