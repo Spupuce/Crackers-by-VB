@@ -49,9 +49,7 @@ export default function ProductForm({
   }, [hasColors, visualStock, stockInputValue]);
 
   const canShowNotifyButton =
-    mode === "edit" &&
-    hasPendingRestockRequests &&
-    currentStock > 0;
+    mode === "edit" && hasPendingRestockRequests && currentStock > 0;
 
   const isEditingColor = editingColorIndex !== null;
 
@@ -152,8 +150,31 @@ export default function ProductForm({
       colors,
     };
 
+    // Détection des couleurs remises en stock (0 -> > 0)
+    const restockedColors =
+      mode === "edit" && initialValues && Array.isArray(initialValues.colors)
+        ? colors
+            .filter((color) => {
+              const name = (color.name || "").trim();
+              if (!name) return false;
+
+              const newQty = Math.max(0, Number(color.quantity) || 0);
+              const previousColor = initialValues.colors.find(
+                (prevColor) =>
+                  (prevColor?.name || "").trim().toLowerCase() ===
+                  name.toLowerCase()
+              );
+              const oldQty = previousColor
+                ? Math.max(0, Number(previousColor.quantity) || 0)
+                : 0;
+
+              return oldQty === 0 && newQty > 0;
+            })
+            .map((color) => (color.name || "").trim())
+        : [];
+
     if (typeof onSubmit === "function") {
-      onSubmit(payload, { mode, submitAction });
+      onSubmit(payload, { mode, submitAction, restockedColors });
     }
   }
 
