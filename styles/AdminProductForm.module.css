@@ -1,5 +1,4 @@
 /* styles/AdminProductForm.module.css */
-
 .pageTopbar {
   display: flex;
   align-items: center;
@@ -121,6 +120,16 @@ select.input:focus {
   border: 1px solid var(--color-gray-200);
   border-radius: 8px;
   padding: 12px;
+}
+
+.colorCardHeader {
+  margin-bottom: 10px;
+}
+
+.colorCardTitle {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .colorRow {
@@ -251,17 +260,37 @@ select.input:focus {
   color: var(--color-text-soft);
 }
 
+.colorPreviewActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorPreviewEdit,
 .colorPreviewDelete {
   height: 32px;
   padding: 0 12px;
   border-radius: 8px;
-  border: none;
-  background-color: var(--color-white);
-  color: var(--color-gray-700);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.colorPreviewEdit {
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-white);
+  color: var(--color-primary);
+}
+
+.colorPreviewEdit:hover {
+  background-color: #fff4ea;
+}
+
+.colorPreviewDelete {
+  border: none;
+  background-color: var(--color-white);
+  color: var(--color-gray-700);
 }
 
 .colorPreviewDelete:hover {
@@ -277,7 +306,8 @@ select.input:focus {
 
   .pageTopbar,
   .colorsHeader,
-  .submitButtons {
+  .submitButtons,
+  .colorPreviewActions {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -290,5 +320,10 @@ select.input:focus {
     background-color: var(--color-gray-100);
     color: var(--color-text-soft);
     cursor: not-allowed;
+  }
+
+  .colorPreviewItem {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

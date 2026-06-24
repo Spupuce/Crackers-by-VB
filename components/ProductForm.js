@@ -1,7 +1,14 @@
 // components/ProductForm.js
-
 import { useMemo, useState } from "react";
 import styles from "../styles/AdminProductForm.module.css";
+
+function createEmptyColorDraft() {
+  return {
+    name: "",
+    quantity: "",
+    imageUrl: "",
+  };
+}
 
 export default function ProductForm({
   mode = "create",
@@ -10,11 +17,8 @@ export default function ProductForm({
   hasPendingRestockRequests = false,
 }) {
   const [showColorForm, setShowColorForm] = useState(false);
-  const [colorDraft, setColorDraft] = useState({
-    name: "",
-    quantity: "",
-    imageUrl: "",
-  });
+  const [colorDraft, setColorDraft] = useState(createEmptyColorDraft());
+  const [editingColorIndex, setEditingColorIndex] = useState(null);
   const [submitAction, setSubmitAction] = useState("save");
   const [stockInputValue, setStockInputValue] = useState(
     initialValues?.stock ?? ""
@@ -49,6 +53,14 @@ export default function ProductForm({
     hasPendingRestockRequests &&
     currentStock > 0;
 
+  const isEditingColor = editingColorIndex !== null;
+
+  function resetColorForm() {
+    setColorDraft(createEmptyColorDraft());
+    setEditingColorIndex(null);
+    setShowColorForm(false);
+  }
+
   function handleColorDraftChange(field, value) {
     setColorDraft((prev) => ({
       ...prev,
@@ -65,35 +77,61 @@ export default function ProductForm({
       return;
     }
 
-    const newColor = {
+    const normalizedColor = {
       name: normalizedName,
       quantity: normalizedQuantity,
       imageUrl: normalizedImageUrl,
     };
 
-    setColors((prev) => [...prev, newColor]);
-    setColorDraft({
-      name: "",
-      quantity: "",
-      imageUrl: "",
-    });
-    setShowColorForm(false);
+    if (isEditingColor) {
+      setColors((prev) =>
+        prev.map((color, index) =>
+          index === editingColorIndex ? normalizedColor : color
+        )
+      );
+    } else {
+      setColors((prev) => [...prev, normalizedColor]);
+    }
+
+    resetColorForm();
   }
 
   function handleCancelColor() {
-    setColorDraft({
-      name: "",
-      quantity: "",
-      imageUrl: "",
-    });
-    setShowColorForm(false);
+    resetColorForm();
   }
 
   function handleRemoveColor(indexToRemove) {
     setColors((prev) => prev.filter((_, index) => index !== indexToRemove));
+
+    if (editingColorIndex === indexToRemove) {
+      resetColorForm();
+      return;
+    }
+
+    if (editingColorIndex !== null && editingColorIndex > indexToRemove) {
+      setEditingColorIndex((prev) => prev - 1);
+    }
   }
 
   function handleShowColorForm() {
+    setEditingColorIndex(null);
+    setColorDraft(createEmptyColorDraft());
+    setShowColorForm(true);
+  }
+
+  function handleEditColor(index) {
+    const colorToEdit = colors[index];
+
+    if (!colorToEdit) {
+      return;
+    }
+
+    setEditingColorIndex(index);
+    setColorDraft({
+      name: colorToEdit.name || "",
+      quantity: colorToEdit.quantity ?? "",
+      imageUrl: colorToEdit.imageUrl || "",
+    });
     setShowColorForm(true);
   }
 
@@ -269,6 +307,12 @@ export default function ProductForm({
 
         {showColorForm && (
           <div className={styles.colorCard}>
+            <div className={styles.colorCardHeader}>
+              <p className={styles.colorCardTitle}>
+                {isEditingColor ? "Modifier la couleur" : "Ajouter une couleur"}
+              </p>
+            </div>
+
             <div className={styles.colorRow}>
               <div className={styles.field}>
                 <label htmlFor="colorName" className={styles.smallLabel}>
@@ -329,7 +373,7 @@ export default function ProductForm({
                 className={styles.primaryButton}
                 onClick={handleValidateColor}
               >
-                Valider
+                {isEditingColor ? "Mettre à jour" : "Valider"}
               </button>
 
               <button
@@ -367,13 +411,23 @@ export default function ProductForm({
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  className={styles.colorPreviewDelete}
-                  onClick={() => handleRemoveColor(index)}
-                >
-                  Supprimer
-                </button>
+                <div className={styles.colorPreviewActions}>
+                  <button
+                    type="button"
+                    className={styles.colorPreviewEdit}
+                    onClick={() => handleEditColor(index)}
+                  >
+                    Modifier
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.colorPreviewDelete}
+                    onClick={() => handleRemoveColor(index)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
               </div>
             ))}
           </div>
