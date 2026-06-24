@@ -1,5 +1,5 @@
 // components/ProductForm.js
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../styles/AdminProductForm.module.css";
 
 function createEmptyColorDraft() {
@@ -8,6 +8,22 @@ function createEmptyColorDraft() {
     quantity: "",
     imageUrl: "",
   };
+}
+
+function normalizeColorName(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function sanitizeColors(colors) {
+  if (!Array.isArray(colors)) {
+    return [];
+  }
+
+  return colors.map((color) => ({
+    name: color?.name || "",
+    quantity: Math.max(0, Number(color?.quantity) || 0),
+    imageUrl: color?.imageUrl || "",
+  }));
 }
 
 export default function ProductForm({
@@ -29,6 +45,19 @@ export default function ProductForm({
       ? initialValues.colors
       : []
   );
+
+  const initialColorsSnapshotRef = useRef(sanitizeColors(initialValues?.colors));
+
+  useEffect(() => {
+    const normalizedInitialColors =
+      initialValues?.colors && Array.isArray(initialValues.colors)
+        ? initialValues.colors
+        : [];
+
+    setColors(normalizedInitialColors);
+    setStockInputValue(initialValues?.stock ?? "");
+    initialColorsSnapshotRef.current = sanitizeColors(normalizedInitialColors);
+  }, [initialValues]);
 
   const hasColors = colors.length > 0;
 
@@ -150,19 +179,22 @@ export default function ProductForm({
       colors,
     };
 
-    // Détection des couleurs remises en stock (0 -> > 0)
+    const initialColorsSnapshot = initialColorsSnapshotRef.current;
+
     const restockedColors =
-      mode === "edit" && initialValues && Array.isArray(initialValues.colors)
+      mode === "edit"
         ? colors
             .filter((color) => {
-              const name = (color.name || "").trim();
-              if (!name) return false;
+              const normalizedName = normalizeColorName(color.name);
+
+              if (!normalizedName) {
+                return false;
+              }
 
               const newQty = Math.max(0, Number(color.quantity) || 0);
-              const previousColor = initialValues.colors.find(
+              const previousColor = initialColorsSnapshot.find(
                 (prevColor) =>
-                  (prevColor?.name || "").trim().toLowerCase() ===
-                  name.toLowerCase()
+                  normalizeColorName(prevColor?.name) === normalizedName
               );
               const oldQty = previousColor
                 ? Math.max(0, Number(previousColor.quantity) || 0)
@@ -170,7 +202,7 @@ export default function ProductForm({
 
               return oldQty === 0 && newQty > 0;
             })
-            .map((color) => (color.name || "").trim())
+            .map((color) => color.name.trim())
         : [];
 
     if (typeof onSubmit === "function") {

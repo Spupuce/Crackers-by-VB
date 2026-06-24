@@ -1,5 +1,4 @@
 // pages/administration/produit/[id].js
-
 import { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -60,54 +59,44 @@ export default function EditProductPage() {
     !product.isArchived &&
     pendingRequestsCount > 0;
 
-  async function runNotifyRestock() {
-    if (!id) {
-      return { ok: false, sentCount: 0 };
+  async function runNotifyRestock(color) {
+    if (!id || !color) {
+      return { ok: false, sentCount: 0, failedCount: 0, message: '' };
     }
 
     try {
-      setNotifyLoading(true);
-      setNotifyFeedback('');
-
       const response = await fetch(`/api/admin/products/${id}/notify-restock`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ color }),
       });
 
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        setNotifyFeedback(
-          data?.message || "Erreur lors de l'envoi des notifications."
-        );
-        return { ok: false, sentCount: 0 };
+        return {
+          ok: false,
+          sentCount: 0,
+          failedCount: 0,
+          message: data?.message || `Erreur lors de l'envoi pour ${color}.`,
+        };
       }
 
-      const sentCount = Number(data?.sentCount || 0);
-
-      setNotifyFeedback(
-        data?.message || 'Notification de réassort envoyée.'
-      );
-
-      if (sentCount > 0) {
-        setProduct((prev) =>
-          prev
-            ? {
-                ...prev,
-                pendingRequestsCount: Math.max(
-                  0,
-                  Number(prev.pendingRequestsCount || 0) - sentCount
-                ),
-              }
-            : prev
-        );
-      }
-
-      return { ok: true, sentCount };
+      return {
+        ok: true,
+        sentCount: Number(data?.sentCount || 0),
+        failedCount: Number(data?.failedCount || 0),
+        message: data?.message || `Notification de réassort envoyée pour ${color}.`,
+      };
     } catch (error) {
-      setNotifyFeedback("Erreur lors de l'envoi des notifications.");
-      return { ok: false, sentCount: 0 };
-    } finally {
-      setNotifyLoading(false);
+      return {
+        ok: false,
+        sentCount: 0,
+        failedCount: 0,
+        message: `Erreur lors de l'envoi des notifications pour ${color}.`,
+      };
     }
   }
 
@@ -115,6 +104,9 @@ export default function EditProductPage() {
     if (!id) return;
 
     const submitAction = options?.submitAction || 'save';
+    const restockedColors = Array.isArray(options?.restockedColors)
+      ? options.restockedColors.filter(Boolean)
+      : [];
 
     try {
       setSaveError('');
@@ -141,10 +133,55 @@ export default function EditProductPage() {
       await fetchProduct();
 
       if (submitAction === 'save-and-notify') {
-        const notifyResult = await runNotifyRestock();
-
-        if (notifyResult.ok) {
+        if (restockedColors.length === 0) {
           setSaveFeedback('Produit mis à jour avec succès.');
+          setNotifyFeedback(
+            'Aucune couleur remise en stock détectée pour envoyer une notification.'
+          );
+          return;
+        }
+
+        setNotifyLoading(true);
+
+        const results = [];
+        for (const color of restockedColors) {
+          const result = await runNotifyRestock(color);
+          results.push({ color, ...result });
+        }
+
+        setNotifyLoading(false);
+
+        const successResults = results.filter((result) => result.ok);
+        const sentTotal = results.reduce(
+          (sum, result) => sum + Number(result.sentCount || 0),
+          0
+        );
+
+        if (successResults.length > 0) {
+          setSaveFeedback('Produit mis à jour avec succès.');
+        }
+
+        if (results.length === 1) {
+          setNotifyFeedback(results[0].message || '');
+        } else {
+          const messages = results
+            .map((result) => `- ${result.color} : ${result.message}`)
+            .join(' ');
+          setNotifyFeedback(messages);
+        }
+
+        if (sentTotal > 0) {
+          setProduct((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  pendingRequestsCount: Math.max(
+                    0,
+                    Number(prev.pendingRequestsCount || 0) - sentTotal
+                  ),
+                }
+              : prev
+          );
         }
 
         return;
@@ -152,6 +189,7 @@ export default function EditProductPage() {
 
       setSaveFeedback('Produit mis à jour avec succès.');
     } catch (error) {
+      setNotifyLoading(false);
       setSaveError('Impossible d’enregistrer le produit.');
     }
   }

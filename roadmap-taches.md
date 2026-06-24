@@ -201,3 +201,7 @@ Lorsqu’une couleur revient en stock, l’action admin “Notifier maintenant�
 - 🔴 Vérifier les URLs de retour Stripe en production.
 - 🔴 Refaire un test complet post-déploiement.
 - 🔴 Contrôler formulaires, panier, commandes, compte et administration en environnement réel.
+
+
+###Points a réfléchir
+Archiver les couleurs en remplacement de la suppression pour avoir le même système que dans le stock
