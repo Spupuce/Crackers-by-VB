@@ -77,6 +77,15 @@ export default function EditProductPage() {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifyFeedback, setNotifyFeedback] = useState('');
 
+  const scrollToTop = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }, []);
+
   const fetchProduct = useCallback(async () => {
     if (!id) return null;
 
@@ -211,6 +220,7 @@ export default function EditProductPage() {
         setSaveError(
           data?.message || 'Erreur lors de la mise à jour du produit.'
         );
+        scrollToTop();
         return;
       }
 
@@ -241,6 +251,7 @@ export default function EditProductPage() {
             );
           }
 
+          scrollToTop();
           return;
         }
 
@@ -285,13 +296,16 @@ export default function EditProductPage() {
           );
         }
 
+        scrollToTop();
         return;
       }
 
       setSaveFeedback('Produit mis à jour avec succès.');
+      scrollToTop();
     } catch (error) {
       setNotifyLoading(false);
       setSaveError('Impossible d’enregistrer le produit.');
+      scrollToTop();
     }
   }
 
