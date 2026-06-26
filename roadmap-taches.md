@@ -205,3 +205,4 @@ Lorsqu’une couleur revient en stock, l’action admin “Notifier maintenant�
 
 ###Points a réfléchir
 Archiver les couleurs en remplacement de la suppression pour avoir le même système que dans le stock
+Sur la 

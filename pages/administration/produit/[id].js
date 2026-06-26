@@ -27,14 +27,14 @@ function getColorStock(color) {
   return 0;
 }
 
-function getPendingRequestColors(product) {
-  if (!Array.isArray(product?.pendingRequests)) {
+function getPendingRequestColorsFromRequests(requests) {
+  if (!Array.isArray(requests)) {
     return [];
   }
 
   const uniqueColors = new Map();
 
-  product.pendingRequests.forEach((request) => {
+  requests.forEach((request) => {
     const normalized = normalizeColorName(request?.color);
     if (!normalized) return;
 
@@ -46,15 +46,13 @@ function getPendingRequestColors(product) {
   return Array.from(uniqueColors.values());
 }
 
-function getNotifiableColors(product) {
-  if (!product || !Array.isArray(product.colors) || !Array.isArray(product.pendingRequests)) {
+function getNotifiableColorsFromRequests(product, requests) {
+  if (!product || !Array.isArray(product.colors) || !Array.isArray(requests)) {
     return [];
   }
 
   const pendingColors = new Set(
-    product.pendingRequests
-      .map((request) => normalizeColorName(request?.color))
-      .filter(Boolean)
+    requests.map((request) => normalizeColorName(request?.color)).filter(Boolean)
   );
 
   return product.colors
@@ -107,6 +105,37 @@ export default function EditProductPage() {
     }
   }, [id]);
 
+  async function fetchPendingRestockRequests() {
+    if (!id) {
+      return [];
+    }
+
+    try {
+      const response = await fetch(`/api/admin/products/${id}/restock-requests`);
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return [];
+      }
+
+      if (Array.isArray(data)) {
+        return data;
+      }
+
+      if (Array.isArray(data?.requests)) {
+        return data.requests;
+      }
+
+      if (Array.isArray(data?.pendingRequests)) {
+        return data.pendingRequests;
+      }
+
+      return [];
+    } catch (error) {
+      return [];
+    }
+  }
+
   useEffect(() => {
     setNotifyFeedback('');
     setSaveFeedback('');
@@ -115,9 +144,7 @@ export default function EditProductPage() {
 
   const pendingRequestsCount = Number(product?.pendingRequestsCount || 0);
   const hasPendingRestockRequests =
-    Boolean(product) &&
-    !product.isArchived &&
-    pendingRequestsCount > 0;
+    Boolean(product) && !product.isArchived && pendingRequestsCount > 0;
 
   async function runNotifyRestock(color) {
     if (!id || !color) {
@@ -190,10 +217,18 @@ export default function EditProductPage() {
       const refreshedProduct = await fetchProduct();
 
       if (submitAction === 'save-and-notify') {
-        const notifiableColors = getNotifiableColors(refreshedProduct);
-        const fallbackPendingColors = getPendingRequestColors(refreshedProduct);
+        setNotifyLoading(true);
+
+        const pendingRequests = await fetchPendingRestockRequests();
+        const notifiableColors = getNotifiableColorsFromRequests(
+          refreshedProduct,
+          pendingRequests
+        );
+        const fallbackPendingColors =
+          getPendingRequestColorsFromRequests(pendingRequests);
 
         if (notifiableColors.length === 0) {
+          setNotifyLoading(false);
           setSaveFeedback('Produit mis à jour avec succès.');
 
           if (fallbackPendingColors.length > 0) {
@@ -208,8 +243,6 @@ export default function EditProductPage() {
 
           return;
         }
-
-        setNotifyLoading(true);
 
         const results = [];
         for (const color of notifiableColors) {

@@ -35,18 +35,6 @@ function getTransporter() {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
-  console.log('SMTP_CONFIG_DEBUG:', {
-    hasHost: Boolean(host),
-    hostValue: host || null,
-    hasPort: Boolean(process.env.SMTP_PORT),
-    portValue: process.env.SMTP_PORT || null,
-    parsedPort: port,
-    hasUser: Boolean(user),
-    userValue: user || null,
-    hasPass: Boolean(pass),
-    passLength: typeof pass === 'string' ? pass.length : 0,
-  });
-
   if (!host || !port || !user || !pass) {
     throw new Error('Configuration SMTP incomplète.');
   }
@@ -59,8 +47,6 @@ function getTransporter() {
       user,
       pass,
     },
-    logger: true,
-    debug: true,
   });
 }
 
@@ -150,21 +136,6 @@ export default async function handler(req, res) {
         )
       : null;
 
-    const colorStock = getColorStock(matchingColor);
-
-    console.log('RESTOCK_NOTIFY_COLOR_DEBUG:', {
-      productId: String(product._id),
-      requestedColor,
-      foundColor: matchingColor
-        ? {
-            name: matchingColor.name || null,
-            stock: matchingColor.stock ?? null,
-            quantity: matchingColor.quantity ?? null,
-          }
-        : null,
-      resolvedStock: colorStock,
-    });
-
     if (!matchingColor) {
       return res.status(400).json({
         message: 'Couleur introuvable pour ce produit.',
@@ -172,6 +143,8 @@ export default async function handler(req, res) {
         failedCount: 0,
       });
     }
+
+    const colorStock = getColorStock(matchingColor);
 
     if (colorStock <= 0) {
       return res.status(400).json({
@@ -196,6 +169,25 @@ export default async function handler(req, res) {
     }
 
     const processingDate = new Date();
+    const staleProcessingDate = new Date(Date.now() - 15 * 60 * 1000);
+
+    const staleLockedRequests = await RestockRequest.find({
+      product: product._id,
+      color: requestedColor,
+      notifiedAt: null,
+      notificationProcessingAt: { $lt: staleProcessingDate },
+    }).select('_id');
+
+    if (staleLockedRequests.length > 0) {
+      await RestockRequest.updateMany(
+        {
+          _id: { $in: staleLockedRequests.map((request) => request._id) },
+        },
+        {
+          $set: { notificationProcessingAt: null },
+        }
+      );
+    }
 
     const claimedRequests = await RestockRequest.find({
       product: product._id,
@@ -242,47 +234,15 @@ export default async function handler(req, res) {
           text: buildMailText(product, requestedColor),
         });
 
-        console.log('RESTOCK_MAIL_RESULT:', {
-          productId: String(product._id),
-          requestId: String(request._id),
-          email: request.email,
-          color: requestedColor,
-          messageId: info?.messageId || null,
-          accepted: info?.accepted || [],
-          rejected: info?.rejected || [],
-          response: info?.response || null,
-        });
-
         if (isAcceptedResult(info, request.email)) {
           sentRequestIds.push(request._id);
         } else {
           failedRequestIds.push(request._id);
           failedEmails.push(request.email);
-          console.error('RESTOCK_MAIL_NOT_ACCEPTED:', {
-            productId: String(product._id),
-            requestId: String(request._id),
-            email: request.email,
-            color: requestedColor,
-            messageId: info?.messageId || null,
-            accepted: info?.accepted || [],
-            rejected: info?.rejected || [],
-            response: info?.response || null,
-          });
         }
       } catch (error) {
         failedRequestIds.push(request._id);
         failedEmails.push(request.email);
-        console.error('RESTOCK_MAIL_SEND_ERROR:', {
-          productId: String(product._id),
-          requestId: String(request._id),
-          email: request.email,
-          color: requestedColor,
-          error: error?.message || error,
-          code: error?.code || null,
-          command: error?.command || null,
-          response: error?.response || null,
-          responseCode: error?.responseCode || null,
-        });
       }
     }
 
