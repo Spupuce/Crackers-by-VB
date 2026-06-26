@@ -164,17 +164,35 @@ export default function AdminProductRow({
         }
       );
 
-      const data = await response.json().catch(() => null);
+      const rawText = await response.text().catch(() => '');
+      let data = null;
+
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        // JSON invalide ou vide, on garde rawText pour debug
+      }
+
+      console.log('NOTIFY_RESTOCK_RESPONSE_DEBUG:', {
+        status: response.status,
+        ok: response.ok,
+        url: response.url,
+        data,
+        rawText,
+      });
 
       if (!response.ok) {
         setRestockFeedback(
-          data?.message || "Erreur lors de l'envoi des notifications."
+          (data && data.message) ||
+            rawText ||
+            "Erreur lors de l'envoi des notifications."
         );
         return;
       }
 
       setRestockFeedback(
-        data?.message || `Notifications envoyées pour la couleur ${normalizedColor}.`
+        (data && data.message) ||
+          `Notifications envoyées pour la couleur ${normalizedColor}.`
       );
 
       const remainingPendingRequests = Array.isArray(product.pendingRequests)
@@ -193,6 +211,9 @@ export default function AdminProductRow({
         });
       }
     } catch (error) {
+      console.error('NOTIFY_RESTOCK_FETCH_ERROR:', {
+        message: error?.message || String(error),
+      });
       setRestockFeedback("Erreur lors de l'envoi des notifications.");
     } finally {
       setIsNotifyingRestock(false);

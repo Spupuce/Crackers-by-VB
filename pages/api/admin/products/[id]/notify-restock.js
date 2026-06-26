@@ -8,11 +8,44 @@ function normalizeColorName(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function getSafeStock(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function getColorStock(color) {
+  if (!color || typeof color !== 'object') {
+    return 0;
+  }
+
+  if (color.stock !== undefined && color.stock !== null) {
+    return getSafeStock(color.stock);
+  }
+
+  if (color.quantity !== undefined && color.quantity !== null) {
+    return getSafeStock(color.quantity);
+  }
+
+  return 0;
+}
+
 function getTransporter() {
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT || 587);
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
+
+  console.log('SMTP_CONFIG_DEBUG:', {
+    hasHost: Boolean(host),
+    hostValue: host || null,
+    hasPort: Boolean(process.env.SMTP_PORT),
+    portValue: process.env.SMTP_PORT || null,
+    parsedPort: port,
+    hasUser: Boolean(user),
+    userValue: user || null,
+    hasPass: Boolean(pass),
+    passLength: typeof pass === 'string' ? pass.length : 0,
+  });
 
   if (!host || !port || !user || !pass) {
     throw new Error('Configuration SMTP incomplète.');
@@ -117,7 +150,20 @@ export default async function handler(req, res) {
         )
       : null;
 
-    const colorStock = matchingColor ? Number(matchingColor.quantity || 0) : 0;
+    const colorStock = getColorStock(matchingColor);
+
+    console.log('RESTOCK_NOTIFY_COLOR_DEBUG:', {
+      productId: String(product._id),
+      requestedColor,
+      foundColor: matchingColor
+        ? {
+            name: matchingColor.name || null,
+            stock: matchingColor.stock ?? null,
+            quantity: matchingColor.quantity ?? null,
+          }
+        : null,
+      resolvedStock: colorStock,
+    });
 
     if (!matchingColor) {
       return res.status(400).json({
