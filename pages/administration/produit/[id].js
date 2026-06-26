@@ -7,6 +7,66 @@ import Footer from '../../../components/Footer';
 import ProductForm from '../../../components/ProductForm';
 import styles from '../../../styles/AdminStock.module.css';
 
+function normalizeColorName(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function getColorStock(color) {
+  if (!color || typeof color !== 'object') return 0;
+
+  if (color.quantity !== undefined && color.quantity !== null) {
+    const quantity = Number(color.quantity);
+    return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
+  }
+
+  if (color.stock !== undefined && color.stock !== null) {
+    const stock = Number(color.stock);
+    return Number.isFinite(stock) && stock > 0 ? stock : 0;
+  }
+
+  return 0;
+}
+
+function getPendingRequestColors(product) {
+  if (!Array.isArray(product?.pendingRequests)) {
+    return [];
+  }
+
+  const uniqueColors = new Map();
+
+  product.pendingRequests.forEach((request) => {
+    const normalized = normalizeColorName(request?.color);
+    if (!normalized) return;
+
+    if (!uniqueColors.has(normalized)) {
+      uniqueColors.set(normalized, request.color.trim());
+    }
+  });
+
+  return Array.from(uniqueColors.values());
+}
+
+function getNotifiableColors(product) {
+  if (!product || !Array.isArray(product.colors) || !Array.isArray(product.pendingRequests)) {
+    return [];
+  }
+
+  const pendingColors = new Set(
+    product.pendingRequests
+      .map((request) => normalizeColorName(request?.color))
+      .filter(Boolean)
+  );
+
+  return product.colors
+    .filter((color) => {
+      const normalizedName = normalizeColorName(color?.name);
+      if (!normalizedName) return false;
+
+      return pendingColors.has(normalizedName) && getColorStock(color) > 0;
+    })
+    .map((color) => color.name.trim());
+}
+
 export default function EditProductPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -104,9 +164,6 @@ export default function EditProductPage() {
     if (!id) return;
 
     const submitAction = options?.submitAction || 'save';
-    const restockedColors = Array.isArray(options?.restockedColors)
-      ? options.restockedColors.filter(Boolean)
-      : [];
 
     try {
       setSaveError('');
@@ -130,21 +187,32 @@ export default function EditProductPage() {
         return;
       }
 
-      await fetchProduct();
+      const refreshedProduct = await fetchProduct();
 
       if (submitAction === 'save-and-notify') {
-        if (restockedColors.length === 0) {
+        const notifiableColors = getNotifiableColors(refreshedProduct);
+        const fallbackPendingColors = getPendingRequestColors(refreshedProduct);
+
+        if (notifiableColors.length === 0) {
           setSaveFeedback('Produit mis à jour avec succès.');
-          setNotifyFeedback(
-            'Aucune couleur remise en stock détectée pour envoyer une notification.'
-          );
+
+          if (fallbackPendingColors.length > 0) {
+            setNotifyFeedback(
+              'Aucune couleur avec demandes en attente n’est actuellement en stock pour envoyer une notification.'
+            );
+          } else {
+            setNotifyFeedback(
+              'Aucune demande de réassort en attente pour envoyer une notification.'
+            );
+          }
+
           return;
         }
 
         setNotifyLoading(true);
 
         const results = [];
-        for (const color of restockedColors) {
+        for (const color of notifiableColors) {
           const result = await runNotifyRestock(color);
           results.push({ color, ...result });
         }

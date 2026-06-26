@@ -225,6 +225,7 @@ export default function ProductForm({
               placeholder="Ex : Pull tricoté main"
               className={styles.input}
               defaultValue={initialValues?.name || ""}
+              autoComplete="off"
               required
             />
           </div>
@@ -238,6 +239,7 @@ export default function ProductForm({
               name="category"
               className={styles.input}
               defaultValue={initialValues?.category || ""}
+              autoComplete="off"
               required
             >
               <option value="" disabled>
@@ -265,6 +267,7 @@ export default function ProductForm({
               placeholder="Ex : 45.00"
               className={styles.input}
               defaultValue={initialValues?.price ?? ""}
+              autoComplete="off"
               required
             />
           </div>
@@ -283,6 +286,7 @@ export default function ProductForm({
               placeholder="Ex : 35.00"
               className={styles.input}
               defaultValue={initialValues?.promoPrice ?? ""}
+              autoComplete="off"
             />
           </div>
         </div>
@@ -310,6 +314,7 @@ export default function ProductForm({
                 setStockInputValue(e.target.value);
               }
             }}
+            autoComplete="off"
             disabled={hasColors}
             required={!hasColors}
           />
@@ -326,6 +331,7 @@ export default function ProductForm({
             placeholder="https://..."
             className={styles.input}
             defaultValue={initialValues?.imageUrl || ""}
+            autoComplete="url"
             required
           />
         </div>
@@ -341,6 +347,7 @@ export default function ProductForm({
             className={styles.textarea}
             rows={5}
             defaultValue={initialValues?.description || ""}
+            autoComplete="off"
           />
         </div>
 
@@ -381,6 +388,7 @@ export default function ProductForm({
                   onChange={(e) =>
                     handleColorDraftChange("name", e.target.value)
                   }
+                  autoComplete="off"
                 />
               </div>
 
@@ -399,6 +407,7 @@ export default function ProductForm({
                   onChange={(e) =>
                     handleColorDraftChange("quantity", e.target.value)
                   }
+                  autoComplete="off"
                 />
               </div>
 
@@ -416,6 +425,7 @@ export default function ProductForm({
                   onChange={(e) =>
                     handleColorDraftChange("imageUrl", e.target.value)
                   }
+                  autoComplete="url"
                 />
               </div>
             </div>

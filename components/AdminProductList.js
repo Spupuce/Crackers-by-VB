@@ -1,3 +1,4 @@
+// components/AdminProductList.js
 import { useEffect, useState } from 'react';
 import AdminProductRow from './AdminProductRow';
 import styles from '../styles/AdminStock.module.css';
