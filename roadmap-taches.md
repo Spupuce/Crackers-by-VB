@@ -205,4 +205,5 @@ Lorsqu’une couleur revient en stock, l’action admin “Notifier maintenant�
 
 ###Points a réfléchir
 Archiver les couleurs en remplacement de la suppression pour avoir le même système que dans le stock
-Sur la 
+Sur la page modifier le produits lorsqu'on met à jour la fiche, on remonte en haut de page pour éviter de devoir scroller
+Corriger l'erreur "Merci de sélectionner une couleur." lorsqu'il n'y en a qu'une
