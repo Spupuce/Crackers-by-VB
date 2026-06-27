@@ -229,7 +229,6 @@ export default function PanierPage() {
   const { user, isAuthenticated, updateUser } = useAuth();
 
   const hasHandledCheckoutSuccessRef = useRef(false);
-
   const hasItems = Array.isArray(items) && items.length > 0;
 
   const [contact, setContact] = useState(buildInitialContact(user));
@@ -633,36 +632,37 @@ export default function PanierPage() {
   const cartLines = useMemo(
     () =>
       items.map((item) => (
-        <li key={buildCartLineKey(item)} className={styles.cartLine}>
-          <div className={styles.cartLineImageWrapper}>
+        <div key={buildCartLineKey(item)} className={styles.itemRow}>
+          <div className={styles.itemImageWrapper}>
             {item.imageUrl ? (
               <img
                 src={item.imageUrl}
                 alt={item.name}
-                className={styles.cartLineImage}
+                className={styles.itemImage}
               />
             ) : (
-              <div className={styles.cartLineImagePlaceholder} />
+              <div
+                className={styles.itemImageFallback}
+                aria-label={item.name}
+                role="img"
+              >
+                <span className={styles.itemImageFallbackText}>VB</span>
+              </div>
             )}
           </div>
-          <div className={styles.cartLineContent}>
-            <div className={styles.cartLineHeader}>
-              <p className={styles.cartLineTitle}>{item.name}</p>
-              <p className={styles.cartLinePrice}>
-                {item.price.toFixed(2)} €
-              </p>
-            </div>
+
+          <div className={styles.itemContent}>
+            <p className={styles.itemName}>{item.name}</p>
             {item.color && (
-              <p className={styles.cartLineMeta}>
-                Couleur : <span className={styles.cartLineMetaValue}>{item.color}</span>
-              </p>
+              <p className={styles.itemMeta}>Couleur : {item.color}</p>
             )}
-            <p className={styles.cartLineMeta}>
-              Quantité :{' '}
-              <span className={styles.cartLineMetaValue}>{item.quantity}</span>
-            </p>
+            <p className={styles.itemMeta}>Quantité : {item.quantity}</p>
           </div>
-        </li>
+
+          <p className={styles.itemPrice}>
+            {(item.price * item.quantity).toFixed(2)} €
+          </p>
+        </div>
       )),
     [items]
   );
@@ -722,269 +722,263 @@ export default function PanierPage() {
 
               <div className={styles.layout}>
                 <div className={styles.mainColumn}>
-                  <section
-                    className={internalStyles.card}
-                    aria-labelledby="contact-section-title"
-                  >
-                    <div className={styles.sectionHeader}>
-                      <h2
-                        id="contact-section-title"
-                        className={internalStyles.cardTitle}
-                      >
-                        Informations de contact
-                      </h2>
-                      <p className={internalStyles.cardSubtitle}>
-                        Ces informations permettent de vous envoyer les
-                        confirmations liées à votre commande.
-                      </p>
-                    </div>
+                  <section className={internalStyles.card}>
+                    <h2 className={styles.sectionTitle}>
+                      Informations de contact
+                    </h2>
 
-                    <div className={styles.formGrid}>
-                      <div className={styles.formField}>
-                        <label
-                          htmlFor="contact-firstName"
-                          className={styles.label}
-                        >
-                          Prénom
-                        </label>
-                        <input
-                          id="contact-firstName"
-                          name="firstName"
-                          type="text"
-                          autoComplete="given-name"
-                          className={`${styles.input} ${
-                            fieldErrors.firstName ? styles.inputError : ''
-                          }`}
-                          value={contact.firstName}
-                          onChange={handleContactChange}
-                          onBlur={handleContactBlur}
-                        />
-                        {fieldErrors.firstName && (
-                          <p className={styles.fieldError} role="alert">
-                            {fieldErrors.firstName}
-                          </p>
-                        )}
+                    <div className={styles.formStack}>
+                      <div className={styles.formBlock}>
+                        <div className={styles.gridTwo}>
+                          <div className={internalStyles.formGroup}>
+                            <label
+                              htmlFor="contact-firstName"
+                              className={internalStyles.label}
+                            >
+                              Prénom
+                            </label>
+                            <input
+                              id="contact-firstName"
+                              name="firstName"
+                              type="text"
+                              autoComplete="given-name"
+                              className={`${internalStyles.input} ${
+                                fieldErrors.firstName ? styles.inputError : ''
+                              }`}
+                              value={contact.firstName}
+                              onChange={handleContactChange}
+                              onBlur={handleContactBlur}
+                            />
+                            {fieldErrors.firstName && (
+                              <p className={styles.fieldError} role="alert">
+                                {fieldErrors.firstName}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className={internalStyles.formGroup}>
+                            <label
+                              htmlFor="contact-lastName"
+                              className={internalStyles.label}
+                            >
+                              Nom
+                            </label>
+                            <input
+                              id="contact-lastName"
+                              name="lastName"
+                              type="text"
+                              autoComplete="family-name"
+                              className={`${internalStyles.input} ${
+                                fieldErrors.lastName ? styles.inputError : ''
+                              }`}
+                              value={contact.lastName}
+                              onChange={handleContactChange}
+                              onBlur={handleContactBlur}
+                            />
+                            {fieldErrors.lastName && (
+                              <p className={styles.fieldError} role="alert">
+                                {fieldErrors.lastName}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className={styles.formField}>
-                        <label
-                          htmlFor="contact-lastName"
-                          className={styles.label}
-                        >
-                          Nom
-                        </label>
-                        <input
-                          id="contact-lastName"
-                          name="lastName"
-                          type="text"
-                          autoComplete="family-name"
-                          className={`${styles.input} ${
-                            fieldErrors.lastName ? styles.inputError : ''
-                          }`}
-                          value={contact.lastName}
-                          onChange={handleContactChange}
-                          onBlur={handleContactBlur}
-                        />
-                        {fieldErrors.lastName && (
-                          <p className={styles.fieldError} role="alert">
-                            {fieldErrors.lastName}
-                          </p>
-                        )}
+                      <div className={styles.formBlock}>
+                        <div className={internalStyles.formGroup}>
+                          <label
+                            htmlFor="contact-email"
+                            className={internalStyles.label}
+                          >
+                            Adresse email
+                          </label>
+                          <input
+                            id="contact-email"
+                            name="email"
+                            type="email"
+                            autoComplete="email"
+                            className={`${internalStyles.input} ${
+                              fieldErrors.email ? styles.inputError : ''
+                            }`}
+                            value={contact.email}
+                            onChange={handleContactChange}
+                            onBlur={handleContactBlur}
+                          />
+                          {fieldErrors.email && (
+                            <p className={styles.fieldError} role="alert">
+                              {fieldErrors.email}
+                            </p>
+                          )}
+                        </div>
                       </div>
 
-                      <div className={styles.formField}>
-                        <label htmlFor="contact-email" className={styles.label}>
-                          Adresse email
-                        </label>
-                        <input
-                          id="contact-email"
-                          name="email"
-                          type="email"
-                          autoComplete="email"
-                          className={`${styles.input} ${
-                            fieldErrors.email ? styles.inputError : ''
-                          }`}
-                          value={contact.email}
-                          onChange={handleContactChange}
-                          onBlur={handleContactBlur}
-                        />
-                        {fieldErrors.email && (
-                          <p className={styles.fieldError} role="alert">
-                            {fieldErrors.email}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className={styles.formField}>
-                        <label htmlFor="contact-phone" className={styles.label}>
-                          Téléphone
-                        </label>
-                        <input
-                          id="contact-phone"
-                          name="phone"
-                          type="tel"
-                          autoComplete="tel"
-                          className={`${styles.input} ${
-                            fieldErrors.phone ? styles.inputError : ''
-                          }`}
-                          value={contact.phone}
-                          onChange={handleContactChange}
-                          onBlur={handleContactBlur}
-                        />
-                        {fieldErrors.phone && (
-                          <p className={styles.fieldError} role="alert">
-                            {fieldErrors.phone}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </section>
-
-                  <section
-                    className={internalStyles.card}
-                    aria-labelledby="shipping-section-title"
-                  >
-                    <div className={styles.sectionHeader}>
-                      <h2
-                        id="shipping-section-title"
-                        className={internalStyles.cardTitle}
-                      >
-                        Adresse de livraison
-                      </h2>
-                      <p className={internalStyles.cardSubtitle}>
-                        Cette adresse sera utilisée pour l&apos;expédition de
-                        votre commande.
-                      </p>
-                    </div>
-
-                    <div className={styles.formGrid}>
-                      <div className={styles.formFieldFull}>
-                        <label
-                          htmlFor="shipping-address"
-                          className={styles.label}
-                        >
-                          Adresse
-                        </label>
-                        <input
-                          id="shipping-address"
-                          name="address"
-                          type="text"
-                          autoComplete="street-address"
-                          className={`${styles.input} ${
-                            fieldErrors.address ? styles.inputError : ''
-                          }`}
-                          value={shipping.address}
-                          onChange={handleShippingChange}
-                          onBlur={handleShippingBlur}
-                        />
-                        {fieldErrors.address && (
-                          <p className={styles.fieldError} role="alert">
-                            {fieldErrors.address}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className={styles.formField}>
-                        <label htmlFor="shipping-zip" className={styles.label}>
-                          Code postal
-                        </label>
-                        <input
-                          id="shipping-zip"
-                          name="zip"
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="postal-code"
-                          className={`${styles.input} ${
-                            fieldErrors.zip ? styles.inputError : ''
-                          }`}
-                          value={shipping.zip}
-                          onChange={handleShippingChange}
-                          onBlur={handleShippingBlur}
-                        />
-                        {fieldErrors.zip && (
-                          <p className={styles.fieldError} role="alert">
-                            {fieldErrors.zip}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className={styles.formField}>
-                        <label htmlFor="shipping-city" className={styles.label}>
-                          Ville
-                        </label>
-                        <input
-                          id="shipping-city"
-                          name="city"
-                          type="text"
-                          autoComplete="address-level2"
-                          className={`${styles.input} ${
-                            fieldErrors.city ? styles.inputError : ''
-                          }`}
-                          value={shipping.city}
-                          onChange={handleShippingChange}
-                          onBlur={handleShippingBlur}
-                        />
-                        {fieldErrors.city && (
-                          <p className={styles.fieldError} role="alert">
-                            {fieldErrors.city}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className={styles.formField}>
-                        <label
-                          htmlFor="shipping-country"
-                          className={styles.label}
-                        >
-                          Pays
-                        </label>
-                        <input
-                          id="shipping-country"
-                          name="country"
-                          type="text"
-                          autoComplete="country-name"
-                          className={`${styles.input} ${
-                            fieldErrors.country ? styles.inputError : ''
-                          }`}
-                          value={shipping.country}
-                          onChange={handleShippingChange}
-                          onBlur={handleShippingBlur}
-                        />
-                        {fieldErrors.country && (
-                          <p className={styles.fieldError} role="alert">
-                            {fieldErrors.country}
-                          </p>
-                        )}
+                      <div className={styles.formBlock}>
+                        <div className={internalStyles.formGroup}>
+                          <label
+                            htmlFor="contact-phone"
+                            className={internalStyles.label}
+                          >
+                            Téléphone
+                          </label>
+                          <input
+                            id="contact-phone"
+                            name="phone"
+                            type="tel"
+                            autoComplete="tel"
+                            className={`${internalStyles.input} ${
+                              fieldErrors.phone ? styles.inputError : ''
+                            }`}
+                            value={contact.phone}
+                            onChange={handleContactChange}
+                            onBlur={handleContactBlur}
+                          />
+                          {fieldErrors.phone && (
+                            <p className={styles.fieldError} role="alert">
+                              {fieldErrors.phone}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </section>
 
-                  <section
-                    className={internalStyles.card}
-                    aria-labelledby="notes-section-title"
-                  >
-                    <div className={styles.sectionHeader}>
-                      <h2
-                        id="notes-section-title"
-                        className={internalStyles.cardTitle}
-                      >
-                        Message pour la créatrice (optionnel)
-                      </h2>
-                      <p className={internalStyles.cardSubtitle}>
-                        Vous pouvez laisser un petit mot ou une précision
-                        particulière concernant votre commande.
-                      </p>
-                    </div>
+                  <section className={internalStyles.card}>
+                    <h2 className={styles.sectionTitle}>Adresse de livraison</h2>
 
-                    <div className={styles.formFieldFull}>
-                      <label htmlFor="order-notes" className={styles.label}>
-                        Message
+                    <div className={styles.formStack}>
+                      <div className={styles.formBlock}>
+                        <div className={internalStyles.formGroup}>
+                          <label
+                            htmlFor="shipping-address"
+                            className={internalStyles.label}
+                          >
+                            Adresse
+                          </label>
+                          <input
+                            id="shipping-address"
+                            name="address"
+                            type="text"
+                            autoComplete="street-address"
+                            className={`${internalStyles.input} ${
+                              fieldErrors.address ? styles.inputError : ''
+                            }`}
+                            value={shipping.address}
+                            onChange={handleShippingChange}
+                            onBlur={handleShippingBlur}
+                          />
+                          {fieldErrors.address && (
+                            <p className={styles.fieldError} role="alert">
+                              {fieldErrors.address}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className={styles.formBlock}>
+                        <div className={styles.gridTwo}>
+                          <div className={internalStyles.formGroup}>
+                            <label
+                              htmlFor="shipping-zip"
+                              className={internalStyles.label}
+                            >
+                              Code postal
+                            </label>
+                            <input
+                              id="shipping-zip"
+                              name="zip"
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="postal-code"
+                              className={`${internalStyles.input} ${
+                                fieldErrors.zip ? styles.inputError : ''
+                              }`}
+                              value={shipping.zip}
+                              onChange={handleShippingChange}
+                              onBlur={handleShippingBlur}
+                            />
+                            {fieldErrors.zip && (
+                              <p className={styles.fieldError} role="alert">
+                                {fieldErrors.zip}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className={internalStyles.formGroup}>
+                            <label
+                              htmlFor="shipping-city"
+                              className={internalStyles.label}
+                            >
+                              Ville
+                            </label>
+                            <input
+                              id="shipping-city"
+                              name="city"
+                              type="text"
+                              autoComplete="address-level2"
+                              className={`${internalStyles.input} ${
+                                fieldErrors.city ? styles.inputError : ''
+                              }`}
+                              value={shipping.city}
+                              onChange={handleShippingChange}
+                              onBlur={handleShippingBlur}
+                            />
+                            {fieldErrors.city && (
+                              <p className={styles.fieldError} role="alert">
+                                {fieldErrors.city}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.formBlock}>
+                        <div className={internalStyles.formGroup}>
+                          <label
+                            htmlFor="shipping-country"
+                            className={internalStyles.label}
+                          >
+                            Pays
+                          </label>
+                          <input
+                            id="shipping-country"
+                            name="country"
+                            type="text"
+                            autoComplete="country-name"
+                            className={`${internalStyles.input} ${
+                              fieldErrors.country ? styles.inputError : ''
+                            }`}
+                            value={shipping.country}
+                            onChange={handleShippingChange}
+                            onBlur={handleShippingBlur}
+                          />
+                          {fieldErrors.country && (
+                            <p className={styles.fieldError} role="alert">
+                              {fieldErrors.country}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className={internalStyles.card}>
+                    <h2 className={styles.sectionTitle}>
+                      Notes de commande{' '}
+                      <span className={styles.sectionOptional}>(optionnel)</span>
+                    </h2>
+
+                    <div className={internalStyles.formGroup}>
+                      <label
+                        htmlFor="order-notes"
+                        className={internalStyles.label}
+                      >
+                        Instructions spéciales, préférences de livraison...
                       </label>
                       <textarea
                         id="order-notes"
-                        name="notes"
+                        name="order-notes"
+                        className={internalStyles.textarea}
                         rows={4}
-                        className={styles.textarea}
                         value={notes}
                         onChange={(event) => {
                           setNotes(event.target.value);
@@ -996,42 +990,48 @@ export default function PanierPage() {
                   </section>
 
                   <section className={internalStyles.card}>
-                    <div className={styles.actions}>
-                      <button
-                        type="button"
-                        className={internalStyles.primaryButton}
-                        onClick={handleCheckout}
-                        disabled={!canAttemptCheckout}
-                      >
-                        {isSubmitting
-                          ? 'Redirection vers le paiement en cours...'
-                          : 'Procéder au paiement'}
-                      </button>
-                      <p className={styles.paymentHint}>
-                        Vous serez redirigée vers une page de paiement sécurisée
-                        Stripe.
+                    <h2 className={styles.sectionTitle}>Mode de paiement</h2>
+                    <div className={styles.paymentInfoBox}>
+                      <p className={styles.paymentTitle}>
+                        Paiement sécurisé par Stripe
+                      </p>
+                      <p className={styles.paymentText}>
+                        Après validation, vous serez redirigée vers la page de
+                        paiement sécurisée de Stripe pour régler votre commande.
                       </p>
                     </div>
                   </section>
+
+                  <div className={styles.submitWrapper}>
+                    <button
+                      type="button"
+                      className={`${internalStyles.primaryButton} ${styles.submitButton}`}
+                      onClick={handleCheckout}
+                      disabled={isSubmitting || !hasItems}
+                    >
+                      {isSubmitting
+                        ? 'Préparation du paiement...'
+                        : `Confirmer la commande · ${cartTotal.toFixed(2)} €`}
+                    </button>
+                    <p className={styles.submitHint}>
+                      Le montant final et les frais de port seront confirmés sur
+                      la page de paiement Stripe.
+                    </p>
+                  </div>
                 </div>
 
                 <aside className={styles.summaryColumn}>
                   <section
-                    className={internalStyles.card}
-                    aria-labelledby="summary-section-title"
+                    className={`${internalStyles.card} ${styles.summaryCard}`}
                   >
-                    <h2
-                      id="summary-section-title"
-                      className={internalStyles.cardTitle}
-                    >
-                      Récapitulatif du panier
-                    </h2>
+                    <div className={styles.summaryHeader}>
+                      <h2 className={styles.sectionTitle}>Récapitulatif</h2>
+                      <span className={styles.summaryBadge}>
+                        {totalItems} article{totalItems > 1 ? 's' : ''}
+                      </span>
+                    </div>
 
-                    <p className={styles.summaryCount}>
-                      {totalItems} article{totalItems > 1 ? 's' : ''}
-                    </p>
-
-                    <ul className={styles.cartLines}>{cartLines}</ul>
+                    <div className={styles.itemsList}>{cartLines}</div>
 
                     <div className={styles.summaryTotals}>
                       <div className={styles.summaryRow}>
@@ -1040,20 +1040,19 @@ export default function PanierPage() {
                       </div>
 
                       <div className={styles.summaryRow}>
-                        <span>Frais de livraison</span>
-                        <span>À définir avant la mise en production</span>
+                        <span>Frais de port</span>
+                        <span>Calculés à l’étape Stripe</span>
                       </div>
 
-                      <div className={styles.summaryTotalRow}>
+                      <div className={styles.summaryRowTotal}>
                         <span>Total estimé</span>
                         <span>{cartTotal.toFixed(2)} €</span>
                       </div>
                     </div>
 
-                    <p className={styles.summaryNote}>
-                      Le montant final incluant les frais de livraison sera
-                      précisé lors de la mise en production du site.
-                    </p>
+                    <div className={styles.summaryBottomNote}>
+                      Paiement sécurisé et confirmation finale sur Stripe.
+                    </div>
                   </section>
                 </aside>
               </div>

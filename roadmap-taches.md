@@ -119,7 +119,7 @@
 - ✅ Vérifier la logique panier / compte / commandes après retour Stripe.
 - ✅ Corriger le non-vidage du panier après retour checkout=success.
 - ✅ Corriger l’affichage du bouton “Découvrir la boutique” dans l’état panier vide.
-- 🔴 Vérifier le comportement non connecté.
+- ✅ Vérifier le comportement non connecté.
 - 🔴 Vérifier les erreurs serveur Stripe / API.
 - 🔴 Permettre la commande sans création de compte
 - 🔴 Vérifier le parcours complet invité : panier, checkout, paiement Stripe, retour succès / annulation
