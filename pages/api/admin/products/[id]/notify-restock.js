@@ -154,13 +154,14 @@ export default async function handler(req, res) {
       });
     }
 
-    const requests = await RestockRequest.find({
+    // 1) Vérifier s’il y a au moins une demande en attente (rapide)
+    const pendingCount = await RestockRequest.countDocuments({
       product: product._id,
       color: requestedColor,
       notifiedAt: null,
     });
 
-    if (requests.length === 0) {
+    if (pendingCount === 0) {
       return res.status(200).json({
         message: `Aucune demande en attente pour la couleur ${requestedColor}.`,
         sentCount: 0,
@@ -171,6 +172,7 @@ export default async function handler(req, res) {
     const processingDate = new Date();
     const staleProcessingDate = new Date(Date.now() - 15 * 60 * 1000);
 
+    // 2) Libérer les verrous trop anciens
     const staleLockedRequests = await RestockRequest.find({
       product: product._id,
       color: requestedColor,
@@ -189,17 +191,26 @@ export default async function handler(req, res) {
       );
     }
 
-    const claimedRequests = await RestockRequest.find({
-      product: product._id,
-      color: requestedColor,
-      notifiedAt: null,
-      $or: [
-        { notificationProcessingAt: null },
-        { notificationProcessingAt: { $exists: false } },
-      ],
-    });
+    // 3) Verrouillage atomique des demandes éligibles
+    const lockResult = await RestockRequest.updateMany(
+      {
+        product: product._id,
+        color: requestedColor,
+        notifiedAt: null,
+        $or: [
+          { notificationProcessingAt: null },
+          { notificationProcessingAt: { $exists: false } },
+        ],
+      },
+      {
+        $set: { notificationProcessingAt: processingDate },
+      }
+    );
 
-    if (claimedRequests.length === 0) {
+    const claimedCount = lockResult.modifiedCount || 0;
+
+    if (claimedCount === 0) {
+      // Soit rien à traiter, soit un autre appel a déjà pris la main
       return res.status(200).json({
         message: 'Une notification est déjà en cours pour cette couleur.',
         sentCount: 0,
@@ -207,16 +218,32 @@ export default async function handler(req, res) {
       });
     }
 
-    const claimedIds = claimedRequests.map((request) => request._id);
+    // 4) Récupérer précisément les demandes claimées dans cette exécution
+    const claimedRequests = await RestockRequest.find({
+      product: product._id,
+      color: requestedColor,
+      notifiedAt: null,
+      notificationProcessingAt: processingDate,
+    });
 
-    await RestockRequest.updateMany(
-      {
-        _id: { $in: claimedIds },
-      },
-      {
-        $set: { notificationProcessingAt: processingDate },
-      }
-    );
+    if (claimedRequests.length === 0) {
+      // Cas très improbable, mais on nettoie au cas où
+      await RestockRequest.updateMany(
+        {
+          product: product._id,
+          color: requestedColor,
+          notifiedAt: null,
+          notificationProcessingAt: processingDate,
+        },
+        { $set: { notificationProcessingAt: null } }
+      );
+
+      return res.status(200).json({
+        message: 'Aucune demande à notifier après verrouillage.',
+        sentCount: 0,
+        failedCount: 0,
+      });
+    }
 
     const transporter = getTransporter();
     await transporter.verify();

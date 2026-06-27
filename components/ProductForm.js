@@ -496,27 +496,22 @@ export default function ProductForm({
           </div>
         )}
 
+        {canShowNotifyButton && (
+          <p className={styles.stockHint}>
+            Des demandes de réassort sont en attente. La notification pourra être
+            déclenchée après la mise à jour du produit.
+          </p>
+        )}
+
         <div className={styles.submitArea}>
           {mode === "edit" ? (
-            <div className={styles.submitButtons}>
-              <button
-                type="submit"
-                className={styles.primaryButton}
-                onClick={() => setSubmitAction("save")}
-              >
-                Mettre à jour le produit
-              </button>
-
-              {canShowNotifyButton && (
-                <button
-                  type="submit"
-                  className={styles.secondarySubmitButton}
-                  onClick={() => setSubmitAction("save-and-notify")}
-                >
-                  Notifier les demandes
-                </button>
-              )}
-            </div>
+            <button
+              type="submit"
+              className={styles.primaryButton}
+              onClick={() => setSubmitAction("save")}
+            >
+              Mettre à jour le produit
+            </button>
           ) : (
             <button type="submit" className={styles.primaryButton}>
               Ajouter le produit
