@@ -106,7 +106,7 @@
 - ✅ Brancher la création de commande via le webhook Stripe.
 - ✅ Enregistrer les lignes produits (quantité, prix unitaire, total, image).
 - ✅ Lier la commande à l’utilisateur connecté.
-- 🟡 Éviter les doublons si Stripe renvoie plusieurs événements.
+- ✅ Éviter les doublons si Stripe renvoie plusieurs événements.
 - ✅ Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
 - ✅ Rendre persistant le changement de statut des commandes depuis /administration/commandes
 - 🔴 Vérifier la cohérence entre le statut de commande et les champs associés (shippedAt, deliveredAt, trackingNumber, trackingUrl)

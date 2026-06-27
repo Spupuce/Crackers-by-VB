@@ -114,16 +114,18 @@ async function markOrderAsPaid(session) {
     throw new Error("Impossible de marquer comme payée une commande annulée.");
   }
 
-  const alreadyPaid =
+  // Protection forte : une commande déjà payée ne doit jamais retrigger le stock
+  if (order.paymentStatus === 'paid') {
+    return;
+  }
+
+  const alreadyPaidWithSameIds =
     order.paymentStatus === 'paid' &&
-    (!stripePaymentIntentId ||
-      order.stripePaymentIntentId === stripePaymentIntentId) &&
+    (!stripePaymentIntentId || order.stripePaymentIntentId === stripePaymentIntentId) &&
     (!stripeSessionId || order.stripeSessionId === stripeSessionId);
 
-  if (alreadyPaid) {
+  if (alreadyPaidWithSameIds) {
     // Webhook dupliqué, on ne refait rien
-    // Utile pour debug si besoin :
-    // console.log('WEBHOOK_DUPLICATE_IGNORED', { orderId: order._id });
     return;
   }
 
