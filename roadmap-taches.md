@@ -109,14 +109,14 @@
 - ✅ Éviter les doublons si Stripe renvoie plusieurs événements.
 - ✅ Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
 - ✅ Rendre persistant le changement de statut des commandes depuis /administration/commandes
-- 🔴 Vérifier la cohérence entre le statut de commande et les champs associés (shippedAt, deliveredAt, trackingNumber, trackingUrl)
+- 🟡 Ajouter plus tard une vraie édition du suivi (trackingNumber / trackingUrl) côté admin, avec éventuellement des règles simples (par exemple : proposer d’ajouter un numéro de suivi quand on passe à “Expédiée”).
 
 ### 3.3 Simulation d’achat de bout en bout
 - ✅ Se connecter avec un compte utilisateur de test.
 - ✅ Vérifier l’ajout au panier, l’accès à `/panier` et à `/mon-compte`.
 - ✅ Tester le flux de paiement succès.
 - ✅ Tester le flux d’annulation.
-- 🟡 Vérifier la logique panier / compte / commandes après retour Stripe.
+- ✅ Vérifier la logique panier / compte / commandes après retour Stripe.
 - ✅ Corriger le non-vidage du panier après retour checkout=success.
 - ✅ Corriger l’affichage du bouton “Découvrir la boutique” dans l’état panier vide.
 - 🔴 Vérifier le comportement non connecté.
@@ -128,6 +128,7 @@
 - 🔴 Définir le comportement post-achat pour proposer la création de compte sans la rendre obligatoire
 - 🔴 Vérifier l’envoi réel des emails liés aux commandes depuis l’administration
 - 🔴 Vérifier la délivrabilité des emails transactionnels sur Gmail
+- 🔴Intégrer Paypal dans Stripe si possible
 
 ### 3.4 Frais de port
 - 🔴 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
@@ -142,6 +143,7 @@
 - 🔴 Vérifier la compatibilité entre les commandes seedées et les commandes MongoDB réelles.
 - 🔴 Harmoniser les statuts réels (pending, paid, processing, etc.) avec les filtres visuels admin.
 - 🔴 Vérifier le tri par date et l’affichage du client, du total et du paiement.
+- 🔴Ajouter les suivi des commandes via Mondial Relay
 
 ---
 
@@ -202,9 +204,3 @@
 - 🔴 Vérifier les URLs de retour Stripe en production.
 - 🔴 Refaire un test complet post-déploiement.
 - 🔴 Contrôler formulaires, panier, commandes, compte et administration en environnement réel.
-
-
-###Points a réfléchir
-Archiver les couleurs en remplacement de la suppression pour avoir le même système que dans le stock
-✅ Sur la page modifier le produits lorsqu'on met à jour la fiche, on remonte en haut de page pour éviter de devoir scroller
-Corriger l'erreur "Merci de sélectionner une couleur." lorsqu'il n'y en a qu'une

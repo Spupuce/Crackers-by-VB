@@ -262,7 +262,7 @@ function buildOrderPayload({
   const totalAmount = subtotalAmount + shippingAmount;
 
   return {
-    userId,
+    userId: userId || null,
     status,
     paymentStatus,
     customer: {
@@ -328,17 +328,12 @@ export default async function handler(req, res) {
 
   try {
     const session = getSessionFromRequest(req);
-
-    if (!session?.userId || !mongoose.Types.ObjectId.isValid(session.userId)) {
-      return res.status(401).json({
-        ok: false,
-        code: 'UNAUTHENTICATED',
-        message: 'Vous devez être connectée pour finaliser votre commande.',
-      });
-    }
+    const authenticatedUserId =
+      session?.userId && mongoose.Types.ObjectId.isValid(session.userId)
+        ? session.userId
+        : null;
 
     const { items, customer, shipping, notes } = req.body || {};
-    const userId = session.userId;
 
     const normalizedItems = normalizeIncomingItems(items);
 
@@ -426,7 +421,7 @@ export default async function handler(req, res) {
     if (!stripeSecretKey) {
       const simulatedOrder = await Order.create(
         buildOrderPayload({
-          userId,
+          userId: authenticatedUserId,
           customer: normalizedCustomer,
           resolvedItems,
           normalizedShipping,
@@ -449,7 +444,7 @@ export default async function handler(req, res) {
 
     const pendingOrder = await Order.create(
       buildOrderPayload({
-        userId,
+        userId: authenticatedUserId,
         customer: normalizedCustomer,
         resolvedItems,
         normalizedShipping,
@@ -471,7 +466,7 @@ export default async function handler(req, res) {
         cancel_url: cancelUrl,
         metadata: {
           order_id: String(pendingOrder._id),
-          user_id: String(userId),
+          user_id: authenticatedUserId ? String(authenticatedUserId) : '',
           customer_email: normalizedCustomer.email || '',
           customer_firstname: normalizedCustomer.firstName || '',
           customer_lastname: normalizedCustomer.lastName || '',
