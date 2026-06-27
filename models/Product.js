@@ -1,5 +1,4 @@
 // models/Product.js
-
 import mongoose from "mongoose";
 
 const colorSchema = new mongoose.Schema(
@@ -19,6 +18,14 @@ const colorSchema = new mongoose.Schema(
       type: String,
       default: "",
       trim: true,
+    },
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: {
+      type: Date,
+      default: null,
     },
   },
   { _id: false },

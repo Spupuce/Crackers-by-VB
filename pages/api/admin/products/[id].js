@@ -1,5 +1,4 @@
 // pages/api/admin/products/[id].js
-
 import { connectMongo } from '../../../../lib/mongodb';
 import Product from '../../../../models/Product';
 import RestockRequest from '../../../../models/RestockRequest';

@@ -55,9 +55,13 @@ export default function ProductPurchasePanel({
       return [];
     }
 
-    return product.colors.filter(
-      (color) => color && normalizeColorName(color.name)
-    );
+    return product.colors.filter((color) => {
+      if (!color || color.isArchived) {
+        return false;
+      }
+
+      return Boolean(normalizeColorName(color.name));
+    });
   }, [product?.colors]);
 
   const hasColorVariants = availableColors.length > 0;
@@ -399,7 +403,6 @@ export default function ProductPurchasePanel({
               const isSelected =
                 normalizeColorName(selectedColor).toLowerCase() ===
                 colorName.toLowerCase();
-              const isDisabled = false;
 
               return (
                 <button
@@ -418,7 +421,7 @@ export default function ProductPurchasePanel({
                     setNotifyError('');
                     setNotifyAlreadyExists(false);
                   }}
-                  disabled={isDisabled}
+                  disabled={false}
                   aria-pressed={isSelected}
                 >
                   <span className={styles.variantButtonLabel}>{colorName}</span>

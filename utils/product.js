@@ -1,5 +1,4 @@
 // utils/product.js
-
 function getSafeStock(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
@@ -7,6 +6,10 @@ function getSafeStock(value) {
 
 function getColorStock(color) {
   if (!color || typeof color !== 'object') return 0;
+
+  if (color.isArchived) {
+    return 0;
+  }
 
   if (color.quantity !== undefined && color.quantity !== null) {
     return getSafeStock(color.quantity);

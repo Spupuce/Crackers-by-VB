@@ -24,6 +24,7 @@ export default function ProductDetailPage({ product }) {
     }
 
     return product.colors
+      .filter((color) => !color?.isArchived)
       .map((color) => ({
         ...color,
         name: normalizeText(color?.name),
@@ -65,6 +66,10 @@ export default function ProductDetailPage({ product }) {
 
     if (Array.isArray(product?.colors)) {
       product.colors.forEach((color) => {
+        if (color?.isArchived) {
+          return;
+        }
+
         const colorName = normalizeText(color?.name);
         const imageUrl = normalizeText(color?.imageUrl);
 

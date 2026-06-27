@@ -67,20 +67,21 @@
 
 ### 2.6 Réassort par couleur
 - ✅ Définir la règle métier des demandes de réassort au niveau couleur pour les produits à variantes :
-- 🟡 Permettre une demande distincte par couple produit / couleur / email.
-- 🟡 Empêcher les doublons uniquement pour une même demande active sur le même produit, la même couleur et la même adresse e-mail.
-- 🟡 Ajouter la couleur concernée dans le modèle `RestockRequest`.
-- 🟡 Adapter l’API de demande de réassort pour enregistrer la couleur sélectionnée.
-- 🔴 Faire apparaître le bouton de demande de notification quand la couleur sélectionnée est épuisée
-- 🔴 Permettre l’affichage du bouton “Me prévenir quand disponible” pour une couleur épuisée même si d’autres couleurs du produit sont encore en stock.
-- 🔴 Définir clairement le comportement UI quand une couleur est épuisée : couleur désactivée seule, couleur sélectionnable avec état “rupture”, ou action dédiée de demande de réassort.
-- 🔴 Vérifier le comportement si aucune couleur n’est sélectionnée au moment de la demande.
-- 🔴 Afficher la couleur demandée dans l’administration / stock avec les demandes de réassort.
-- 🔴 Adapter l’action “Notifier maintenant” pour notifier la bonne couleur uniquement.
-- 🔴 Adapter le contenu de l’email de retour en stock pour mentionner la couleur concernée.
-- 🔴 Vérifier qu’une notification envoyée pour une couleur ne clôture pas par erreur les demandes des autres couleurs du même produit.
+- ✅ Permettre une demande distincte par couple produit / couleur / email.
+- ✅ Empêcher les doublons uniquement pour une même demande active sur le même produit, la même couleur et la même adresse e-mail.
+- ✅ Ajouter la couleur concernée dans le modèle `RestockRequest`.
+- ✅ Adapter l’API de demande de réassort pour enregistrer la couleur sélectionnée.
+- ✅ Faire apparaître le bouton de demande de notification quand la couleur sélectionnée est épuisée
+- ✅ Permettre l’affichage du bouton “Me prévenir quand disponible” pour une couleur épuisée même si d’autres couleurs du produit sont encore en stock.
+- ✅ Définir clairement le comportement UI quand une couleur est épuisée : couleur désactivée seule, couleur sélectionnable avec état “rupture”, ou action dédiée de demande de réassort.
+- ✅ Vérifier le comportement si aucune couleur n’est sélectionnée au moment de la demande.
+- ✅ Afficher la couleur demandée dans l’administration / stock avec les demandes de réassort.
+- ✅ Adapter l’action “Notifier maintenant” pour notifier la bonne couleur uniquement.
+- ✅ Adapter le contenu de l’email de retour en stock pour mentionner la couleur concernée.
+- ✅ Vérifier qu’une notification envoyée pour une couleur ne clôture pas par erreur les demandes des autres couleurs du même produit.
 - 🔴 Vérifier le comportement si une même adresse demande plusieurs couleurs d’un même produit.
 - 🔴 Vérifier le comportement si une couleur revient en stock puis retombe à zéro.
+- 🔴 Archiver les couleurs en remplacement de la suppression.
 
 ---
 

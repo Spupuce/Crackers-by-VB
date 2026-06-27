@@ -1,5 +1,6 @@
 // components/ProductForm.js
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FiArchive, FiEdit2, FiTrash2 } from "react-icons/fi";
 import styles from "../styles/AdminProductForm.module.css";
 
 function createEmptyColorDraft() {
@@ -23,6 +24,10 @@ function sanitizeColors(colors) {
     name: color?.name || "",
     quantity: Math.max(0, Number(color?.quantity) || 0),
     imageUrl: color?.imageUrl || "",
+    isArchived: Boolean(color?.isArchived),
+    archivedAt: color?.isArchived
+      ? color?.archivedAt || new Date().toISOString()
+      : null,
   }));
 }
 
@@ -42,7 +47,7 @@ export default function ProductForm({
 
   const [colors, setColors] = useState(
     initialValues?.colors && Array.isArray(initialValues.colors)
-      ? initialValues.colors
+      ? sanitizeColors(initialValues.colors)
       : []
   );
 
@@ -51,7 +56,7 @@ export default function ProductForm({
   useEffect(() => {
     const normalizedInitialColors =
       initialValues?.colors && Array.isArray(initialValues.colors)
-        ? initialValues.colors
+        ? sanitizeColors(initialValues.colors)
         : [];
 
     setColors(normalizedInitialColors);
@@ -59,15 +64,25 @@ export default function ProductForm({
     initialColorsSnapshotRef.current = sanitizeColors(normalizedInitialColors);
   }, [initialValues]);
 
-  const hasColors = colors.length > 0;
+  const activeColors = useMemo(
+    () => colors.filter((color) => !color.isArchived),
+    [colors]
+  );
+
+  const archivedColors = useMemo(
+    () => colors.filter((color) => color.isArchived),
+    [colors]
+  );
+
+  const hasColors = activeColors.length > 0;
 
   const visualStock = useMemo(() => {
     if (!hasColors) return "";
-    return colors.reduce((total, color) => {
+    return activeColors.reduce((total, color) => {
       const quantity = Number(color.quantity) || 0;
       return total + quantity;
     }, 0);
-  }, [colors, hasColors]);
+  }, [activeColors, hasColors]);
 
   const currentStock = useMemo(() => {
     if (hasColors) {
@@ -108,12 +123,21 @@ export default function ProductForm({
       name: normalizedName,
       quantity: normalizedQuantity,
       imageUrl: normalizedImageUrl,
+      isArchived: false,
+      archivedAt: null,
     };
 
     if (isEditingColor) {
       setColors((prev) =>
         prev.map((color, index) =>
-          index === editingColorIndex ? normalizedColor : color
+          index === editingColorIndex
+            ? {
+                ...color,
+                ...normalizedColor,
+                isArchived: false,
+                archivedAt: null,
+              }
+            : color
         )
       );
     } else {
@@ -127,7 +151,44 @@ export default function ProductForm({
     resetColorForm();
   }
 
-  function handleRemoveColor(indexToRemove) {
+  function handleArchiveColor(indexToArchive) {
+    setColors((prev) =>
+      prev.map((color, index) =>
+        index === indexToArchive
+          ? {
+              ...color,
+              isArchived: true,
+              archivedAt: new Date().toISOString(),
+            }
+          : color
+      )
+    );
+
+    if (editingColorIndex === indexToArchive) {
+      resetColorForm();
+      return;
+    }
+
+    if (editingColorIndex !== null && editingColorIndex > indexToArchive) {
+      setEditingColorIndex((prev) => prev - 1);
+    }
+  }
+
+  function handleUnarchiveColor(indexToRestore) {
+    setColors((prev) =>
+      prev.map((color, index) =>
+        index === indexToRestore
+          ? {
+              ...color,
+              isArchived: false,
+              archivedAt: null,
+            }
+          : color
+      )
+    );
+  }
+
+  function handleRemoveArchivedColor(indexToRemove) {
     setColors((prev) => prev.filter((_, index) => index !== indexToRemove));
 
     if (editingColorIndex === indexToRemove) {
@@ -183,7 +244,7 @@ export default function ProductForm({
 
     const restockedColors =
       mode === "edit"
-        ? colors
+        ? activeColors
             .filter((color) => {
               const normalizedName = normalizeColorName(color.name);
 
@@ -196,9 +257,10 @@ export default function ProductForm({
                 (prevColor) =>
                   normalizeColorName(prevColor?.name) === normalizedName
               );
-              const oldQty = previousColor
-                ? Math.max(0, Number(previousColor.quantity) || 0)
-                : 0;
+              const oldQty =
+                previousColor && !previousColor.isArchived
+                  ? Math.max(0, Number(previousColor.quantity) || 0)
+                  : 0;
 
               return oldQty === 0 && newQty > 0;
             })
@@ -296,7 +358,7 @@ export default function ProductForm({
             Stock disponible *
             {hasColors && (
               <span className={styles.stockHint}>
-                (Calculé automatiquement depuis les couleurs)
+                (Calculé automatiquement depuis les couleurs actives)
               </span>
             )}
           </label>
@@ -450,49 +512,129 @@ export default function ProductForm({
           </div>
         )}
 
-        {colors.length > 0 && (
+        {activeColors.length > 0 && (
           <div className={styles.colorPreviewList}>
-            {colors.map((color, index) => (
-              <div
-                key={`${color.name}-${index}`}
-                className={styles.colorPreviewItem}
-              >
-                {color.imageUrl && (
-                  <div className={styles.colorPreviewImageWrapper}>
-                    <img
-                      src={color.imageUrl}
-                      alt={color.name}
-                      className={styles.colorPreviewImage}
-                    />
+            {activeColors.map((color) => {
+              const realIndex = colors.findIndex(
+                (entry) =>
+                  entry.name === color.name &&
+                  entry.imageUrl === color.imageUrl &&
+                  Number(entry.quantity) === Number(color.quantity) &&
+                  entry.isArchived === color.isArchived
+              );
+
+              return (
+                <div
+                  key={`${color.name}-${realIndex}`}
+                  className={styles.colorPreviewItem}
+                >
+                  {color.imageUrl && (
+                    <div className={styles.colorPreviewImageWrapper}>
+                      <img
+                        src={color.imageUrl}
+                        alt={color.name}
+                        className={styles.colorPreviewImage}
+                      />
+                    </div>
+                  )}
+
+                  <div className={styles.colorPreviewInfo}>
+                    <span className={styles.colorPreviewName}>{color.name}</span>
+                    <span className={styles.colorPreviewQuantity}>
+                      Quantité : {color.quantity}
+                    </span>
                   </div>
-                )}
 
-                <div className={styles.colorPreviewInfo}>
-                  <span className={styles.colorPreviewName}>{color.name}</span>
-                  <span className={styles.colorPreviewQuantity}>
-                    Quantité : {color.quantity}
-                  </span>
+                  <div className={styles.colorPreviewActions}>
+                    <button
+                      type="button"
+                      className={styles.colorPreviewEdit}
+                      onClick={() => handleEditColor(realIndex)}
+                      aria-label={`Modifier la couleur ${color.name}`}
+                      title={`Modifier la couleur ${color.name}`}
+                    >
+                      <FiEdit2 />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.colorPreviewArchive}
+                      onClick={() => handleArchiveColor(realIndex)}
+                      aria-label={`Archiver la couleur ${color.name}`}
+                      title={`Archiver la couleur ${color.name}`}
+                    >
+                      <FiArchive />
+                    </button>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
 
-                <div className={styles.colorPreviewActions}>
-                  <button
-                    type="button"
-                    className={styles.colorPreviewEdit}
-                    onClick={() => handleEditColor(index)}
-                  >
-                    Modifier
-                  </button>
+        {archivedColors.length > 0 && (
+          <div className={styles.archivedColorsSection}>
+            <h3 className={styles.archivedColorsTitle}>
+              Couleurs archivées ({archivedColors.length})
+            </h3>
 
-                  <button
-                    type="button"
-                    className={styles.colorPreviewDelete}
-                    onClick={() => handleRemoveColor(index)}
+            <div className={styles.colorPreviewList}>
+              {archivedColors.map((color) => {
+                const realIndex = colors.findIndex(
+                  (entry) =>
+                    entry.name === color.name &&
+                    entry.imageUrl === color.imageUrl &&
+                    Number(entry.quantity) === Number(color.quantity) &&
+                    entry.isArchived === color.isArchived
+                );
+
+                return (
+                  <div
+                    key={`${color.name}-${realIndex}`}
+                    className={styles.colorPreviewItemArchived}
                   >
-                    Supprimer
-                  </button>
-                </div>
-              </div>
-            ))}
+                    {color.imageUrl && (
+                      <div className={styles.colorPreviewImageWrapper}>
+                        <img
+                          src={color.imageUrl}
+                          alt={color.name}
+                          className={styles.colorPreviewImage}
+                        />
+                      </div>
+                    )}
+
+                    <div className={styles.colorPreviewInfo}>
+                      <span className={styles.colorPreviewName}>{color.name}</span>
+                      <span className={styles.colorPreviewQuantity}>
+                        Quantité : {color.quantity}
+                      </span>
+                    </div>
+
+                    <div className={styles.colorPreviewActions}>
+                      <button
+                        type="button"
+                        className={styles.colorPreviewRestore}
+                        onClick={() => handleUnarchiveColor(realIndex)}
+                        aria-label={`Désarchiver la couleur ${color.name}`}
+                        title={`Désarchiver la couleur ${color.name}`}
+                      >
+                        Désarchiver
+                      </button>
+
+                      <button
+                        type="button"
+                        className={styles.colorPreviewDelete}
+                        onClick={() => handleRemoveArchivedColor(realIndex)}
+                        aria-label={`Supprimer définitivement la couleur ${color.name}`}
+                        title={`Supprimer définitivement la couleur ${color.name}`}
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
