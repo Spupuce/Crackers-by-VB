@@ -79,9 +79,16 @@
 - ✅ Adapter l’action “Notifier maintenant” pour notifier la bonne couleur uniquement.
 - ✅ Adapter le contenu de l’email de retour en stock pour mentionner la couleur concernée.
 - ✅ Vérifier qu’une notification envoyée pour une couleur ne clôture pas par erreur les demandes des autres couleurs du même produit.
-- 🔴 Vérifier le comportement si une même adresse demande plusieurs couleurs d’un même produit.
-- 🔴 Vérifier le comportement si une couleur revient en stock puis retombe à zéro.
-- 🔴 Archiver les couleurs en remplacement de la suppression.
+- ✅ Corriger l'erreur "Merci de sélectionner une couleur." lorsqu'il n'y en a qu'une
+→ OK : on filtre les couleurs archivées, on gère le cas “une seule couleur active” et la logique de sélection automatique dans la fiche produit.
+- ✅ Cohérence d’affichage entre fiche produit, drawer panier et page panier
+→ OK : même couleur, même image, mêmes quantités, les couleurs archivées ne se retrouvent plus dans le tunnel d’achat.
+- 🟡 Ajouter la couleur concernée dans le modèle RestockRequest (si pas déjà fait partout).
+- 🟡 Adapter l’API de demande de réassort pour enregistrer la couleur sélectionnée.
+- ✅ Vérifier le comportement si une même adresse demande plusieurs couleurs d’un même produit.
+- ✅ Vérifier le comportement si une couleur revient en stock puis retombe à zéro.
+- 🔴 Vérifier tous les comportements de notification / DMARC / Gmail autour des demandes de réassort par couleur.
+- ✅ Archiver les couleurs en remplacement de la suppression.
 
 ---
 
