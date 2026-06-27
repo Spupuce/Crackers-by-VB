@@ -14,6 +14,12 @@ function normalizeStatus(value) {
   return value.trim().toLowerCase();
 }
 
+function ensureShippingObject(order) {
+  if (!order.shipping) {
+    order.shipping = {};
+  }
+}
+
 export default async function handler(req, res) {
   const { id } = req.query;
 
@@ -63,25 +69,26 @@ export default async function handler(req, res) {
       });
     }
 
-    const previousStatus = order.status;
     order.status = nextStatus;
 
     const now = new Date();
+    ensureShippingObject(order);
 
-    // Passage en "shipped" : poser shippedAt si pas encore défini
-    if (previousStatus !== 'shipped' && nextStatus === 'shipped') {
-      if (!order.shipping) {
-        order.shipping = {};
-      }
+    if (nextStatus === 'pending' || nextStatus === 'preparing') {
+      order.shipping.shippedAt = null;
+      order.shipping.deliveredAt = null;
+    }
+
+    if (nextStatus === 'shipped') {
       if (!order.shipping.shippedAt) {
         order.shipping.shippedAt = now;
       }
+      order.shipping.deliveredAt = null;
     }
 
-    // Passage en "delivered" : poser deliveredAt si pas encore défini
-    if (previousStatus !== 'delivered' && nextStatus === 'delivered') {
-      if (!order.shipping) {
-        order.shipping = {};
+    if (nextStatus === 'delivered') {
+      if (!order.shipping.shippedAt) {
+        order.shipping.shippedAt = now;
       }
       if (!order.shipping.deliveredAt) {
         order.shipping.deliveredAt = now;
