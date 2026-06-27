@@ -49,6 +49,7 @@ export default function AdminProductRow({
 
   const [isNotifyingRestock, setIsNotifyingRestock] = useState(false);
   const [restockFeedback, setRestockFeedback] = useState('');
+  const [showRestockDetails, setShowRestockDetails] = useState(false);
 
   const pendingRequestsCount = Number(product.pendingRequestsCount || 0);
   const hasPendingRequests = pendingRequestsCount > 0;
@@ -257,78 +258,99 @@ export default function AdminProductRow({
           <p className={styles.description}>{product.description}</p>
 
           {!isArchived && hasPendingRequests && (
-            <>
+            <div className={styles.restockBlock}>
               <div className={styles.restockLine}>
                 <span className={styles.restockInfo}>
                   <span className={styles.restockInfoIcon}>
                     <FiMail />
                   </span>
                   {pendingRequestsCount} demande
-                  {pendingRequestsCount > 1 ? 's' : ''} en attente
+                  {pendingRequestsCount > 1 ? 's' : ''} de notification en attente
                 </span>
-              </div>
 
-              {pendingRequestsByColor.length > 0 ? (
-                <div className={styles.restockRequestsList}>
-                  {pendingRequestsByColor.map((entry) => {
-                    const matchingColor = hasColorVariants
-                      ? normalizedColors.find(
-                          (color) =>
-                            color.name.toLowerCase() === entry.color.toLowerCase()
-                        )
-                      : null;
-
-                    const canNotify = entry.isWithoutColor
-                      ? getSafeStock(product.stock) > 0
-                      : Boolean(matchingColor && matchingColor.stock > 0);
-
-                    return (
-                      <div key={entry.key} className={styles.restockRequestItem}>
-                        <span className={styles.restockInfo}>
-                          {entry.isWithoutColor
-                            ? `Produit sans couleur — ${entry.count} demande${
-                                entry.count > 1 ? 's' : ''
-                              }`
-                            : `Couleur : ${entry.colorLabel} — ${entry.count} demande${
-                                entry.count > 1 ? 's' : ''
-                              }`}
-                        </span>
-
-                        <button
-                          type="button"
-                          className={styles.restockNotifyButton}
-                          onClick={() =>
-                            handleNotifyRestock(entry.isWithoutColor ? '' : entry.color)
-                          }
-                          disabled={isNotifyingRestock || !canNotify}
-                        >
-                          <FiMail />
-                          {isNotifyingRestock
-                            ? 'Envoi...'
-                            : entry.isWithoutColor
-                            ? 'Notifier maintenant'
-                            : `Notifier ${entry.colorLabel}`}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
                 <button
                   type="button"
-                  className={styles.restockNotifyButton}
-                  onClick={() => handleNotifyRestock('')}
-                  disabled={isNotifyingRestock || getSafeStock(product.stock) <= 0}
+                  className={styles.restockToggleButton}
+                  onClick={() => setShowRestockDetails((prev) => !prev)}
                 >
-                  <FiMail />
-                  {isNotifyingRestock ? 'Envoi...' : 'Notifier maintenant'}
+                  {showRestockDetails
+                    ? 'Masquer le détail'
+                    : 'Voir le détail des demandes'}
                 </button>
-              )}
+              </div>
 
-              {restockFeedback && (
-                <p className={styles.restockFeedback}>{restockFeedback}</p>
+              {showRestockDetails && (
+                <div className={styles.restockDetails}>
+                  {pendingRequestsByColor.length > 0 ? (
+                    <ul className={styles.restockList}>
+                      {pendingRequestsByColor.map((entry) => {
+                        const matchingColor = hasColorVariants
+                          ? normalizedColors.find(
+                              (color) =>
+                                color.name.toLowerCase() ===
+                                entry.color.toLowerCase()
+                            )
+                          : null;
+
+                        const canNotify = entry.isWithoutColor
+                          ? getSafeStock(product.stock) > 0
+                          : Boolean(matchingColor && matchingColor.stock > 0);
+
+                        const label = entry.isWithoutColor
+                          ? `Produit sans couleur`
+                          : `Couleur : ${entry.colorLabel}`;
+
+                        return (
+                          <li key={entry.key} className={styles.restockItem}>
+                            <span className={styles.restockItemLabel}>
+                              {label} — {entry.count} demande
+                              {entry.count > 1 ? 's' : ''}
+                            </span>
+
+                            <button
+                              type="button"
+                              className={styles.restockNotifyButton}
+                              onClick={() =>
+                                handleNotifyRestock(
+                                  entry.isWithoutColor ? '' : entry.color
+                                )
+                              }
+                              disabled={isNotifyingRestock || !canNotify}
+                            >
+                              <FiMail />
+                              {isNotifyingRestock
+                                ? 'Envoi...'
+                                : entry.isWithoutColor
+                                ? 'Notifier'
+                                : `Notifier`}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <div className={styles.restockEmptyDetails}>
+                      <p>Aucune donnée détaillée par couleur pour l’instant.</p>
+                      <button
+                        type="button"
+                        className={styles.restockNotifyButton}
+                        onClick={() => handleNotifyRestock('')}
+                        disabled={
+                          isNotifyingRestock || getSafeStock(product.stock) <= 0
+                        }
+                      >
+                        <FiMail />
+                        {isNotifyingRestock ? 'Envoi...' : 'Notifier maintenant'}
+                      </button>
+                    </div>
+                  )}
+
+                  {restockFeedback && (
+                    <p className={styles.restockFeedback}>{restockFeedback}</p>
+                  )}
+                </div>
               )}
-            </>
+            </div>
           )}
 
           {normalizedColors.length > 0 && (
@@ -347,17 +369,11 @@ export default function AdminProductRow({
         <div className={styles.priceBlock}>
           {hasPromo ? (
             <>
-              <p className={styles.priceOld}>
-                {basePrice.toFixed(2)} €
-              </p>
-              <p className={styles.pricePromo}>
-                {activePrice.toFixed(2)} €
-              </p>
+              <p className={styles.priceOld}>{basePrice.toFixed(2)} €</p>
+              <p className={styles.pricePromo}>{activePrice.toFixed(2)} €</p>
             </>
           ) : (
-            <p className={styles.price}>
-              {basePrice.toFixed(2)} €
-            </p>
+            <p className={styles.price}>{basePrice.toFixed(2)} €</p>
           )}
         </div>
 
@@ -369,9 +385,7 @@ export default function AdminProductRow({
               Stock faible : {totalStock}
             </span>
           ) : (
-            <span className={styles.badgeStock}>
-              Stock : {totalStock}
-            </span>
+            <span className={styles.badgeStock}>Stock : {totalStock}</span>
           )}
         </div>
 
