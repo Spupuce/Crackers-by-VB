@@ -114,56 +114,76 @@ export default async function handler(req, res) {
       throw new Error('MAIL_FROM_ADDRESS est manquant.');
     }
 
-    if (!requestedColor) {
-      return res.status(400).json({
-        message: 'La couleur à notifier est obligatoire.',
-        sentCount: 0,
-        failedCount: 0,
-      });
-    }
-
     const product = await Product.findById(id);
 
     if (!product) {
       return res.status(404).json({ message: 'Produit introuvable.' });
     }
 
-    const matchingColor = Array.isArray(product.colors)
-      ? product.colors.find(
-          (color) =>
-            normalizeColorName(color?.name).toLowerCase() ===
-            requestedColor.toLowerCase()
-        )
-      : null;
+    const productColors = Array.isArray(product.colors) ? product.colors : [];
+    const hasColorVariants = productColors.some(
+      (color) => color && normalizeColorName(color.name)
+    );
 
-    if (!matchingColor) {
-      return res.status(400).json({
-        message: 'Couleur introuvable pour ce produit.',
-        sentCount: 0,
-        failedCount: 0,
-      });
+    let targetColor = '';
+
+    if (hasColorVariants) {
+      if (!requestedColor) {
+        return res.status(400).json({
+          message: 'La couleur à notifier est obligatoire.',
+          sentCount: 0,
+          failedCount: 0,
+        });
+      }
+
+      const matchingColor = productColors.find(
+        (color) =>
+          normalizeColorName(color?.name).toLowerCase() ===
+          requestedColor.toLowerCase()
+      );
+
+      if (!matchingColor) {
+        return res.status(400).json({
+          message: 'Couleur introuvable pour ce produit.',
+          sentCount: 0,
+          failedCount: 0,
+        });
+      }
+
+      const colorStock = getColorStock(matchingColor);
+
+      if (colorStock <= 0) {
+        return res.status(400).json({
+          message: 'La couleur doit être de nouveau en stock avant notification.',
+          sentCount: 0,
+          failedCount: 0,
+        });
+      }
+
+      targetColor = normalizeColorName(matchingColor.name);
+    } else {
+      const productStock = getSafeStock(product?.stock);
+
+      if (productStock <= 0) {
+        return res.status(400).json({
+          message: 'Le produit doit être de nouveau en stock avant notification.',
+          sentCount: 0,
+          failedCount: 0,
+        });
+      }
     }
 
-    const colorStock = getColorStock(matchingColor);
-
-    if (colorStock <= 0) {
-      return res.status(400).json({
-        message: 'La couleur doit être de nouveau en stock avant notification.',
-        sentCount: 0,
-        failedCount: 0,
-      });
-    }
-
-    // 1) Vérifier s’il y a au moins une demande en attente (rapide)
     const pendingCount = await RestockRequest.countDocuments({
       product: product._id,
-      color: requestedColor,
+      color: targetColor,
       notifiedAt: null,
     });
 
     if (pendingCount === 0) {
       return res.status(200).json({
-        message: `Aucune demande en attente pour la couleur ${requestedColor}.`,
+        message: hasColorVariants
+          ? `Aucune demande en attente pour la couleur ${targetColor}.`
+          : 'Aucune demande en attente pour ce produit.',
         sentCount: 0,
         failedCount: 0,
       });
@@ -172,10 +192,9 @@ export default async function handler(req, res) {
     const processingDate = new Date();
     const staleProcessingDate = new Date(Date.now() - 15 * 60 * 1000);
 
-    // 2) Libérer les verrous trop anciens
     const staleLockedRequests = await RestockRequest.find({
       product: product._id,
-      color: requestedColor,
+      color: targetColor,
       notifiedAt: null,
       notificationProcessingAt: { $lt: staleProcessingDate },
     }).select('_id');
@@ -191,11 +210,10 @@ export default async function handler(req, res) {
       );
     }
 
-    // 3) Verrouillage atomique des demandes éligibles
     const lockResult = await RestockRequest.updateMany(
       {
         product: product._id,
-        color: requestedColor,
+        color: targetColor,
         notifiedAt: null,
         $or: [
           { notificationProcessingAt: null },
@@ -210,28 +228,27 @@ export default async function handler(req, res) {
     const claimedCount = lockResult.modifiedCount || 0;
 
     if (claimedCount === 0) {
-      // Soit rien à traiter, soit un autre appel a déjà pris la main
       return res.status(200).json({
-        message: 'Une notification est déjà en cours pour cette couleur.',
+        message: hasColorVariants
+          ? 'Une notification est déjà en cours pour cette couleur.'
+          : 'Une notification est déjà en cours pour ce produit.',
         sentCount: 0,
         failedCount: 0,
       });
     }
 
-    // 4) Récupérer précisément les demandes claimées dans cette exécution
     const claimedRequests = await RestockRequest.find({
       product: product._id,
-      color: requestedColor,
+      color: targetColor,
       notifiedAt: null,
       notificationProcessingAt: processingDate,
     });
 
     if (claimedRequests.length === 0) {
-      // Cas très improbable, mais on nettoie au cas où
       await RestockRequest.updateMany(
         {
           product: product._id,
-          color: requestedColor,
+          color: targetColor,
           notifiedAt: null,
           notificationProcessingAt: processingDate,
         },
@@ -239,7 +256,9 @@ export default async function handler(req, res) {
       );
 
       return res.status(200).json({
-        message: 'Aucune demande à notifier après verrouillage.',
+        message: hasColorVariants
+          ? 'Aucune demande à notifier après verrouillage pour cette couleur.'
+          : 'Aucune demande à notifier après verrouillage pour ce produit.',
         sentCount: 0,
         failedCount: 0,
       });
@@ -257,8 +276,10 @@ export default async function handler(req, res) {
         const info = await transporter.sendMail({
           from: `"${mailFromName}" <${mailFromAddress}>`,
           to: request.email,
-          subject: `${product.name} (${requestedColor}) est de nouveau disponible`,
-          text: buildMailText(product, requestedColor),
+          subject: hasColorVariants
+            ? `${product.name} (${targetColor}) est de nouveau disponible`
+            : `${product.name} est de nouveau disponible`,
+          text: buildMailText(product, targetColor),
         });
 
         if (isAcceptedResult(info, request.email)) {
@@ -303,7 +324,9 @@ export default async function handler(req, res) {
 
     if (sentCount === 0) {
       return res.status(500).json({
-        message: `Aucune notification n'a pu être envoyée pour la couleur ${requestedColor}.`,
+        message: hasColorVariants
+          ? `Aucune notification n'a pu être envoyée pour la couleur ${targetColor}.`
+          : "Aucune notification n'a pu être envoyée pour ce produit.",
         sentCount: 0,
         failedCount,
       });
@@ -311,14 +334,18 @@ export default async function handler(req, res) {
 
     if (failedCount > 0) {
       return res.status(200).json({
-        message: `${sentCount} notification(s) acceptée(s) pour ${requestedColor}, ${failedCount} en échec.`,
+        message: hasColorVariants
+          ? `${sentCount} notification(s) acceptée(s) pour ${targetColor}, ${failedCount} en échec.`
+          : `${sentCount} notification(s) acceptée(s) pour ce produit, ${failedCount} en échec.`,
         sentCount,
         failedCount,
       });
     }
 
     return res.status(200).json({
-      message: `${sentCount} notification(s) acceptée(s) pour ${requestedColor}.`,
+      message: hasColorVariants
+        ? `${sentCount} notification(s) acceptée(s) pour ${targetColor}.`
+        : `${sentCount} notification(s) acceptée(s) pour ce produit.`,
       sentCount,
       failedCount: 0,
     });

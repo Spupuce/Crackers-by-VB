@@ -10,7 +10,7 @@ const restockRequestSchema = new mongoose.Schema(
     },
     color: {
       type: String,
-      required: true,
+      default: '',
       trim: true,
     },
     email: {

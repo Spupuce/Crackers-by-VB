@@ -61,19 +61,12 @@
 
 ### 2.5 Réassort et notifications email
 - ✅ Valider le tunnel complet “Me prévenir quand disponible” → demande enregistrée → admin stock → “Notifier maintenant”
-- 🔴 Vérifier l’envoi réel des notifications de retour en stock sur différentes messageries, dont Gmail
+- ✅ Vérifier l’envoi réel des notifications de retour en stock sur différentes messageries, dont Gmail
 - ✅ Clarifier la règle métier : notifier immédiatement à la remise en stock ou uniquement via action admin “Notifier maintenant”
-- 🟡 Vérifier qu’une même demande de réassort n’est pas notifiée plusieurs fois après envoi
+- ✅ Vérifier qu’une même demande de réassort n’est pas notifiée plusieurs fois après envoi
 
 ### 2.6 Réassort par couleur
 - ✅ Définir la règle métier des demandes de réassort au niveau couleur pour les produits à variantes :
-Règle métier – réassort par couleur
-Une demande de réassort est toujours liée à un produit précis, une couleur précise (pour les produits à variantes) et une adresse e‑mail.
-Une même adresse peut créer plusieurs demandes distinctes si la combinaison produit + couleur est différente.
-Pour une combinaison donnée (produit + couleur + email), une seule demande active est autorisée à la fois : si une demande existe déjà et n’a pas encore été notifiée, un nouveau clic “Me prévenir” ne recrée pas une deuxième demande.
-Le bouton “Me prévenir quand disponible” est affiché par couleur, dès qu’une couleur est en rupture, même si d’autres couleurs du même produit restent en stock.
-La fiche produit reste en état “En stock” si au moins une couleur a du stock, mais la couleur à 0 est indiquée comme “Rupture” et déclenche le bouton de demande de réassort.
-Lorsqu’une couleur revient en stock, l’action admin “Notifier maintenant” ne notifie que les demandes liées à cette couleur, et marque ces demandes comme notifiées sans toucher aux autres couleurs du même produit.
 - 🟡 Permettre une demande distincte par couple produit / couleur / email.
 - 🟡 Empêcher les doublons uniquement pour une même demande active sur le même produit, la même couleur et la même adresse e-mail.
 - 🟡 Ajouter la couleur concernée dans le modèle `RestockRequest`.

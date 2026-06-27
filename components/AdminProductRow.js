@@ -56,12 +56,16 @@ export default function AdminProductRow({
   const normalizedColors = useMemo(() => {
     if (!Array.isArray(product.colors)) return [];
 
-    return product.colors.map((color, index) => ({
-      key: `${color?.name || 'couleur'}-${index}`,
-      name: normalizeColorName(color?.name) || 'Couleur',
-      stock: getColorStock(color),
-    }));
+    return product.colors
+      .map((color, index) => ({
+        key: `${color?.name || 'couleur'}-${index}`,
+        name: normalizeColorName(color?.name),
+        stock: getColorStock(color),
+      }))
+      .filter((color) => color.name);
   }, [product.colors]);
+
+  const hasColorVariants = normalizedColors.length > 0;
 
   const totalStock = useMemo(() => {
     if (normalizedColors.length > 0) {
@@ -77,16 +81,19 @@ export default function AdminProductRow({
     }
 
     const grouped = product.pendingRequests.reduce((acc, request, index) => {
-      const colorName = normalizeColorName(request?.color) || 'Sans couleur';
-      const existing = acc.find((entry) => entry.color === colorName);
+      const normalizedColor = normalizeColorName(request?.color);
+      const colorLabel = normalizedColor || 'Sans couleur';
+      const existing = acc.find((entry) => entry.colorLabel === colorLabel);
 
       if (existing) {
         existing.count += 1;
         existing.requests.push(request);
       } else {
         acc.push({
-          key: `${colorName}-${index}`,
-          color: colorName,
+          key: `${colorLabel}-${index}`,
+          color: normalizedColor,
+          colorLabel,
+          isWithoutColor: !normalizedColor,
           count: 1,
           requests: [request],
         });
@@ -126,27 +133,36 @@ export default function AdminProductRow({
     }
   };
 
-  const handleNotifyRestock = async (color) => {
+  const handleNotifyRestock = async (color = '') => {
     if (!product?._id || isNotifyingRestock) {
       return;
     }
 
     const normalizedColor = normalizeColorName(color);
 
-    if (!normalizedColor) {
-      setRestockFeedback('Couleur introuvable pour cette notification.');
-      return;
-    }
+    if (hasColorVariants) {
+      if (!normalizedColor) {
+        setRestockFeedback('Couleur introuvable pour cette notification.');
+        return;
+      }
 
-    const matchingColor = normalizedColors.find(
-      (entry) => entry.name.toLowerCase() === normalizedColor.toLowerCase()
-    );
-
-    if (!matchingColor || matchingColor.stock <= 0) {
-      setRestockFeedback(
-        'La couleur doit être de nouveau en stock avant notification.'
+      const matchingColor = normalizedColors.find(
+        (entry) => entry.name.toLowerCase() === normalizedColor.toLowerCase()
       );
-      return;
+
+      if (!matchingColor || matchingColor.stock <= 0) {
+        setRestockFeedback(
+          'La couleur doit être de nouveau en stock avant notification.'
+        );
+        return;
+      }
+    } else {
+      if (getSafeStock(product.stock) <= 0) {
+        setRestockFeedback(
+          'Le produit doit être de nouveau en stock avant notification.'
+        );
+        return;
+      }
     }
 
     setIsNotifyingRestock(true);
@@ -160,7 +176,7 @@ export default function AdminProductRow({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ color: normalizedColor }),
+          body: JSON.stringify({ color: hasColorVariants ? normalizedColor : '' }),
         }
       );
 
@@ -192,15 +208,21 @@ export default function AdminProductRow({
 
       setRestockFeedback(
         (data && data.message) ||
-          `Notifications envoyées pour la couleur ${normalizedColor}.`
+          (hasColorVariants
+            ? `Notifications envoyées pour la couleur ${normalizedColor}.`
+            : 'Notifications envoyées pour ce produit.')
       );
 
       const remainingPendingRequests = Array.isArray(product.pendingRequests)
-        ? product.pendingRequests.filter(
-            (request) =>
-              normalizeColorName(request?.color).toLowerCase() !==
-              normalizedColor.toLowerCase()
-          )
+        ? product.pendingRequests.filter((request) => {
+            const requestColor = normalizeColorName(request?.color);
+
+            if (hasColorVariants) {
+              return requestColor.toLowerCase() !== normalizedColor.toLowerCase();
+            }
+
+            return requestColor !== '';
+          })
         : [];
 
       if (typeof onProductUpdated === 'function') {
@@ -249,30 +271,43 @@ export default function AdminProductRow({
               {pendingRequestsByColor.length > 0 ? (
                 <div className={styles.restockRequestsList}>
                   {pendingRequestsByColor.map((entry) => {
-                    const matchingColor = normalizedColors.find(
-                      (color) =>
-                        color.name.toLowerCase() === entry.color.toLowerCase()
-                    );
-                    const colorStock = matchingColor ? matchingColor.stock : 0;
-                    const canNotify = colorStock > 0;
+                    const matchingColor = hasColorVariants
+                      ? normalizedColors.find(
+                          (color) =>
+                            color.name.toLowerCase() === entry.color.toLowerCase()
+                        )
+                      : null;
+
+                    const canNotify = entry.isWithoutColor
+                      ? getSafeStock(product.stock) > 0
+                      : Boolean(matchingColor && matchingColor.stock > 0);
 
                     return (
                       <div key={entry.key} className={styles.restockRequestItem}>
                         <span className={styles.restockInfo}>
-                          Couleur : {entry.color} — {entry.count} demande
-                          {entry.count > 1 ? 's' : ''}
+                          {entry.isWithoutColor
+                            ? `Produit sans couleur — ${entry.count} demande${
+                                entry.count > 1 ? 's' : ''
+                              }`
+                            : `Couleur : ${entry.colorLabel} — ${entry.count} demande${
+                                entry.count > 1 ? 's' : ''
+                              }`}
                         </span>
 
                         <button
                           type="button"
                           className={styles.restockNotifyButton}
-                          onClick={() => handleNotifyRestock(entry.color)}
+                          onClick={() =>
+                            handleNotifyRestock(entry.isWithoutColor ? '' : entry.color)
+                          }
                           disabled={isNotifyingRestock || !canNotify}
                         >
                           <FiMail />
                           {isNotifyingRestock
                             ? 'Envoi...'
-                            : `Notifier ${entry.color}`}
+                            : entry.isWithoutColor
+                            ? 'Notifier maintenant'
+                            : `Notifier ${entry.colorLabel}`}
                         </button>
                       </div>
                     );
@@ -283,10 +318,10 @@ export default function AdminProductRow({
                   type="button"
                   className={styles.restockNotifyButton}
                   onClick={() => handleNotifyRestock('')}
-                  disabled
+                  disabled={isNotifyingRestock || getSafeStock(product.stock) <= 0}
                 >
                   <FiMail />
-                  Notifier maintenant
+                  {isNotifyingRestock ? 'Envoi...' : 'Notifier maintenant'}
                 </button>
               )}
 

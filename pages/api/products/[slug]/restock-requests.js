@@ -44,7 +44,9 @@ export default async function handler(req, res) {
       }
 
       const email = req.body?.email?.trim().toLowerCase();
-      const color = normalizeColor(req.body?.color);
+      const requestedColor = normalizeColor(req.body?.color);
+      const productColors = Array.isArray(product.colors) ? product.colors : [];
+      const hasColorVariants = productColors.length > 0;
 
       if (!isValidEmail(email)) {
         return res.status(400).json({
@@ -52,21 +54,28 @@ export default async function handler(req, res) {
         });
       }
 
-      if (!color) {
-        return res.status(400).json({
-          message: 'Merci de sélectionner une couleur.',
-        });
-      }
+      let color = '';
 
-      const productColors = Array.isArray(product.colors) ? product.colors : [];
-      const matchingColor = productColors.find(
-        (entry) => typeof entry?.name === 'string' && entry.name.trim() === color
-      );
+      if (hasColorVariants) {
+        if (!requestedColor) {
+          return res.status(400).json({
+            message: 'Merci de sélectionner une couleur.',
+          });
+        }
 
-      if (!matchingColor) {
-        return res.status(400).json({
-          message: 'Couleur invalide pour ce produit.',
-        });
+        const matchingColor = productColors.find(
+          (entry) =>
+            typeof entry?.name === 'string' &&
+            entry.name.trim().toLowerCase() === requestedColor.toLowerCase()
+        );
+
+        if (!matchingColor) {
+          return res.status(400).json({
+            message: 'Couleur invalide pour ce produit.',
+          });
+        }
+
+        color = matchingColor.name.trim();
       }
 
       const existingRequest = await RestockRequest.findOne({
@@ -78,7 +87,9 @@ export default async function handler(req, res) {
 
       if (existingRequest) {
         return res.status(200).json({
-          message: 'Une demande existe déjà pour cette couleur et cette adresse e-mail.',
+          message: hasColorVariants
+            ? 'Une demande existe déjà pour cette couleur et cette adresse e-mail.'
+            : 'Une demande existe déjà pour cette adresse e-mail pour ce produit.',
           alreadyExists: true,
         });
       }
