@@ -14,7 +14,7 @@ import styles from '../styles/CartPage.module.css';
 
 const phoneRegex = /^(?:(?:\+33|0)[1-9](?:[ .-]?\d{2}){4})$/;
 const postalCodeRegex = /^\d{5}$/;
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const nameRegex = /^[A-Za-zÀ-ÿ' -]{2,}$/;
 
 const fieldOrder = [
@@ -553,19 +553,6 @@ export default function PanierPage() {
   async function handleCheckout() {
     if (!canAttemptCheckout) return;
 
-    if (!isAuthenticated || !user?.id) {
-      setSubmitInfo('');
-      setSubmitError(
-        'Vous devez être connectée pour finaliser votre commande.'
-      );
-
-      const redirectUrl = `/connexion?redirect=${encodeURIComponent(
-        '/panier'
-      )}`;
-      router.push(redirectUrl);
-      return;
-    }
-
     setSubmitError('');
     setSubmitInfo('');
 
@@ -643,6 +630,43 @@ export default function PanierPage() {
     }
   }
 
+  const cartLines = useMemo(
+    () =>
+      items.map((item) => (
+        <li key={buildCartLineKey(item)} className={styles.cartLine}>
+          <div className={styles.cartLineImageWrapper}>
+            {item.imageUrl ? (
+              <img
+                src={item.imageUrl}
+                alt={item.name}
+                className={styles.cartLineImage}
+              />
+            ) : (
+              <div className={styles.cartLineImagePlaceholder} />
+            )}
+          </div>
+          <div className={styles.cartLineContent}>
+            <div className={styles.cartLineHeader}>
+              <p className={styles.cartLineTitle}>{item.name}</p>
+              <p className={styles.cartLinePrice}>
+                {item.price.toFixed(2)} €
+              </p>
+            </div>
+            {item.color && (
+              <p className={styles.cartLineMeta}>
+                Couleur : <span className={styles.cartLineMetaValue}>{item.color}</span>
+              </p>
+            )}
+            <p className={styles.cartLineMeta}>
+              Quantité :{' '}
+              <span className={styles.cartLineMetaValue}>{item.quantity}</span>
+            </p>
+          </div>
+        </li>
+      )),
+    [items]
+  );
+
   return (
     <>
       <Head>
@@ -698,459 +722,338 @@ export default function PanierPage() {
 
               <div className={styles.layout}>
                 <div className={styles.mainColumn}>
-                  <section className={internalStyles.card}>
-                    <h2 className={styles.sectionTitle}>
-                      Informations de contact
-                    </h2>
-
-                    <div className={styles.formStack}>
-                      <div className={styles.formBlock}>
-                        <div className={styles.gridTwo}>
-                          <div className={internalStyles.formGroup}>
-                            <label
-                              htmlFor="contact-firstName"
-                              className={internalStyles.label}
-                            >
-                              Prénom
-                            </label>
-                            <input
-                              id="contact-firstName"
-                              name="firstName"
-                              className={`${internalStyles.input} ${
-                                fieldErrors.firstName ? styles.inputError : ''
-                              }`}
-                              type="text"
-                              autoComplete="given-name"
-                              value={contact.firstName}
-                              onChange={handleContactChange}
-                              onBlur={handleContactBlur}
-                              aria-invalid={Boolean(fieldErrors.firstName)}
-                              aria-describedby={
-                                fieldErrors.firstName
-                                  ? 'contact-firstName-error'
-                                  : undefined
-                              }
-                            />
-                            {fieldErrors.firstName && (
-                              <p
-                                id="contact-firstName-error"
-                                className={styles.fieldError}
-                                role="alert"
-                              >
-                                {fieldErrors.firstName}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className={internalStyles.formGroup}>
-                            <label
-                              htmlFor="contact-lastName"
-                              className={internalStyles.label}
-                            >
-                              Nom
-                            </label>
-                            <input
-                              id="contact-lastName"
-                              name="lastName"
-                              className={`${internalStyles.input} ${
-                                fieldErrors.lastName ? styles.inputError : ''
-                              }`}
-                              type="text"
-                              autoComplete="family-name"
-                              value={contact.lastName}
-                              onChange={handleContactChange}
-                              onBlur={handleContactBlur}
-                              aria-invalid={Boolean(fieldErrors.lastName)}
-                              aria-describedby={
-                                fieldErrors.lastName
-                                  ? 'contact-lastName-error'
-                                  : undefined
-                              }
-                            />
-                            {fieldErrors.lastName && (
-                              <p
-                                id="contact-lastName-error"
-                                className={styles.fieldError}
-                                role="alert"
-                              >
-                                {fieldErrors.lastName}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={styles.formBlock}>
-                        <div className={internalStyles.formGroup}>
-                          <label
-                            htmlFor="contact-email"
-                            className={internalStyles.label}
-                          >
-                            Email
-                          </label>
-                          <input
-                            id="contact-email"
-                            name="email"
-                            className={`${internalStyles.input} ${
-                              fieldErrors.email ? styles.inputError : ''
-                            }`}
-                            type="email"
-                            autoComplete="email"
-                            value={contact.email}
-                            onChange={handleContactChange}
-                            onBlur={handleContactBlur}
-                            aria-invalid={Boolean(fieldErrors.email)}
-                            aria-describedby={
-                              fieldErrors.email
-                                ? 'contact-email-error'
-                                : undefined
-                            }
-                          />
-                          {fieldErrors.email && (
-                            <p
-                              id="contact-email-error"
-                              className={styles.fieldError}
-                              role="alert"
-                            >
-                              {fieldErrors.email}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className={styles.formBlock}>
-                        <div className={internalStyles.formGroup}>
-                          <label
-                            htmlFor="contact-phone"
-                            className={internalStyles.label}
-                          >
-                            Téléphone
-                          </label>
-                          <input
-                            id="contact-phone"
-                            name="phone"
-                            className={`${internalStyles.input} ${
-                              fieldErrors.phone ? styles.inputError : ''
-                            }`}
-                            type="tel"
-                            autoComplete="tel"
-                            value={contact.phone}
-                            onChange={handleContactChange}
-                            onBlur={handleContactBlur}
-                            aria-invalid={Boolean(fieldErrors.phone)}
-                            aria-describedby={
-                              fieldErrors.phone
-                                ? 'contact-phone-error'
-                                : undefined
-                            }
-                          />
-                          {fieldErrors.phone && (
-                            <p
-                              id="contact-phone-error"
-                              className={styles.fieldError}
-                              role="alert"
-                            >
-                              {fieldErrors.phone}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className={internalStyles.card}>
-                    <h2 className={styles.sectionTitle}>
-                      Adresse de livraison
-                    </h2>
-
-                    <div className={styles.formStack}>
-                      <div className={styles.formBlock}>
-                        <div className={internalStyles.formGroup}>
-                          <label
-                            htmlFor="shipping-address"
-                            className={internalStyles.label}
-                          >
-                            Adresse
-                          </label>
-                          <input
-                            id="shipping-address"
-                            name="address"
-                            className={`${internalStyles.input} ${
-                              fieldErrors.address ? styles.inputError : ''
-                            }`}
-                            type="text"
-                            autoComplete="street-address"
-                            value={shipping.address}
-                            onChange={handleShippingChange}
-                            onBlur={handleShippingBlur}
-                            aria-invalid={Boolean(fieldErrors.address)}
-                            aria-describedby={
-                              fieldErrors.address
-                                ? 'shipping-address-error'
-                                : undefined
-                            }
-                          />
-                          {fieldErrors.address && (
-                            <p
-                              id="shipping-address-error"
-                              className={styles.fieldError}
-                              role="alert"
-                            >
-                              {fieldErrors.address}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className={styles.formBlock}>
-                        <div className={styles.gridTwo}>
-                          <div className={internalStyles.formGroup}>
-                            <label
-                              htmlFor="shipping-zip"
-                              className={internalStyles.label}
-                            >
-                              Code postal
-                            </label>
-                            <input
-                              id="shipping-zip"
-                              name="zip"
-                              className={`${internalStyles.input} ${
-                                fieldErrors.zip ? styles.inputError : ''
-                              }`}
-                              type="text"
-                              inputMode="numeric"
-                              autoComplete="postal-code"
-                              value={shipping.zip}
-                              onChange={handleShippingChange}
-                              onBlur={handleShippingBlur}
-                              aria-invalid={Boolean(fieldErrors.zip)}
-                              aria-describedby={
-                                fieldErrors.zip
-                                  ? 'shipping-zip-error'
-                                  : undefined
-                              }
-                            />
-                            {fieldErrors.zip && (
-                              <p
-                                id="shipping-zip-error"
-                                className={styles.fieldError}
-                                role="alert"
-                              >
-                                {fieldErrors.zip}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className={internalStyles.formGroup}>
-                            <label
-                              htmlFor="shipping-city"
-                              className={internalStyles.label}
-                            >
-                              Ville
-                            </label>
-                            <input
-                              id="shipping-city"
-                              name="city"
-                              className={`${internalStyles.input} ${
-                                fieldErrors.city ? styles.inputError : ''
-                              }`}
-                              type="text"
-                              autoComplete="address-level2"
-                              value={shipping.city}
-                              onChange={handleShippingChange}
-                              onBlur={handleShippingBlur}
-                              aria-invalid={Boolean(fieldErrors.city)}
-                              aria-describedby={
-                                fieldErrors.city
-                                  ? 'shipping-city-error'
-                                  : undefined
-                              }
-                            />
-                            {fieldErrors.city && (
-                              <p
-                                id="shipping-city-error"
-                                className={styles.fieldError}
-                                role="alert"
-                              >
-                                {fieldErrors.city}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={styles.formBlock}>
-                        <div className={internalStyles.formGroup}>
-                          <label
-                            htmlFor="shipping-country"
-                            className={internalStyles.label}
-                          >
-                            Pays
-                          </label>
-                          <input
-                            id="shipping-country"
-                            name="country"
-                            className={`${internalStyles.input} ${
-                              fieldErrors.country ? styles.inputError : ''
-                            }`}
-                            type="text"
-                            value={shipping.country}
-                            onChange={handleShippingChange}
-                            onBlur={handleShippingBlur}
-                            aria-invalid={Boolean(fieldErrors.country)}
-                            aria-describedby={
-                              fieldErrors.country
-                                ? 'shipping-country-error'
-                                : undefined
-                            }
-                          />
-                          {fieldErrors.country && (
-                            <p
-                              id="shipping-country-error"
-                              className={styles.fieldError}
-                              role="alert"
-                            >
-                              {fieldErrors.country}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className={internalStyles.card}>
-                    <h2 className={styles.sectionTitle}>Mode de paiement</h2>
-
-                    <div className={styles.paymentInfoBox}>
-                      <p className={styles.paymentTitle}>
-                        Paiement sécurisé par Stripe
-                      </p>
-                      <p className={styles.paymentText}>
-                        Après validation, vous serez redirigée vers la page de
-                        paiement sécurisée de Stripe pour régler votre
-                        commande.
-                      </p>
-                    </div>
-                  </section>
-
-                  <section className={internalStyles.card}>
-                    <h2 className={styles.sectionTitle}>
-                      Notes de commande{' '}
-                      <span className={styles.sectionOptional}>
-                        (optionnel)
-                      </span>
-                    </h2>
-
-                    <div className={internalStyles.formGroup}>
-                      <label
-                        htmlFor="order-notes"
-                        className={internalStyles.label}
+                  <section
+                    className={internalStyles.card}
+                    aria-labelledby="contact-section-title"
+                  >
+                    <div className={styles.sectionHeader}>
+                      <h2
+                        id="contact-section-title"
+                        className={internalStyles.cardTitle}
                       >
-                        Instructions spéciales, préférences de livraison...
+                        Informations de contact
+                      </h2>
+                      <p className={internalStyles.cardSubtitle}>
+                        Ces informations permettent de vous envoyer les
+                        confirmations liées à votre commande.
+                      </p>
+                    </div>
+
+                    <div className={styles.formGrid}>
+                      <div className={styles.formField}>
+                        <label
+                          htmlFor="contact-firstName"
+                          className={styles.label}
+                        >
+                          Prénom
+                        </label>
+                        <input
+                          id="contact-firstName"
+                          name="firstName"
+                          type="text"
+                          autoComplete="given-name"
+                          className={`${styles.input} ${
+                            fieldErrors.firstName ? styles.inputError : ''
+                          }`}
+                          value={contact.firstName}
+                          onChange={handleContactChange}
+                          onBlur={handleContactBlur}
+                        />
+                        {fieldErrors.firstName && (
+                          <p className={styles.fieldError} role="alert">
+                            {fieldErrors.firstName}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className={styles.formField}>
+                        <label
+                          htmlFor="contact-lastName"
+                          className={styles.label}
+                        >
+                          Nom
+                        </label>
+                        <input
+                          id="contact-lastName"
+                          name="lastName"
+                          type="text"
+                          autoComplete="family-name"
+                          className={`${styles.input} ${
+                            fieldErrors.lastName ? styles.inputError : ''
+                          }`}
+                          value={contact.lastName}
+                          onChange={handleContactChange}
+                          onBlur={handleContactBlur}
+                        />
+                        {fieldErrors.lastName && (
+                          <p className={styles.fieldError} role="alert">
+                            {fieldErrors.lastName}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className={styles.formField}>
+                        <label htmlFor="contact-email" className={styles.label}>
+                          Adresse email
+                        </label>
+                        <input
+                          id="contact-email"
+                          name="email"
+                          type="email"
+                          autoComplete="email"
+                          className={`${styles.input} ${
+                            fieldErrors.email ? styles.inputError : ''
+                          }`}
+                          value={contact.email}
+                          onChange={handleContactChange}
+                          onBlur={handleContactBlur}
+                        />
+                        {fieldErrors.email && (
+                          <p className={styles.fieldError} role="alert">
+                            {fieldErrors.email}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className={styles.formField}>
+                        <label htmlFor="contact-phone" className={styles.label}>
+                          Téléphone
+                        </label>
+                        <input
+                          id="contact-phone"
+                          name="phone"
+                          type="tel"
+                          autoComplete="tel"
+                          className={`${styles.input} ${
+                            fieldErrors.phone ? styles.inputError : ''
+                          }`}
+                          value={contact.phone}
+                          onChange={handleContactChange}
+                          onBlur={handleContactBlur}
+                        />
+                        {fieldErrors.phone && (
+                          <p className={styles.fieldError} role="alert">
+                            {fieldErrors.phone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  <section
+                    className={internalStyles.card}
+                    aria-labelledby="shipping-section-title"
+                  >
+                    <div className={styles.sectionHeader}>
+                      <h2
+                        id="shipping-section-title"
+                        className={internalStyles.cardTitle}
+                      >
+                        Adresse de livraison
+                      </h2>
+                      <p className={internalStyles.cardSubtitle}>
+                        Cette adresse sera utilisée pour l&apos;expédition de
+                        votre commande.
+                      </p>
+                    </div>
+
+                    <div className={styles.formGrid}>
+                      <div className={styles.formFieldFull}>
+                        <label
+                          htmlFor="shipping-address"
+                          className={styles.label}
+                        >
+                          Adresse
+                        </label>
+                        <input
+                          id="shipping-address"
+                          name="address"
+                          type="text"
+                          autoComplete="street-address"
+                          className={`${styles.input} ${
+                            fieldErrors.address ? styles.inputError : ''
+                          }`}
+                          value={shipping.address}
+                          onChange={handleShippingChange}
+                          onBlur={handleShippingBlur}
+                        />
+                        {fieldErrors.address && (
+                          <p className={styles.fieldError} role="alert">
+                            {fieldErrors.address}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className={styles.formField}>
+                        <label htmlFor="shipping-zip" className={styles.label}>
+                          Code postal
+                        </label>
+                        <input
+                          id="shipping-zip"
+                          name="zip"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="postal-code"
+                          className={`${styles.input} ${
+                            fieldErrors.zip ? styles.inputError : ''
+                          }`}
+                          value={shipping.zip}
+                          onChange={handleShippingChange}
+                          onBlur={handleShippingBlur}
+                        />
+                        {fieldErrors.zip && (
+                          <p className={styles.fieldError} role="alert">
+                            {fieldErrors.zip}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className={styles.formField}>
+                        <label htmlFor="shipping-city" className={styles.label}>
+                          Ville
+                        </label>
+                        <input
+                          id="shipping-city"
+                          name="city"
+                          type="text"
+                          autoComplete="address-level2"
+                          className={`${styles.input} ${
+                            fieldErrors.city ? styles.inputError : ''
+                          }`}
+                          value={shipping.city}
+                          onChange={handleShippingChange}
+                          onBlur={handleShippingBlur}
+                        />
+                        {fieldErrors.city && (
+                          <p className={styles.fieldError} role="alert">
+                            {fieldErrors.city}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className={styles.formField}>
+                        <label
+                          htmlFor="shipping-country"
+                          className={styles.label}
+                        >
+                          Pays
+                        </label>
+                        <input
+                          id="shipping-country"
+                          name="country"
+                          type="text"
+                          autoComplete="country-name"
+                          className={`${styles.input} ${
+                            fieldErrors.country ? styles.inputError : ''
+                          }`}
+                          value={shipping.country}
+                          onChange={handleShippingChange}
+                          onBlur={handleShippingBlur}
+                        />
+                        {fieldErrors.country && (
+                          <p className={styles.fieldError} role="alert">
+                            {fieldErrors.country}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  <section
+                    className={internalStyles.card}
+                    aria-labelledby="notes-section-title"
+                  >
+                    <div className={styles.sectionHeader}>
+                      <h2
+                        id="notes-section-title"
+                        className={internalStyles.cardTitle}
+                      >
+                        Message pour la créatrice (optionnel)
+                      </h2>
+                      <p className={internalStyles.cardSubtitle}>
+                        Vous pouvez laisser un petit mot ou une précision
+                        particulière concernant votre commande.
+                      </p>
+                    </div>
+
+                    <div className={styles.formFieldFull}>
+                      <label htmlFor="order-notes" className={styles.label}>
+                        Message
                       </label>
                       <textarea
                         id="order-notes"
-                        name="order-notes"
-                        className={internalStyles.textarea}
+                        name="notes"
                         rows={4}
+                        className={styles.textarea}
                         value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
+                        onChange={(event) => {
+                          setNotes(event.target.value);
+                          setSubmitError('');
+                          setSubmitInfo('');
+                        }}
                       />
                     </div>
                   </section>
 
-                  <div className={styles.submitWrapper}>
-                    <button
-                      type="button"
-                      className={`${internalStyles.primaryButton} ${styles.submitButton}`}
-                      onClick={handleCheckout}
-                      disabled={isSubmitting || !hasItems}
-                    >
-                      {isSubmitting
-                        ? 'Préparation du paiement...'
-                        : `Confirmer la commande · ${cartTotal.toFixed(2)} €`}
-                    </button>
-                    <p className={styles.submitHint}>
-                      Le montant final et les frais de port seront confirmés sur
-                      la page de paiement Stripe.
-                    </p>
-                  </div>
+                  <section className={internalStyles.card}>
+                    <div className={styles.actions}>
+                      <button
+                        type="button"
+                        className={internalStyles.primaryButton}
+                        onClick={handleCheckout}
+                        disabled={!canAttemptCheckout}
+                      >
+                        {isSubmitting
+                          ? 'Redirection vers le paiement en cours...'
+                          : 'Procéder au paiement'}
+                      </button>
+                      <p className={styles.paymentHint}>
+                        Vous serez redirigée vers une page de paiement sécurisée
+                        Stripe.
+                      </p>
+                    </div>
+                  </section>
                 </div>
 
                 <aside className={styles.summaryColumn}>
                   <section
-                    className={`${internalStyles.card} ${styles.summaryCard}`}
+                    className={internalStyles.card}
+                    aria-labelledby="summary-section-title"
                   >
-                    <div className={styles.summaryHeader}>
-                      <h2 className={styles.sectionTitle}>Récapitulatif</h2>
-                      <span className={styles.summaryBadge}>
-                        {totalItems} article{totalItems > 1 ? 's' : ''}
-                      </span>
-                    </div>
+                    <h2
+                      id="summary-section-title"
+                      className={internalStyles.cardTitle}
+                    >
+                      Récapitulatif du panier
+                    </h2>
 
-                    <div className={styles.itemsList}>
-                      {items.map((item) => (
-                        <div
-                          key={buildCartLineKey(item)}
-                          className={styles.itemRow}
-                        >
-                          <div className={styles.itemImageWrapper}>
-                            {item.imageUrl ? (
-                              <img
-                                src={item.imageUrl}
-                                alt={item.name}
-                                className={styles.itemImage}
-                              />
-                            ) : (
-                              <div
-                                className={styles.itemImageFallback}
-                                aria-label={item.name}
-                                role="img"
-                              >
-                                <span className={styles.itemImageFallbackText}>
-                                  VB
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                    <p className={styles.summaryCount}>
+                      {totalItems} article{totalItems > 1 ? 's' : ''}
+                    </p>
 
-                          <div className={styles.itemContent}>
-                            <p className={styles.itemName}>{item.name}</p>
-                            {item.color && (
-                              <p className={styles.itemMeta}>
-                                Couleur : {item.color}
-                              </p>
-                            )}
-                            <p className={styles.itemMeta}>
-                              Quantité : {item.quantity}
-                            </p>
-                          </div>
-
-                          <p className={styles.itemPrice}>
-                            {(item.price * item.quantity).toFixed(2)} €
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                    <ul className={styles.cartLines}>{cartLines}</ul>
 
                     <div className={styles.summaryTotals}>
                       <div className={styles.summaryRow}>
                         <span>Sous-total</span>
                         <span>{cartTotal.toFixed(2)} €</span>
                       </div>
+
                       <div className={styles.summaryRow}>
-                        <span>Frais de port</span>
-                        <span>Calculés à l’étape Stripe</span>
+                        <span>Frais de livraison</span>
+                        <span>À définir avant la mise en production</span>
                       </div>
-                      <div className={styles.summaryRowTotal}>
+
+                      <div className={styles.summaryTotalRow}>
                         <span>Total estimé</span>
                         <span>{cartTotal.toFixed(2)} €</span>
                       </div>
                     </div>
 
-                    <div className={styles.summaryBottomNote}>
-                      Paiement sécurisé et confirmation finale sur Stripe.
-                    </div>
+                    <p className={styles.summaryNote}>
+                      Le montant final incluant les frais de livraison sera
+                      précisé lors de la mise en production du site.
+                    </p>
                   </section>
                 </aside>
               </div>
