@@ -34,9 +34,10 @@ async function decrementStockForOrder(order) {
   }
 
   for (const item of order.items) {
-    if (!item.productId || !mongoose.Types.ObjectId.isValid(String(item.productId))) {
-      // Pas de productId fiable → on ignore cette ligne pour le stock
-      // (la commande reste néanmoins marquée payée)
+    if (
+      !item.productId ||
+      !mongoose.Types.ObjectId.isValid(String(item.productId))
+    ) {
       // eslint-disable-next-line no-continue
       continue;
     }
@@ -44,18 +45,17 @@ async function decrementStockForOrder(order) {
     const product = await Product.findById(item.productId);
 
     if (!product) {
-      // Produit supprimé ou introuvable → on ne décrémente rien
       // eslint-disable-next-line no-continue
       continue;
     }
 
     const orderedQty = Number(item.quantity) || 0;
+
     if (orderedQty <= 0) {
       // eslint-disable-next-line no-continue
       continue;
     }
 
-    // Variante couleur
     if (item.color && Array.isArray(product.colors) && product.colors.length > 0) {
       const normalizedColorName = String(item.color).trim().toLowerCase();
 
@@ -69,12 +69,8 @@ async function decrementStockForOrder(order) {
         const newQty = Math.max(currentQty - orderedQty, 0);
 
         colorVariant.quantity = newQty;
-
-        // Ici, on ne touche pas au stock global product.stock
-        // pour ne pas casser une logique déjà en place ailleurs.
       }
     } else {
-      // Pas de couleur → décrément stock global
       const currentStock = Number(product.stock) || 0;
       const newStock = Math.max(currentStock - orderedQty, 0);
       product.stock = newStock;
@@ -85,9 +81,7 @@ async function decrementStockForOrder(order) {
 }
 
 async function markOrderAsPaid(session) {
-  // Optionnel mais plus robuste : ne traiter que les sessions réellement payées
   if (session.payment_status && session.payment_status !== 'paid') {
-    // On ne fait rien si Stripe nous envoie autre chose que 'paid'
     return;
   }
 
@@ -114,18 +108,7 @@ async function markOrderAsPaid(session) {
     throw new Error("Impossible de marquer comme payée une commande annulée.");
   }
 
-  // Protection forte : une commande déjà payée ne doit jamais retrigger le stock
   if (order.paymentStatus === 'paid') {
-    return;
-  }
-
-  const alreadyPaidWithSameIds =
-    order.paymentStatus === 'paid' &&
-    (!stripePaymentIntentId || order.stripePaymentIntentId === stripePaymentIntentId) &&
-    (!stripeSessionId || order.stripeSessionId === stripeSessionId);
-
-  if (alreadyPaidWithSameIds) {
-    // Webhook dupliqué, on ne refait rien
     return;
   }
 
