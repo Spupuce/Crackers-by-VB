@@ -1,6 +1,6 @@
 // pages/panier.js
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -225,10 +225,9 @@ function buildCartLineKey(item) {
 
 export default function PanierPage() {
   const router = useRouter();
-  const { items, cartTotal, clearCart } = useCart();
+  const { items, cartTotal } = useCart();
   const { user, isAuthenticated, updateUser } = useAuth();
 
-  const hasHandledCheckoutSuccessRef = useRef(false);
   const hasItems = Array.isArray(items) && items.length > 0;
 
   const [contact, setContact] = useState(buildInitialContact(user));
@@ -265,30 +264,12 @@ export default function PanierPage() {
 
     const checkoutStatus = router.query.checkout;
 
-    if (checkoutStatus === 'success') {
-      if (!hasHandledCheckoutSuccessRef.current) {
-        clearCart();
-        hasHandledCheckoutSuccessRef.current = true;
-      }
-
-      setSubmitInfo(
-        'Votre paiement a bien été enregistré. Merci pour votre commande !'
-      );
-      setSubmitError('');
-    }
-
     if (checkoutStatus === 'cancel') {
       setSubmitError(
         'Le paiement a été interrompu avant validation. Vous pouvez réessayer à tout moment.'
       );
       setSubmitInfo('');
-    }
 
-    if (checkoutStatus !== 'success') {
-      hasHandledCheckoutSuccessRef.current = false;
-    }
-
-    if (checkoutStatus === 'success' || checkoutStatus === 'cancel') {
       const { checkout, ...restQuery } = router.query;
 
       router.replace(
@@ -300,7 +281,7 @@ export default function PanierPage() {
         { shallow: true }
       );
     }
-  }, [router.isReady, router.pathname, router.query, router, clearCart]);
+  }, [router.isReady, router.pathname, router.query, router]);
 
   const canAttemptCheckout = useMemo(
     () => hasItems && !isSubmitting,
