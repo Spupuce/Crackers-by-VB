@@ -415,10 +415,10 @@ export default async function handler(req, res) {
       process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
 
     const origin = buildOrigin(req);
-    const successUrl = `${origin}/panier?checkout=success`;
     const cancelUrl = `${origin}/panier?checkout=cancel`;
 
     if (!stripeSecretKey) {
+      // Pas de clé Stripe → on simule un paiement et on redirige vers la page de confirmation
       const simulatedOrder = await Order.create(
         buildOrderPayload({
           userId: authenticatedUserId,
@@ -432,6 +432,8 @@ export default async function handler(req, res) {
           stripePaymentIntentId: 'SIMULATED_PAYMENT',
         })
       );
+
+      const successUrl = `${origin}/commande/confirmation?orderId=${simulatedOrder._id}`;
 
       return res.status(200).json({
         ok: true,
@@ -457,6 +459,8 @@ export default async function handler(req, res) {
     try {
       const stripe = getStripeClient(stripeSecretKey);
       const lineItems = buildStripeLineItems(resolvedItems);
+
+      const successUrl = `${origin}/commande/confirmation?orderId=${pendingOrder._id}`;
 
       const stripeSession = await stripe.checkout.sessions.create({
         mode: 'payment',
