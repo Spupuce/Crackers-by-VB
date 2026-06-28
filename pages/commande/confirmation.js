@@ -1,13 +1,27 @@
 // pages/commande/confirmation.js
 
+import { useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { FiArrowLeft } from 'react-icons/fi';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { useCart } from '../../context/CartContext';
 import internalStyles from '../../styles/InternalPages.module.css';
 
 export default function ConfirmationCommandePage() {
+  const { clearCart } = useCart();
+  const hasClearedCartRef = useRef(false);
+
+  useEffect(() => {
+    if (hasClearedCartRef.current) {
+      return;
+    }
+
+    clearCart();
+    hasClearedCartRef.current = true;
+  }, [clearCart]);
+
   return (
     <>
       <Head>
