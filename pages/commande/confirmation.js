@@ -10,6 +10,15 @@ import Footer from '../../components/Footer';
 import { useCart } from '../../context/CartContext';
 import internalStyles from '../../styles/InternalPages.module.css';
 
+const MAX_CONFIRMATION_ATTEMPTS = 6;
+const CONFIRMATION_RETRY_DELAY = 1500;
+
+function wait(delay) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, delay);
+  });
+}
+
 export default function ConfirmationCommandePage() {
   const router = useRouter();
   const { clearCart } = useCart();
@@ -19,6 +28,7 @@ export default function ConfirmationCommandePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [confirmationError, setConfirmationError] = useState('');
   const [orderData, setOrderData] = useState(null);
+  const [attemptCount, setAttemptCount] = useState(1);
 
   useEffect(() => {
     if (!router.isReady) {
@@ -40,41 +50,77 @@ export default function ConfirmationCommandePage() {
     async function verifyOrder() {
       setIsLoading(true);
       setConfirmationError('');
+      setOrderData(null);
+      setAttemptCount(1);
 
-      try {
-        const response = await fetch(`/api/orders/${orderId}`);
-        const data = await response.json().catch(() => null);
-
-        if (!response.ok || !data?.ok || data?.order?.paymentStatus !== 'paid') {
-          throw new Error(
-            data?.message ||
-              "Cette commande n'est pas confirmée pour le moment."
-          );
-        }
-
+      for (let attempt = 1; attempt <= MAX_CONFIRMATION_ATTEMPTS; attempt += 1) {
         if (!isMounted) {
           return;
         }
 
-        setOrderData(data.order);
+        setAttemptCount(attempt);
 
-        if (!hasClearedCartRef.current) {
-          clearCart();
-          hasClearedCartRef.current = true;
-        }
-      } catch (error) {
-        if (!isMounted) {
-          return;
+        try {
+          const response = await fetch(`/api/orders/${orderId}`);
+          const data = await response.json().catch(() => null);
+
+          if (response.ok && data?.ok && data?.order?.paymentStatus === 'paid') {
+            if (!isMounted) {
+              return;
+            }
+
+            setOrderData(data.order);
+
+            if (!hasClearedCartRef.current) {
+              clearCart();
+              hasClearedCartRef.current = true;
+            }
+
+            setConfirmationError('');
+            setIsLoading(false);
+            return;
+          }
+
+          const shouldRetry =
+            data?.code === 'ORDER_NOT_PAID' ||
+            data?.code === 'ORDER_NOT_FOUND';
+
+          if (!shouldRetry || attempt === MAX_CONFIRMATION_ATTEMPTS) {
+            throw new Error(
+              data?.message ||
+                "Cette commande n'est pas confirmée pour le moment."
+            );
+          }
+        } catch (error) {
+          const errorMessage =
+            error?.message ||
+            'Une erreur est survenue lors de la vérification de votre commande.';
+
+          const shouldRetry =
+            attempt < MAX_CONFIRMATION_ATTEMPTS &&
+            (errorMessage.includes("n'est pas encore validée") ||
+              errorMessage.includes("n'est pas confirmée") ||
+              errorMessage.includes("n'existe pas"));
+
+          if (!shouldRetry) {
+            if (!isMounted) {
+              return;
+            }
+
+            setConfirmationError(errorMessage);
+            setIsLoading(false);
+            return;
+          }
         }
 
+        await wait(CONFIRMATION_RETRY_DELAY);
+      }
+
+      if (isMounted) {
         setConfirmationError(
-          error?.message ||
-            'Une erreur est survenue lors de la vérification de votre commande.'
+          "La confirmation du paiement prend plus de temps que prévu. Merci de rafraîchir la page dans quelques instants."
         );
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     }
 
@@ -115,7 +161,7 @@ export default function ConfirmationCommandePage() {
 
             {isLoading && (
               <p className={internalStyles.pageSubtitle}>
-                Nous vérifions actuellement la confirmation de votre paiement.
+                Nous confirmons actuellement votre paiement auprès de Stripe.
               </p>
             )}
 
@@ -135,8 +181,14 @@ export default function ConfirmationCommandePage() {
 
           {isLoading && (
             <section className={internalStyles.card}>
+              <h2 className={internalStyles.sectionTitle}>
+                Validation du paiement
+              </h2>
               <p className={internalStyles.text}>
                 Vérification de votre paiement en cours...
+              </p>
+              <p className={internalStyles.text}>
+                Tentative {attemptCount} sur {MAX_CONFIRMATION_ATTEMPTS}.
               </p>
             </section>
           )}
