@@ -29,6 +29,36 @@ function getStripeClient() {
   });
 }
 
+function getBaseUrlFromEnv() {
+  const candidates = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.SITE_URL,
+    process.env.NEXTAUTH_URL,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim().replace(/\/+$/, '');
+    }
+  }
+
+  return '';
+}
+
+function buildAccountUrl(order) {
+  if (!order?.userId) {
+    return '';
+  }
+
+  const baseUrl = getBaseUrlFromEnv();
+
+  if (!baseUrl) {
+    return '';
+  }
+
+  return `${baseUrl}/mon-compte`;
+}
+
 async function decrementStockForOrder(order) {
   if (!Array.isArray(order.items) || order.items.length === 0) {
     return;
@@ -170,10 +200,6 @@ function getOrderCustomerName(order) {
     return order.customer.firstName.trim();
   }
 
-  if (typeof order?.shipping?.firstName === 'string' && order.shipping.firstName.trim()) {
-    return order.shipping.firstName.trim();
-  }
-
   return '';
 }
 
@@ -202,16 +228,19 @@ async function sendConfirmationEmailForOrder(order, session) {
 
   const customerName = getOrderCustomerName(order);
   const orderId = getOrderReference(order);
+  const accountUrl = buildAccountUrl(order);
 
   const info = await sendOrderConfirmationEmail({
     customerEmail,
     customerName,
     orderId,
+    accountUrl,
   });
 
   console.log('STRIPE_ORDER_CONFIRMATION_EMAIL_SENT', {
     orderId,
     customerEmail,
+    accountUrl: accountUrl || null,
     messageId: info?.messageId || null,
     accepted: info?.accepted || [],
     rejected: info?.rejected || [],
