@@ -205,5 +205,4 @@
 - 🔴 Refaire un test complet post-déploiement.
 - 🔴 Contrôler formulaires, panier, commandes, compte et administration en environnement réel.
 
-Vérifier les notes de commandes ou apparissent t elle ?
-Le bouton rechercher ne fonctionne que sur la page Boutique
+Le bouton rechercher fonctionne mais ne montre un résultat que sur la page Boutique
