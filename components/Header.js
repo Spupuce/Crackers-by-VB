@@ -108,14 +108,10 @@ export default function Header({ products = [] }) {
       return;
     }
 
-    const normalized = trimmed;
-
-    const nextQuery = { ...router.query, search: normalized };
-
     router.push(
       {
         pathname: '/boutique',
-        query: nextQuery,
+        query: { search: trimmed },
       },
       undefined,
       { shallow: false }
@@ -194,6 +190,9 @@ export default function Header({ products = [] }) {
       .slice(0, 6);
   }, [safeProducts, searchTerm]);
 
+  const trimmedSearch = searchTerm.trim();
+  const shouldShowSearchAction = trimmedSearch.length > 0;
+
   return (
     <>
       <header className={styles.header}>
@@ -268,9 +267,7 @@ export default function Header({ products = [] }) {
                           ref={searchInputRef}
                           type="text"
                           value={searchTerm}
-                          onChange={(event) =>
-                            setSearchTerm(event.target.value)
-                          }
+                          onChange={(event) => setSearchTerm(event.target.value)}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter') {
                               event.preventDefault();
@@ -283,13 +280,9 @@ export default function Header({ products = [] }) {
                       </div>
 
                       <div className={styles.searchResults}>
-                        {!searchTerm.trim() ? (
+                        {!trimmedSearch ? (
                           <p className={styles.searchMessage}>
                             Tape un nom de produit ou une catégorie.
-                          </p>
-                        ) : filteredResults.length === 0 ? (
-                          <p className={styles.searchMessage}>
-                            Aucun produit trouvé.
                           </p>
                         ) : (
                           filteredResults.map((product) => (
@@ -328,16 +321,17 @@ export default function Header({ products = [] }) {
                         )}
                       </div>
 
-                      <div className={styles.searchActions}>
-                        <button
-                          type="button"
-                          className={styles.searchSubmitButton}
-                          onClick={handleSubmitSearch}
-                          disabled={!searchTerm.trim()}
-                        >
-                          Voir tous les résultats dans la boutique
-                        </button>
-                      </div>
+                      {shouldShowSearchAction && (
+                        <div className={styles.searchActions}>
+                          <button
+                            type="button"
+                            className={styles.searchSubmitButton}
+                            onClick={handleSubmitSearch}
+                          >
+                            Voir en boutique
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -352,9 +346,7 @@ export default function Header({ products = [] }) {
                   >
                     <FiHeart aria-hidden="true" />
                     {displayedFavoritesCount > 0 && (
-                      <span className={styles.badge}>
-                        {displayedFavoritesCount}
-                      </span>
+                      <span className={styles.badge}>{displayedFavoritesCount}</span>
                     )}
                   </a>
                 </Link>
