@@ -1,7 +1,8 @@
 // pages/boutique.js
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
@@ -99,7 +100,28 @@ function matchesPriceRange(productPrice, priceRangeKey, minPrice, maxPrice) {
   return true;
 }
 
+function matchesSearch(product, searchTerm) {
+  const normalizedSearch = normalizeValue(searchTerm);
+
+  if (!normalizedSearch) {
+    return true;
+  }
+
+  const normalizedName = normalizeValue(product.name);
+  const normalizedCategory = normalizeValue(product.category);
+  const normalizedSlug = normalizeValue(product.slug);
+  const normalizedDescription = normalizeValue(product.description);
+
+  return (
+    normalizedName.includes(normalizedSearch) ||
+    normalizedCategory.includes(normalizedSearch) ||
+    normalizedSlug.includes(normalizedSearch) ||
+    normalizedDescription.includes(normalizedSearch)
+  );
+}
+
 export default function BoutiquePage({ products }) {
+  const router = useRouter();
   const safeProducts = Array.isArray(products) ? products : [];
 
   const activeProducts = useMemo(
@@ -112,6 +134,18 @@ export default function BoutiquePage({ products }) {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [promoOnly, setPromoOnly] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+
+    const querySearch =
+      typeof router.query.search === 'string' ? router.query.search : '';
+
+    setSearchTerm(querySearch);
+  }, [router.isReady, router.query.search]);
 
   function handleCategoryChange(nextCategory) {
     setSelectedCategory(nextCategory);
@@ -127,6 +161,19 @@ export default function BoutiquePage({ products }) {
     setMinPrice('');
     setMaxPrice('');
     setPromoOnly(false);
+    setSearchTerm('');
+
+    const nextQuery = { ...router.query };
+    delete nextQuery.search;
+
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: nextQuery,
+      },
+      undefined,
+      { shallow: true }
+    );
   }
 
   const filteredProducts = useMemo(() => {
@@ -140,8 +187,9 @@ export default function BoutiquePage({ products }) {
         maxPrice
       );
       const promoOk = !promoOnly || hasValidPromoPrice(product);
+      const searchOk = matchesSearch(product, searchTerm);
 
-      return categoryOk && priceOk && promoOk;
+      return categoryOk && priceOk && promoOk && searchOk;
     });
   }, [
     activeProducts,
@@ -150,6 +198,7 @@ export default function BoutiquePage({ products }) {
     minPrice,
     maxPrice,
     promoOnly,
+    searchTerm,
   ]);
 
   return (
@@ -192,6 +241,7 @@ export default function BoutiquePage({ products }) {
             <section className={styles.productsSection}>
               <p className={styles.results}>
                 {filteredProducts.length} produits trouvés
+                {searchTerm ? ` pour “${searchTerm}”` : ''}
               </p>
 
               <div className={styles.grid}>

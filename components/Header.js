@@ -12,6 +12,11 @@ import {
   FiX,
   FiLogOut,
 } from 'react-icons/fi';
+import {
+  getActiveProductPrice,
+  getProductBasePrice,
+  hasValidPromoPrice,
+} from '../utils/product';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext';
@@ -101,6 +106,25 @@ export default function Header({ products = [] }) {
     }
   }
 
+  function handleSubmitSearch() {
+    const trimmed = searchTerm.trim();
+
+    if (!trimmed) {
+      return;
+    }
+
+    router.push(
+      {
+        pathname: '/boutique',
+        query: { search: trimmed },
+      },
+      undefined,
+      { shallow: false }
+    );
+
+    handleCloseSearch();
+  }
+
   useEffect(() => {
     if (!searchOpen) {
       return;
@@ -170,6 +194,9 @@ export default function Header({ products = [] }) {
       })
       .slice(0, 6);
   }, [safeProducts, searchTerm]);
+
+  const trimmedSearch = searchTerm.trim();
+  const shouldShowSearchAction = trimmedSearch.length > 0;
 
   return (
     <>
@@ -246,56 +273,89 @@ export default function Header({ products = [] }) {
                           type="text"
                           value={searchTerm}
                           onChange={(event) => setSearchTerm(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              handleSubmitSearch();
+                            }
+                          }}
                           placeholder="Rechercher une création..."
                           className={styles.searchInput}
                         />
                       </div>
 
                       <div className={styles.searchResults}>
-                        {!searchTerm.trim() ? (
+                        {!trimmedSearch ? (
                           <p className={styles.searchMessage}>
                             Tape un nom de produit ou une catégorie.
                           </p>
-                        ) : filteredResults.length === 0 ? (
-                          <p className={styles.searchMessage}>
-                            Aucun produit trouvé.
-                          </p>
                         ) : (
-                          filteredResults.map((product) => (
-                            <Link
-                              key={product._id || product.slug}
-                              href={`/boutique/${product.slug}`}
-                              legacyBehavior
-                            >
-                              <a
-                                className={styles.searchResultItem}
-                                onClick={handleCloseSearch}
+                          filteredResults.map((product) => {
+                            const hasPromo = hasValidPromoPrice(product);
+                            const activePrice = getActiveProductPrice(product);
+                            const basePrice = getProductBasePrice(product);
+
+                            return (
+                              <Link
+                                key={product._id || product.slug}
+                                href={`/boutique/${product.slug}`}
+                                legacyBehavior
                               >
-                                <div className={styles.searchResultImageWrapper}>
-                                  <img
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    className={styles.searchResultImage}
-                                  />
-                                </div>
+                                <a
+                                  className={styles.searchResultItem}
+                                  onClick={handleCloseSearch}
+                                >
+                                  <div className={styles.searchResultImageWrapper}>
+                                    <img
+                                      src={product.imageUrl}
+                                      alt={product.name}
+                                      className={styles.searchResultImage}
+                                    />
+                                  </div>
 
-                                <div className={styles.searchResultContent}>
-                                  <span className={styles.searchResultName}>
-                                    {product.name}
-                                  </span>
-                                  <span className={styles.searchResultCategory}>
-                                    {product.category}
-                                  </span>
-                                </div>
+                                  <div className={styles.searchResultContent}>
+                                    <span className={styles.searchResultName}>
+                                      {product.name}
+                                    </span>
+                                    <span className={styles.searchResultCategory}>
+                                      {product.category}
+                                    </span>
+                                  </div>
 
-                                <span className={styles.searchResultPrice}>
-                                  {Number(product.price).toFixed(2)} €
-                                </span>
-                              </a>
-                            </Link>
-                          ))
+                                  <div className={styles.searchResultPriceBlock}>
+                                    {hasPromo ? (
+                                      <>
+                                        <span className={styles.searchResultPriceOld}>
+                                          {basePrice.toFixed(2)} €
+                                        </span>
+                                        <span className={styles.searchResultPricePromo}>
+                                          {activePrice.toFixed(2)} €
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <span className={styles.searchResultPrice}>
+                                        {basePrice.toFixed(2)} €
+                                      </span>
+                                    )}
+                                  </div>
+                                </a>
+                              </Link>
+                            );
+                          })
                         )}
                       </div>
+
+                      {shouldShowSearchAction && (
+                        <div className={styles.searchActions}>
+                          <button
+                            type="button"
+                            className={styles.searchSubmitButton}
+                            onClick={handleSubmitSearch}
+                          >
+                            Voir en boutique
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}

@@ -168,6 +168,7 @@ function normalizeAdminOrder(apiOrder) {
     trackingUrl: apiOrder.shipping?.trackingUrl || '',
     shippingMethod:
       apiOrder.shipping?.method || apiOrder.shipping?.carrier || 'Livraison',
+    notes: apiOrder.notes || '',
     items,
   };
 }
@@ -552,7 +553,9 @@ export default function AdminOrdersPage() {
 
               {statusFeedback.message ? (
                 <div
-                  className={`${styles.loadingContainer} ${styles.statusFeedbackWrapper || ''}`}
+                  className={`${styles.loadingContainer} ${
+                    styles.statusFeedbackWrapper || ''
+                  }`}
                 >
                   <div className={styles.loadingBox}>{statusFeedback.message}</div>
                 </div>
@@ -729,6 +732,14 @@ export default function AdminOrdersPage() {
                       <strong>Adresse :</strong>{' '}
                       {getAddressLabel(selectedOrder)}
                     </p>
+                  </div>
+                </div>
+
+                <div className={styles.detailSection}>
+                  <h2 className={styles.sectionTitle}>Notes de commande</h2>
+
+                  <div className={styles.infoCard}>
+                    <p>{selectedOrder.notes || 'Aucune note laissée par la cliente.'}</p>
                   </div>
                 </div>
 
