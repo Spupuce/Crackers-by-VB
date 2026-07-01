@@ -101,6 +101,29 @@ export default function Header({ products = [] }) {
     }
   }
 
+  function handleSubmitSearch() {
+    const trimmed = searchTerm.trim();
+
+    if (!trimmed) {
+      return;
+    }
+
+    const normalized = trimmed;
+
+    const nextQuery = { ...router.query, search: normalized };
+
+    router.push(
+      {
+        pathname: '/boutique',
+        query: nextQuery,
+      },
+      undefined,
+      { shallow: false }
+    );
+
+    handleCloseSearch();
+  }
+
   useEffect(() => {
     if (!searchOpen) {
       return;
@@ -245,7 +268,15 @@ export default function Header({ products = [] }) {
                           ref={searchInputRef}
                           type="text"
                           value={searchTerm}
-                          onChange={(event) => setSearchTerm(event.target.value)}
+                          onChange={(event) =>
+                            setSearchTerm(event.target.value)
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              handleSubmitSearch();
+                            }
+                          }}
                           placeholder="Rechercher une création..."
                           className={styles.searchInput}
                         />
@@ -296,6 +327,17 @@ export default function Header({ products = [] }) {
                           ))
                         )}
                       </div>
+
+                      <div className={styles.searchActions}>
+                        <button
+                          type="button"
+                          className={styles.searchSubmitButton}
+                          onClick={handleSubmitSearch}
+                          disabled={!searchTerm.trim()}
+                        >
+                          Voir tous les résultats dans la boutique
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
@@ -310,7 +352,9 @@ export default function Header({ products = [] }) {
                   >
                     <FiHeart aria-hidden="true" />
                     {displayedFavoritesCount > 0 && (
-                      <span className={styles.badge}>{displayedFavoritesCount}</span>
+                      <span className={styles.badge}>
+                        {displayedFavoritesCount}
+                      </span>
                     )}
                   </a>
                 </Link>
