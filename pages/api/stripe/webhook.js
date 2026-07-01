@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { connectMongo } from '../../../lib/mongodb';
 import Order from '../../../models/Order';
 import Product from '../../../models/Product';
+import { sendOrderConfirmationEmail } from '../../../lib/services/emailService';
 
 export const config = {
   api: {
@@ -56,7 +57,11 @@ async function decrementStockForOrder(order) {
       continue;
     }
 
-    if (item.color && Array.isArray(product.colors) && product.colors.length > 0) {
+    if (
+      item.color &&
+      Array.isArray(product.colors) &&
+      product.colors.length > 0
+    ) {
       const normalizedColorName = String(item.color).trim().toLowerCase();
 
       const colorVariant = product.colors.find((c) => {
@@ -82,7 +87,10 @@ async function decrementStockForOrder(order) {
 
 async function markOrderAsPaid(session) {
   if (session.payment_status && session.payment_status !== 'paid') {
-    return;
+    return {
+      order: null,
+      didMarkAsPaid: false,
+    };
   }
 
   const orderId = session?.metadata?.order_id;
@@ -109,7 +117,10 @@ async function markOrderAsPaid(session) {
   }
 
   if (order.paymentStatus === 'paid') {
-    return;
+    return {
+      order,
+      didMarkAsPaid: false,
+    };
   }
 
   await decrementStockForOrder(order);
@@ -125,6 +136,87 @@ async function markOrderAsPaid(session) {
   }
 
   await order.save();
+
+  return {
+    order,
+    didMarkAsPaid: true,
+  };
+}
+
+function getOrderCustomerEmail(order, session) {
+  if (typeof order?.customer?.email === 'string' && order.customer.email.trim()) {
+    return order.customer.email.trim();
+  }
+
+  if (
+    typeof session?.customer_details?.email === 'string' &&
+    session.customer_details.email.trim()
+  ) {
+    return session.customer_details.email.trim();
+  }
+
+  if (
+    typeof session?.customer_email === 'string' &&
+    session.customer_email.trim()
+  ) {
+    return session.customer_email.trim();
+  }
+
+  return '';
+}
+
+function getOrderCustomerName(order) {
+  if (typeof order?.customer?.firstName === 'string' && order.customer.firstName.trim()) {
+    return order.customer.firstName.trim();
+  }
+
+  if (typeof order?.shipping?.firstName === 'string' && order.shipping.firstName.trim()) {
+    return order.shipping.firstName.trim();
+  }
+
+  return '';
+}
+
+function getOrderReference(order) {
+  if (typeof order?.orderNumber === 'string' && order.orderNumber.trim()) {
+    return order.orderNumber.trim();
+  }
+
+  if (order?._id) {
+    return String(order._id);
+  }
+
+  return 'commande';
+}
+
+async function sendConfirmationEmailForOrder(order, session) {
+  const customerEmail = getOrderCustomerEmail(order, session);
+
+  if (!customerEmail) {
+    console.warn('STRIPE_ORDER_CONFIRMATION_EMAIL_SKIPPED_NO_EMAIL', {
+      orderId: order?._id ? String(order._id) : null,
+      stripeSessionId: session?.id || null,
+    });
+    return;
+  }
+
+  const customerName = getOrderCustomerName(order);
+  const orderId = getOrderReference(order);
+
+  const info = await sendOrderConfirmationEmail({
+    customerEmail,
+    customerName,
+    orderId,
+  });
+
+  console.log('STRIPE_ORDER_CONFIRMATION_EMAIL_SENT', {
+    orderId,
+    customerEmail,
+    messageId: info?.messageId || null,
+    accepted: info?.accepted || [],
+    rejected: info?.rejected || [],
+    response: info?.response || null,
+  });
 }
 
 export default async function handler(req, res) {
@@ -167,7 +259,13 @@ export default async function handler(req, res) {
 
     switch (event.type) {
       case 'checkout.session.completed': {
-        await markOrderAsPaid(event.data.object);
+        const session = event.data.object;
+        const { order, didMarkAsPaid } = await markOrderAsPaid(session);
+
+        if (order && didMarkAsPaid) {
+          await sendConfirmationEmailForOrder(order, session);
+        }
+
         break;
       }
 
@@ -180,7 +278,12 @@ export default async function handler(req, res) {
       received: true,
     });
   } catch (error) {
-    console.error('STRIPE_WEBHOOK_ERROR', error);
+    console.error('STRIPE_WEBHOOK_ERROR', {
+      message: error?.message || error,
+      code: error?.code || null,
+      type: error?.type || null,
+      stack: error?.stack || null,
+    });
 
     return res.status(400).json({
       ok: false,
