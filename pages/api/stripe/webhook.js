@@ -59,6 +59,44 @@ function buildAccountUrl(order) {
   return `${baseUrl}/mon-compte`;
 }
 
+function normalizeCurrency(currency) {
+  if (typeof currency === 'string' && currency.trim()) {
+    return currency.trim().toUpperCase();
+  }
+
+  return 'EUR';
+}
+
+function buildEmailOrderItems(order) {
+  if (!Array.isArray(order?.items) || order.items.length === 0) {
+    return [];
+  }
+
+  return order.items.map((item, index) => {
+    const unitPrice = Number(item?.unitPrice) || 0;
+    const quantity = Number(item?.quantity) || 0;
+
+    return {
+      id: item?.productId ? String(item.productId) : `item-${index}`,
+      name: item?.name ? String(item.name).trim() : 'Produit',
+      color: item?.color ? String(item.color).trim() : '',
+      quantity,
+      unitPrice,
+      lineTotal: unitPrice * quantity,
+    };
+  });
+}
+
+function buildEmailOrderSummary(order) {
+  return {
+    items: buildEmailOrderItems(order),
+    subtotalAmount: Number(order?.subtotalAmount) || 0,
+    shippingAmount: Number(order?.shippingAmount) || 0,
+    totalAmount: Number(order?.totalAmount) || 0,
+    currency: normalizeCurrency(order?.currency),
+  };
+}
+
 async function decrementStockForOrder(order) {
   if (!Array.isArray(order.items) || order.items.length === 0) {
     return;
@@ -229,18 +267,23 @@ async function sendConfirmationEmailForOrder(order, session) {
   const customerName = getOrderCustomerName(order);
   const orderId = getOrderReference(order);
   const accountUrl = buildAccountUrl(order);
+  const orderSummary = buildEmailOrderSummary(order);
 
   const info = await sendOrderConfirmationEmail({
     customerEmail,
     customerName,
     orderId,
     accountUrl,
+    orderSummary,
   });
 
   console.log('STRIPE_ORDER_CONFIRMATION_EMAIL_SENT', {
     orderId,
     customerEmail,
     accountUrl: accountUrl || null,
+    itemCount: orderSummary.items.length,
+    totalAmount: orderSummary.totalAmount,
+    currency: orderSummary.currency,
     messageId: info?.messageId || null,
     accepted: info?.accepted || [],
     rejected: info?.rejected || [],
