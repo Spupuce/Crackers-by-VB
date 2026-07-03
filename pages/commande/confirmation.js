@@ -19,6 +19,63 @@ function wait(delay) {
   });
 }
 
+function getDeliveryMethodLabel(method) {
+  if (method === 'relay') {
+    return 'Point relais';
+  }
+
+  if (method === 'home') {
+    return 'Livraison à domicile';
+  }
+
+  return 'Livraison';
+}
+
+function getParcelSizeLabel(parcelSize) {
+  if (parcelSize === 'small') {
+    return 'Petit colis';
+  }
+
+  if (parcelSize === 'medium') {
+    return 'Colis moyen';
+  }
+
+  return '';
+}
+
+function buildDeliverySummary(orderData) {
+  const methodLabel = getDeliveryMethodLabel(orderData?.shipping?.method || '');
+  const parcelSizeLabel = getParcelSizeLabel(orderData?.shipping?.parcelSize || '');
+
+  if (methodLabel && parcelSizeLabel) {
+    return `${methodLabel} - ${parcelSizeLabel}`;
+  }
+
+  if (methodLabel) {
+    return methodLabel;
+  }
+
+  if (parcelSizeLabel) {
+    return parcelSizeLabel;
+  }
+
+  return 'Livraison';
+}
+
+function getDeliveryFollowUpMessage(orderData) {
+  const deliveryMethod = orderData?.shipping?.method || '';
+
+  if (deliveryMethod === 'relay') {
+    return 'Votre commande sera préparée puis déposée en point relais dès qu’elle sera prête.';
+  }
+
+  if (deliveryMethod === 'home') {
+    return 'Votre commande sera préparée puis expédiée à votre adresse dès qu’elle sera prête.';
+  }
+
+  return 'Votre commande sera préparée puis confiée au transporteur dès qu’elle sera prête.';
+}
+
 export default function ConfirmationCommandePage() {
   const router = useRouter();
   const { clearCart } = useCart();
@@ -132,6 +189,10 @@ export default function ConfirmationCommandePage() {
   }, [router.isReady, router.query, clearCart]);
 
   const isConfirmed = !isLoading && !confirmationError && orderData;
+  const deliverySummary = isConfirmed ? buildDeliverySummary(orderData) : '';
+  const deliveryFollowUpMessage = isConfirmed
+    ? getDeliveryFollowUpMessage(orderData)
+    : '';
 
   return (
     <>
@@ -242,6 +303,14 @@ export default function ConfirmationCommandePage() {
                   Référence de commande : {orderData.orderNumber}
                 </p>
               ) : null}
+
+              <p className={internalStyles.text}>
+                Mode de livraison choisi : {deliverySummary}
+              </p>
+
+              <p className={internalStyles.text}>
+                {deliveryFollowUpMessage}
+              </p>
 
               <p className={internalStyles.text}>
                 Un email de confirmation détaillant votre commande sera envoyé à
