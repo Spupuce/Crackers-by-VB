@@ -209,3 +209,7 @@ Le bouton rechercher fonctionne mais ne montre un résultat que sur la page Bout
 Option cadeau ?
 Pas de TVA a affiché ?
 Gros colis ?
+Photo stock depuis Google photo
+Mettre les images du produit et l'adresse de livraison à domicile ou de point relay si on choisi un lieu ?
+![alt text](image.png)
+lien de suivi dans le mail 
