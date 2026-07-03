@@ -206,3 +206,4 @@
 - 🔴 Contrôler formulaires, panier, commandes, compte et administration en environnement réel.
 
 Le bouton rechercher fonctionne mais ne montre un résultat que sur la page Boutique
+Option cadeau ?

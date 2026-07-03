@@ -155,6 +155,13 @@ const OrderSchema = new mongoose.Schema(
     shipping: {
       method: {
         type: String,
+        enum: ['', 'relay', 'home'],
+        default: '',
+        trim: true,
+      },
+      parcelSize: {
+        type: String,
+        enum: ['', 'small', 'medium'],
         default: '',
         trim: true,
       },

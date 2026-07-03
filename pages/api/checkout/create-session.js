@@ -67,6 +67,31 @@ function getSafeStock(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
+function normalizeDeliveryMethod(value) {
+  return value === 'home' ? 'home' : 'relay';
+}
+
+function getParcelSizeFromItems(resolvedItems) {
+  const totalItems = resolvedItems.reduce(
+    (sum, item) => sum + getSafeNumber(item.quantity),
+    0
+  );
+
+  return totalItems > 2 ? 'medium' : 'small';
+}
+
+function computeShippingAmount({ subtotalAmount, deliveryMethod, parcelSize }) {
+  if (subtotalAmount >= 69) {
+    return 0;
+  }
+
+  if (parcelSize === 'medium') {
+    return deliveryMethod === 'home' ? 8.9 : 5.9;
+  }
+
+  return deliveryMethod === 'home' ? 7.9 : 4.9;
+}
+
 function hasValidPromoPrice(product) {
   if (!product) {
     return false;
@@ -247,6 +272,9 @@ function buildOrderPayload({
   customer,
   resolvedItems,
   normalizedShipping,
+  deliveryMethod,
+  parcelSize,
+  shippingAmount,
   notes,
   status,
   paymentStatus,
@@ -258,7 +286,6 @@ function buildOrderPayload({
     0
   );
 
-  const shippingAmount = 0;
   const totalAmount = subtotalAmount + shippingAmount;
 
   return {
@@ -286,11 +313,20 @@ function buildOrderPayload({
       city: normalizedShipping.city,
       country: normalizedShipping.country,
     },
+    shipping: {
+      method: deliveryMethod,
+      parcelSize,
+      carrier: '',
+      trackingNumber: '',
+      trackingUrl: '',
+      shippedAt: null,
+      deliveredAt: null,
+    },
   };
 }
 
-function buildStripeLineItems(resolvedItems) {
-  return resolvedItems.map((item) => ({
+function buildStripeLineItems(resolvedItems, shippingAmount, deliveryMethod) {
+  const productLineItems = resolvedItems.map((item) => ({
     quantity: item.quantity,
     price_data: {
       currency: 'eur',
@@ -306,6 +342,31 @@ function buildStripeLineItems(resolvedItems) {
       unit_amount: Math.round(item.unitPrice * 100),
     },
   }));
+
+  if (shippingAmount <= 0) {
+    return productLineItems;
+  }
+
+  return [
+    ...productLineItems,
+    {
+      quantity: 1,
+      price_data: {
+        currency: 'eur',
+        product_data: {
+          name:
+            deliveryMethod === 'home'
+              ? 'Frais de port - Livraison à domicile'
+              : 'Frais de port - Point relais',
+          metadata: {
+            type: 'shipping',
+            deliveryMethod,
+          },
+        },
+        unit_amount: Math.round(shippingAmount * 100),
+      },
+    },
+  ];
 }
 
 function getStripeClient(stripeSecretKey) {
@@ -333,7 +394,7 @@ export default async function handler(req, res) {
         ? session.userId
         : null;
 
-    const { items, customer, shipping, notes } = req.body || {};
+    const { items, customer, shipping, deliveryMethod, notes } = req.body || {};
 
     const normalizedItems = normalizeIncomingItems(items);
 
@@ -358,6 +419,8 @@ export default async function handler(req, res) {
       zip: normalizeText(shipping?.zip || ''),
       country: normalizeText(shipping?.country || '') || 'France',
     };
+
+    const normalizedDeliveryMethod = normalizeDeliveryMethod(deliveryMethod);
 
     if (
       !normalizedCustomer.firstName ||
@@ -411,6 +474,18 @@ export default async function handler(req, res) {
       });
     }
 
+    const subtotalAmount = resolvedItems.reduce(
+      (sum, item) => sum + item.unitPrice * item.quantity,
+      0
+    );
+
+    const parcelSize = getParcelSizeFromItems(resolvedItems);
+    const shippingAmount = computeShippingAmount({
+      subtotalAmount,
+      deliveryMethod: normalizedDeliveryMethod,
+      parcelSize,
+    });
+
     const stripeSecretKey =
       process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
 
@@ -418,13 +493,15 @@ export default async function handler(req, res) {
     const cancelUrl = `${origin}/panier?checkout=cancel`;
 
     if (!stripeSecretKey) {
-      // Pas de clé Stripe → on simule un paiement et on redirige vers la page de confirmation
       const simulatedOrder = await Order.create(
         buildOrderPayload({
           userId: authenticatedUserId,
           customer: normalizedCustomer,
           resolvedItems,
           normalizedShipping,
+          deliveryMethod: normalizedDeliveryMethod,
+          parcelSize,
+          shippingAmount,
           notes,
           status: 'pending',
           paymentStatus: 'paid',
@@ -450,6 +527,9 @@ export default async function handler(req, res) {
         customer: normalizedCustomer,
         resolvedItems,
         normalizedShipping,
+        deliveryMethod: normalizedDeliveryMethod,
+        parcelSize,
+        shippingAmount,
         notes,
         status: 'pending',
         paymentStatus: 'pending',
@@ -458,7 +538,11 @@ export default async function handler(req, res) {
 
     try {
       const stripe = getStripeClient(stripeSecretKey);
-      const lineItems = buildStripeLineItems(resolvedItems);
+      const lineItems = buildStripeLineItems(
+        resolvedItems,
+        shippingAmount,
+        normalizedDeliveryMethod
+      );
 
       const successUrl = `${origin}/commande/confirmation?orderId=${pendingOrder._id}`;
 
@@ -478,6 +562,9 @@ export default async function handler(req, res) {
           shipping_city: normalizedShipping.city || '',
           shipping_zip: normalizedShipping.zip || '',
           shipping_country: normalizedShipping.country || '',
+          delivery_method: normalizedDeliveryMethod,
+          parcel_size: parcelSize,
+          shipping_amount: String(shippingAmount),
           notes: normalizeText(notes) || '',
         },
       });
