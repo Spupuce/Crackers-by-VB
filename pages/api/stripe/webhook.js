@@ -67,6 +67,30 @@ function normalizeCurrency(currency) {
   return 'EUR';
 }
 
+function getDeliveryMethodLabel(method) {
+  if (method === 'home') {
+    return 'Livraison à domicile';
+  }
+
+  if (method === 'relay') {
+    return 'Point relais';
+  }
+
+  return 'Livraison';
+}
+
+function getParcelSizeLabel(parcelSize) {
+  if (parcelSize === 'medium') {
+    return 'Colis moyen';
+  }
+
+  if (parcelSize === 'small') {
+    return 'Petit colis';
+  }
+
+  return '';
+}
+
 function buildEmailOrderItems(order) {
   if (!Array.isArray(order?.items) || order.items.length === 0) {
     return [];
@@ -94,6 +118,10 @@ function buildEmailOrderSummary(order) {
     shippingAmount: Number(order?.shippingAmount) || 0,
     totalAmount: Number(order?.totalAmount) || 0,
     currency: normalizeCurrency(order?.currency),
+    deliveryMethod: order?.shipping?.method || '',
+    deliveryMethodLabel: getDeliveryMethodLabel(order?.shipping?.method || ''),
+    parcelSize: order?.shipping?.parcelSize || '',
+    parcelSizeLabel: getParcelSizeLabel(order?.shipping?.parcelSize || ''),
   };
 }
 
@@ -284,6 +312,8 @@ async function sendConfirmationEmailForOrder(order, session) {
     itemCount: orderSummary.items.length,
     totalAmount: orderSummary.totalAmount,
     currency: orderSummary.currency,
+    deliveryMethod: orderSummary.deliveryMethod || null,
+    parcelSize: orderSummary.parcelSize || null,
     messageId: info?.messageId || null,
     accepted: info?.accepted || [],
     rejected: info?.rejected || [],

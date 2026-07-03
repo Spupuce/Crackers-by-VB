@@ -207,3 +207,4 @@
 
 Le bouton rechercher fonctionne mais ne montre un résultat que sur la page Boutique
 Option cadeau ?
+Pas de TVA a affiché
