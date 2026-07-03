@@ -223,6 +223,32 @@ function buildCartLineKey(item) {
   return `${slug}::${color || 'default'}`;
 }
 
+function getParcelSize(totalItems) {
+  return totalItems > 2 ? 'medium' : 'small';
+}
+
+function getParcelLabel(parcelSize) {
+  return parcelSize === 'medium' ? 'Colis moyen' : 'Petit colis';
+}
+
+function getShippingPrice(deliveryMethod, totalItems, cartTotal) {
+  if (cartTotal >= 69) {
+    return 0;
+  }
+
+  const parcelSize = getParcelSize(totalItems);
+
+  if (parcelSize === 'medium') {
+    return deliveryMethod === 'home' ? 8.9 : 5.9;
+  }
+
+  return deliveryMethod === 'home' ? 7.9 : 4.9;
+}
+
+function getDeliveryMethodLabel(deliveryMethod) {
+  return deliveryMethod === 'home' ? 'Livraison à domicile' : 'Point relais';
+}
+
 export default function PanierPage() {
   const router = useRouter();
   const { items, cartTotal } = useCart();
@@ -233,6 +259,7 @@ export default function PanierPage() {
   const [contact, setContact] = useState(buildInitialContact(user));
   const [shipping, setShipping] = useState(buildInitialShipping(user));
   const [notes, setNotes] = useState('');
+  const [deliveryMethod, setDeliveryMethod] = useState('relay');
   const [fieldErrors, setFieldErrors] = useState(buildInitialErrors());
   const [touchedFields, setTouchedFields] = useState(buildInitialTouched());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -293,6 +320,20 @@ export default function PanierPage() {
       items.reduce((accumulator, item) => accumulator + (item.quantity || 0), 0),
     [items]
   );
+
+  const parcelSize = useMemo(() => getParcelSize(totalItems), [totalItems]);
+
+  const shippingPrice = useMemo(
+    () => getShippingPrice(deliveryMethod, totalItems, cartTotal),
+    [deliveryMethod, totalItems, cartTotal]
+  );
+
+  const estimatedTotal = useMemo(
+    () => cartTotal + shippingPrice,
+    [cartTotal, shippingPrice]
+  );
+
+  const isFreeShipping = cartTotal >= 69;
 
   function setFieldTouched(fieldName) {
     setTouchedFields((prev) => ({
@@ -577,6 +618,8 @@ export default function PanierPage() {
             zip: trimmedShipping.zip,
             country: trimmedShipping.country,
           },
+          deliveryMethod,
+          parcelSize,
           notes: notes.trim(),
         }),
       });
@@ -943,6 +986,81 @@ export default function PanierPage() {
                   </section>
 
                   <section className={internalStyles.card}>
+                    <h2 className={styles.sectionTitle}>Mode de livraison</h2>
+
+                    <div className={styles.deliveryMethods}>
+                      <button
+                        type="button"
+                        className={`${styles.deliveryOption} ${
+                          deliveryMethod === 'relay' ? styles.deliveryOptionActive : ''
+                        }`}
+                        onClick={() => {
+                          setDeliveryMethod('relay');
+                          setSubmitError('');
+                          setSubmitInfo('');
+                        }}
+                      >
+                        <span className={styles.deliveryOptionTop}>
+                          <span className={styles.deliveryOptionTitle}>
+                            Point relais
+                          </span>
+                          <span className={styles.deliveryOptionPrice}>
+                            {isFreeShipping
+                              ? 'Offert'
+                              : parcelSize === 'medium'
+                              ? '5,90 €'
+                              : '4,90 €'}
+                          </span>
+                        </span>
+                        <span className={styles.deliveryOptionText}>
+                          Retrait en point relais, pratique pour les petits envois.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`${styles.deliveryOption} ${
+                          deliveryMethod === 'home' ? styles.deliveryOptionActive : ''
+                        }`}
+                        onClick={() => {
+                          setDeliveryMethod('home');
+                          setSubmitError('');
+                          setSubmitInfo('');
+                        }}
+                      >
+                        <span className={styles.deliveryOptionTop}>
+                          <span className={styles.deliveryOptionTitle}>
+                            Livraison à domicile
+                          </span>
+                          <span className={styles.deliveryOptionPrice}>
+                            {isFreeShipping
+                              ? 'Offert'
+                              : parcelSize === 'medium'
+                              ? '8,90 €'
+                              : '7,90 €'}
+                          </span>
+                        </span>
+                        <span className={styles.deliveryOptionText}>
+                          Livraison directement à l’adresse indiquée.
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className={styles.deliveryInfoBox}>
+                      <p className={styles.deliveryInfoTitle}>
+                        Règles de livraison
+                      </p>
+                      <p className={styles.deliveryInfoText}>
+                        {getParcelLabel(parcelSize)} pour ce panier ({totalItems}{' '}
+                        article{totalItems > 1 ? 's' : ''}).
+                      </p>
+                      <p className={styles.deliveryInfoText}>
+                        Livraison offerte dès 69,00 € d’achat.
+                      </p>
+                    </div>
+                  </section>
+
+                  <section className={internalStyles.card}>
                     <h2 className={styles.sectionTitle}>
                       Notes de commande{' '}
                       <span className={styles.sectionOptional}>(optionnel)</span>
@@ -992,11 +1110,11 @@ export default function PanierPage() {
                     >
                       {isSubmitting
                         ? 'Préparation du paiement...'
-                        : `Confirmer la commande · ${cartTotal.toFixed(2)} €`}
+                        : `Confirmer la commande · ${estimatedTotal.toFixed(2)} €`}
                     </button>
                     <p className={styles.submitHint}>
-                      Le montant final et les frais de port seront confirmés sur
-                      la page de paiement Stripe.
+                      Le montant final inclut les frais de port sélectionnés avant
+                      redirection vers Stripe.
                     </p>
                   </div>
                 </div>
@@ -1021,18 +1139,24 @@ export default function PanierPage() {
                       </div>
 
                       <div className={styles.summaryRow}>
-                        <span>Frais de port</span>
-                        <span>Calculés à l’étape Stripe</span>
+                        <span>
+                          Frais de port ({getDeliveryMethodLabel(deliveryMethod)})
+                        </span>
+                        <span>
+                          {isFreeShipping ? 'Offert' : `${shippingPrice.toFixed(2)} €`}
+                        </span>
                       </div>
 
                       <div className={styles.summaryRowTotal}>
                         <span>Total estimé</span>
-                        <span>{cartTotal.toFixed(2)} €</span>
+                        <span>{estimatedTotal.toFixed(2)} €</span>
                       </div>
                     </div>
 
                     <div className={styles.summaryBottomNote}>
-                      Paiement sécurisé et confirmation finale sur Stripe.
+                      {isFreeShipping
+                        ? 'La livraison est offerte pour cette commande.'
+                        : `${getParcelLabel(parcelSize)} appliqué pour ce panier.`}
                     </div>
                   </section>
                 </aside>
