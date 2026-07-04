@@ -7,10 +7,27 @@ import Order from '../../../models/Order';
 import Product from '../../../models/Product';
 
 function buildOrigin(req) {
-  return (
-    req.headers.origin ||
-    `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}`
-  );
+  const originHeader =
+    typeof req.headers.origin === 'string' ? req.headers.origin.trim() : '';
+
+  if (originHeader) {
+    return originHeader.replace(/\/$/, '');
+  }
+
+  const forwardedProto =
+    typeof req.headers['x-forwarded-proto'] === 'string' &&
+    req.headers['x-forwarded-proto'].trim()
+      ? req.headers['x-forwarded-proto'].trim()
+      : 'http';
+
+  const host =
+    typeof req.headers.host === 'string' ? req.headers.host.trim() : '';
+
+  if (!host) {
+    throw new Error("L'origine de la requête est introuvable.");
+  }
+
+  return `${forwardedProto}://${host}`.replace(/\/$/, '');
 }
 
 function normalizeText(value) {
@@ -55,6 +72,14 @@ function normalizeIncomingItems(items) {
 
 function normalizeEmail(value) {
   return normalizeText(value).toLowerCase();
+}
+
+function isValidEmail(email) {
+  if (!email) {
+    return false;
+  }
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function getSafeNumber(value) {
@@ -467,13 +492,21 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({
+        ok: false,
+        code: 'INVALID_BODY',
+        message: 'La requête de paiement est invalide.',
+      });
+    }
+
     const session = getSessionFromRequest(req);
     const authenticatedUserId =
       session?.userId && mongoose.Types.ObjectId.isValid(session.userId)
         ? session.userId
         : null;
 
-    const { items, customer, shipping, deliveryMethod, notes } = req.body || {};
+    const { items, customer, shipping, deliveryMethod, notes } = req.body;
 
     const normalizedItems = normalizeIncomingItems(items);
 
@@ -512,6 +545,14 @@ export default async function handler(req, res) {
         code: 'INVALID_CUSTOMER',
         message:
           'Les informations de contact sont incomplètes. Merci de réessayer.',
+      });
+    }
+
+    if (!isValidEmail(normalizedCustomer.email)) {
+      return res.status(400).json({
+        ok: false,
+        code: 'INVALID_CUSTOMER_EMAIL',
+        message: "L'adresse e-mail renseignée est invalide.",
       });
     }
 

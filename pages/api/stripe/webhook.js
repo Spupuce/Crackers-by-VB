@@ -125,8 +125,8 @@ function buildEmailOrderSummary(order) {
   };
 }
 
-async function decrementStockForOrder(order) {
-  if (!Array.isArray(order.items) || order.items.length === 0) {
+async function decrementStockForOrder(order, mongoSession) {
+  if (!Array.isArray(order?.items) || order.items.length === 0) {
     return;
   }
 
@@ -139,7 +139,7 @@ async function decrementStockForOrder(order) {
       continue;
     }
 
-    const product = await Product.findById(item.productId);
+    const product = await Product.findById(item.productId).session(mongoSession);
 
     if (!product) {
       // eslint-disable-next-line no-continue
@@ -168,7 +168,6 @@ async function decrementStockForOrder(order) {
       if (colorVariant) {
         const currentQty = Number(colorVariant.quantity) || 0;
         const newQty = Math.max(currentQty - orderedQty, 0);
-
         colorVariant.quantity = newQty;
       }
     } else {
@@ -177,8 +176,32 @@ async function decrementStockForOrder(order) {
       product.stock = newStock;
     }
 
-    await product.save();
+    await product.save({ session: mongoSession });
   }
+}
+
+async function findOrderFromSessionData(session, mongoSession) {
+  const orderId = session?.metadata?.order_id;
+  const stripeSessionId = typeof session?.id === 'string' ? session.id : '';
+
+  if (orderId && mongoose.Types.ObjectId.isValid(orderId)) {
+    const orderById = await Order.findById(orderId).session(mongoSession);
+    if (orderById) {
+      return orderById;
+    }
+  }
+
+  if (stripeSessionId) {
+    const orderByStripeSessionId = await Order.findOne({
+      stripeSessionId,
+    }).session(mongoSession);
+
+    if (orderByStripeSessionId) {
+      return orderByStripeSessionId;
+    }
+  }
+
+  return null;
 }
 
 async function markOrderAsPaid(session) {
@@ -189,54 +212,61 @@ async function markOrderAsPaid(session) {
     };
   }
 
-  const orderId = session?.metadata?.order_id;
   const stripeSessionId = typeof session?.id === 'string' ? session.id : '';
   const stripePaymentIntentId =
     typeof session?.payment_intent === 'string' ? session.payment_intent : '';
 
-  let order = null;
+  const mongoSession = await mongoose.startSession();
 
-  if (orderId && mongoose.Types.ObjectId.isValid(orderId)) {
-    order = await Order.findById(orderId);
-  }
-
-  if (!order && stripeSessionId) {
-    order = await Order.findOne({ stripeSessionId });
-  }
-
-  if (!order) {
-    throw new Error('Commande introuvable pour cette session Stripe.');
-  }
-
-  if (order.status === 'cancelled') {
-    throw new Error("Impossible de marquer comme payée une commande annulée.");
-  }
-
-  if (order.paymentStatus === 'paid') {
-    return {
-      order,
+  try {
+    let result = {
+      order: null,
       didMarkAsPaid: false,
     };
+
+    await mongoSession.withTransaction(async () => {
+      const order = await findOrderFromSessionData(session, mongoSession);
+
+      if (!order) {
+        throw new Error('Commande introuvable pour cette session Stripe.');
+      }
+
+      if (order.status === 'cancelled') {
+        throw new Error("Impossible de marquer comme payée une commande annulée.");
+      }
+
+      if (order.paymentStatus === 'paid') {
+        result = {
+          order,
+          didMarkAsPaid: false,
+        };
+        return;
+      }
+
+      await decrementStockForOrder(order, mongoSession);
+
+      order.paymentStatus = 'paid';
+
+      if (stripeSessionId) {
+        order.stripeSessionId = stripeSessionId;
+      }
+
+      if (stripePaymentIntentId) {
+        order.stripePaymentIntentId = stripePaymentIntentId;
+      }
+
+      await order.save({ session: mongoSession });
+
+      result = {
+        order,
+        didMarkAsPaid: true,
+      };
+    });
+
+    return result;
+  } finally {
+    await mongoSession.endSession();
   }
-
-  await decrementStockForOrder(order);
-
-  order.paymentStatus = 'paid';
-
-  if (stripeSessionId) {
-    order.stripeSessionId = stripeSessionId;
-  }
-
-  if (stripePaymentIntentId) {
-    order.stripePaymentIntentId = stripePaymentIntentId;
-  }
-
-  await order.save();
-
-  return {
-    order,
-    didMarkAsPaid: true,
-  };
 }
 
 function getOrderCustomerEmail(order, session) {
@@ -397,6 +427,14 @@ export default async function handler(req, res) {
         const session = event.data.object;
         const { order, didMarkAsPaid } = await markOrderAsPaid(session);
 
+        console.log('STRIPE_CHECKOUT_SESSION_COMPLETED_PROCESSED', {
+          eventId: event?.id || null,
+          stripeSessionId: session?.id || null,
+          orderId: order?._id ? String(order._id) : null,
+          didMarkAsPaid,
+          paymentStatus: order?.paymentStatus || null,
+        });
+
         if (order && didMarkAsPaid) {
           try {
             await sendConfirmationEmailForOrder(order, session);
@@ -418,6 +456,7 @@ export default async function handler(req, res) {
       default:
         console.log('STRIPE_WEBHOOK_EVENT_IGNORED', {
           eventType: event.type,
+          eventId: event?.id || null,
         });
         break;
     }

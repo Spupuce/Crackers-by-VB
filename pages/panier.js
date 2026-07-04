@@ -249,6 +249,90 @@ function getDeliveryMethodLabel(deliveryMethod) {
   return deliveryMethod === 'home' ? 'Livraison à domicile' : 'Point relais';
 }
 
+function getCheckoutErrorMessage(data, responseStatus) {
+  const code = typeof data?.code === 'string' ? data.code : '';
+
+  if (code === 'EMPTY_CART') {
+    return 'Votre panier est vide. Ajoutez au moins un produit avant de continuer.';
+  }
+
+  if (
+    code === 'INVALID_BODY' ||
+    code === 'INVALID_CUSTOMER' ||
+    code === 'INVALID_CUSTOMER_EMAIL' ||
+    code === 'INVALID_SHIPPING' ||
+    code === 'INVALID_ITEMS'
+  ) {
+    return (
+      data?.message ||
+      'Certaines informations de la commande sont invalides. Merci de vérifier le formulaire.'
+    );
+  }
+
+  if (code === 'STOCK_ERROR') {
+    return (
+      data?.message ||
+      'Certains produits ne sont plus disponibles en quantité suffisante.'
+    );
+  }
+
+  if (code === 'STRIPE_AMOUNT_INVALID') {
+    return (
+      data?.message ||
+      'Le montant de la commande est invalide. Merci de vérifier votre panier.'
+    );
+  }
+
+  if (code === 'STRIPE_IDEMPOTENCY_ERROR' || responseStatus === 409) {
+    return (
+      data?.message ||
+      'Une tentative de paiement en double a été détectée. Merci de réessayer.'
+    );
+  }
+
+  if (code === 'STRIPE_UNAVAILABLE' || responseStatus === 502) {
+    return (
+      data?.message ||
+      'Le service de paiement est momentanément indisponible. Merci de réessayer dans quelques instants.'
+    );
+  }
+
+  if (code === 'STRIPE_RATE_LIMIT' || responseStatus === 503) {
+    return (
+      data?.message ||
+      'Le service de paiement est temporairement saturé. Merci de réessayer dans quelques instants.'
+    );
+  }
+
+  if (
+    code === 'STRIPE_INVALID_REQUEST' ||
+    code === 'STRIPE_AUTH_ERROR' ||
+    code === 'STRIPE_SESSION_ERROR' ||
+    code === 'CHECKOUT_ERROR' ||
+    responseStatus >= 500
+  ) {
+    return (
+      data?.message ||
+      'Une erreur serveur est survenue lors de la préparation du paiement. Merci de réessayer plus tard.'
+    );
+  }
+
+  return (
+    data?.message ||
+    'Une erreur inattendue est survenue lors de la préparation du paiement.'
+  );
+}
+
+async function parseJsonSafely(response) {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (!contentType.includes('application/json')) {
+    return null;
+  }
+
+  return response.json().catch(() => null);
+}
+
 export default function PanierPage() {
   const router = useRouter();
   const { items, cartTotal } = useCart();
@@ -557,12 +641,12 @@ export default function PanierPage() {
       }),
     });
 
-    const data = await response.json().catch(() => null);
+    const data = await parseJsonSafely(response);
 
     if (!response.ok) {
       throw new Error(
         data?.message ||
-          'Impossible de mettre à jour les informations du compte.'
+          'Impossible de mettre à jour les informations du compte avant le paiement.'
       );
     }
 
@@ -589,6 +673,7 @@ export default function PanierPage() {
     }
 
     setIsSubmitting(true);
+    setSubmitInfo('Préparation de votre commande...');
 
     try {
       await syncProfileIfNeeded(trimmedContact, trimmedShipping);
@@ -624,13 +709,11 @@ export default function PanierPage() {
         }),
       });
 
-      const data = await response.json().catch(() => null);
+      const data = await parseJsonSafely(response);
 
       if (!response.ok) {
-        setSubmitError(
-          data?.message ||
-            'Une erreur est survenue lors de la préparation du paiement.'
-        );
+        setSubmitInfo('');
+        setSubmitError(getCheckoutErrorMessage(data, response.status));
         return;
       }
 
@@ -639,11 +722,13 @@ export default function PanierPage() {
         return;
       }
 
+      setSubmitInfo('');
       setSubmitError(
         data?.message ||
           'Une erreur inattendue est survenue lors de la préparation du paiement.'
       );
     } catch (error) {
+      setSubmitInfo('');
       setSubmitError(
         error?.message ||
           'Impossible de contacter le serveur de paiement. Merci de réessayer plus tard.'
@@ -992,7 +1077,9 @@ export default function PanierPage() {
                       <button
                         type="button"
                         className={`${styles.deliveryOption} ${
-                          deliveryMethod === 'relay' ? styles.deliveryOptionActive : ''
+                          deliveryMethod === 'relay'
+                            ? styles.deliveryOptionActive
+                            : ''
                         }`}
                         onClick={() => {
                           setDeliveryMethod('relay');
@@ -1020,7 +1107,9 @@ export default function PanierPage() {
                       <button
                         type="button"
                         className={`${styles.deliveryOption} ${
-                          deliveryMethod === 'home' ? styles.deliveryOptionActive : ''
+                          deliveryMethod === 'home'
+                            ? styles.deliveryOptionActive
+                            : ''
                         }`}
                         onClick={() => {
                           setDeliveryMethod('home');
@@ -1143,7 +1232,9 @@ export default function PanierPage() {
                           Frais de port ({getDeliveryMethodLabel(deliveryMethod)})
                         </span>
                         <span>
-                          {isFreeShipping ? 'Offert' : `${shippingPrice.toFixed(2)} €`}
+                          {isFreeShipping
+                            ? 'Offert'
+                            : `${shippingPrice.toFixed(2)} €`}
                         </span>
                       </div>
 
