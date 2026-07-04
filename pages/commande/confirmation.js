@@ -8,7 +8,6 @@ import { FiArrowLeft } from 'react-icons/fi';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { useCart } from '../../context/CartContext';
-import { useAuth } from '../../context/AuthContext';
 import internalStyles from '../../styles/InternalPages.module.css';
 
 const MAX_CONFIRMATION_ATTEMPTS = 6;
@@ -102,7 +101,6 @@ function buildConfirmationFetchUrl(orderId, sessionId) {
 export default function ConfirmationCommandePage() {
   const router = useRouter();
   const { clearCart } = useCart();
-  const { isAuthenticated, isAuthReady } = useAuth();
 
   const hasClearedCartRef = useRef(false);
 
@@ -234,8 +232,7 @@ export default function ConfirmationCommandePage() {
     return `/inscription?email=${encodeURIComponent(customerEmail)}`;
   }, [customerEmail]);
 
-  const shouldShowGuestAccountPrompt =
-    isConfirmed && isAuthReady && !isAuthenticated;
+  const shouldShowGuestAccountPrompt = isConfirmed && Boolean(customerEmail);
 
   return (
     <>
@@ -404,21 +401,19 @@ export default function ConfirmationCommandePage() {
               {shouldShowGuestAccountPrompt && (
                 <section className={internalStyles.card}>
                   <h2 className={internalStyles.sectionTitle}>
-                    Créer un compte plus tard
+                    Créer un compte pour vos prochaines commandes
                   </h2>
 
                   <p className={internalStyles.text}>
-                    Votre commande est bien enregistrée, même sans compte client.
+                    Votre commande est bien enregistrée. Si vous le souhaitez,
+                    vous pouvez aussi créer un compte client pour retrouver plus
+                    facilement vos prochaines commandes et gagner du temps lors de
+                    vos futurs achats.
                   </p>
 
                   <p className={internalStyles.text}>
-                    Si vous le souhaitez, vous pouvez maintenant créer un compte
-                    avec la même adresse email pour retrouver plus facilement vos
-                    prochaines commandes et vos informations personnelles.
-                  </p>
-
-                  <p className={internalStyles.text}>
-                    Cette étape reste totalement facultative.
+                    Cette étape reste facultative et ne change rien à la commande
+                    que vous venez de valider.
                   </p>
 
                   <div

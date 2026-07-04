@@ -1,3 +1,5 @@
+/* styles/InternalPages.module.css */
+
 .page {
   min-height: 100vh;
   background: linear-gradient(
@@ -18,7 +20,7 @@
 }
 
 .pageIntro {
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .pageTitle {
@@ -39,12 +41,12 @@
 .card {
   background-color: var(--color-white);
   border-radius: 14px;
-  padding: 32px;
+  padding: 18px 32px 24px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 .card + .card {
-  margin-top: 24px;
+  margin-top: 16px;
 }
 
 .contactCard {
@@ -208,8 +210,8 @@
 }
 
 .divider {
-  margin-top: 28px;
-  padding-top: 20px;
+  margin-top: 20px;
+  padding-top: 16px;
   border-top: 1px solid var(--color-border);
 }
 
@@ -237,7 +239,7 @@
   }
 
   .card {
-    padding: 24px;
+    padding: 16px 20px 20px;
   }
 
   .gridTwo {
