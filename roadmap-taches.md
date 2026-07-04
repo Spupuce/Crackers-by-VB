@@ -126,7 +126,7 @@
 - ✅ Vérifier le parcours complet invité : panier, checkout, paiement Stripe, retour succès / annulation.
 - ✅ Créer la commande MongoDB sans `userId` quand l’acheteur n’est pas connecté.
 - 🔴 Vérifier que les emails, l’adresse de livraison et les lignes de commande restent correctement enregistrés pour un invité.
-- 🔴 Définir le comportement post-achat pour proposer la création de compte sans la rendre obligatoire.
+- 🟡 Définir le comportement post-achat pour proposer la création de compte sans la rendre obligatoire.
 - 🔴 Vérifier l’envoi réel des emails liés aux commandes depuis l’administration.
 - 🔴 Vérifier la délivrabilité des emails transactionnels sur Gmail.
 - 🔴 Intégrer Paypal dans Stripe si possible.

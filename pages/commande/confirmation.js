@@ -1,6 +1,6 @@
 // pages/commande/confirmation.js
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -8,6 +8,7 @@ import { FiArrowLeft } from 'react-icons/fi';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import internalStyles from '../../styles/InternalPages.module.css';
 
 const MAX_CONFIRMATION_ATTEMPTS = 6;
@@ -101,6 +102,7 @@ function buildConfirmationFetchUrl(orderId, sessionId) {
 export default function ConfirmationCommandePage() {
   const router = useRouter();
   const { clearCart } = useCart();
+  const { isAuthenticated, isAuthReady } = useAuth();
 
   const hasClearedCartRef = useRef(false);
 
@@ -219,6 +221,22 @@ export default function ConfirmationCommandePage() {
     ? getDeliveryFollowUpMessage(orderData)
     : '';
 
+  const customerEmail = useMemo(() => {
+    const email = orderData?.customer?.email;
+    return typeof email === 'string' ? email.trim() : '';
+  }, [orderData]);
+
+  const registrationHref = useMemo(() => {
+    if (!customerEmail) {
+      return '/inscription';
+    }
+
+    return `/inscription?email=${encodeURIComponent(customerEmail)}`;
+  }, [customerEmail]);
+
+  const shouldShowGuestAccountPrompt =
+    isConfirmed && isAuthReady && !isAuthenticated;
+
   return (
     <>
       <Head>
@@ -318,69 +336,108 @@ export default function ConfirmationCommandePage() {
           )}
 
           {isConfirmed && (
-            <section className={internalStyles.card}>
-              <h2 className={internalStyles.sectionTitle}>
-                Confirmation et suivi
-              </h2>
+            <>
+              <section className={internalStyles.card}>
+                <h2 className={internalStyles.sectionTitle}>
+                  Confirmation et suivi
+                </h2>
 
-              {orderData?.orderNumber ? (
+                {orderData?.orderNumber ? (
+                  <p className={internalStyles.text}>
+                    Référence de commande : {orderData.orderNumber}
+                  </p>
+                ) : null}
+
                 <p className={internalStyles.text}>
-                  Référence de commande : {orderData.orderNumber}
+                  Mode de livraison choisi : {deliverySummary}
                 </p>
-              ) : null}
 
-              <p className={internalStyles.text}>
-                Mode de livraison choisi : {deliverySummary}
-              </p>
+                <p className={internalStyles.text}>
+                  {deliveryFollowUpMessage}
+                </p>
 
-              <p className={internalStyles.text}>
-                {deliveryFollowUpMessage}
-              </p>
+                <p className={internalStyles.text}>
+                  Un email de confirmation détaillant votre commande sera envoyé à
+                  l&apos;adresse indiquée lors du paiement. Conservez-le, il
+                  contiendra les informations utiles pour le suivi et les échanges
+                  éventuels avec la créatrice.
+                </p>
 
-              <p className={internalStyles.text}>
-                Un email de confirmation détaillant votre commande sera envoyé à
-                l&apos;adresse indiquée lors du paiement. Conservez-le, il
-                contiendra les informations utiles pour le suivi et les échanges
-                éventuels avec la créatrice.
-              </p>
+                <p className={internalStyles.text}>
+                  Si vous ne voyez pas l&apos;email arriver dans les prochaines
+                  minutes, pensez à vérifier vos courriers indésirables ou votre
+                  onglet &quot;Promotions&quot;.
+                </p>
 
-              <p className={internalStyles.text}>
-                Si vous ne voyez pas l&apos;email arriver dans les prochaines
-                minutes, pensez à vérifier vos courriers indésirables ou votre
-                onglet &quot;Promotions&quot;.
-              </p>
+                <div className={internalStyles.divider}>
+                  <p className={internalStyles.metaText}>
+                    En cas de question à propos de votre commande, vous pouvez
+                    contacter directement la créatrice via la page&nbsp;
+                    <Link href="/contact" legacyBehavior>
+                      <a className={internalStyles.contactLink}>Contact</a>
+                    </Link>
+                    .
+                  </p>
+                </div>
 
-              <div className={internalStyles.divider}>
-                <p className={internalStyles.metaText}>
-                  En cas de question à propos de votre commande, vous pouvez
-                  contacter directement la créatrice via la page&nbsp;
-                  <Link href="/contact" legacyBehavior>
-                    <a className={internalStyles.contactLink}>Contact</a>
+                <div
+                  style={{
+                    marginTop: '24px',
+                    display: 'flex',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Link href="/boutique" legacyBehavior>
+                    <a className={internalStyles.primaryButton}>
+                      Retourner à la boutique
+                    </a>
                   </Link>
-                  .
-                </p>
-              </div>
+                  <Link href="/" legacyBehavior>
+                    <a className={internalStyles.primaryButton}>
+                      Revenir à l&apos;accueil
+                    </a>
+                  </Link>
+                </div>
+              </section>
 
-              <div
-                style={{
-                  marginTop: '24px',
-                  display: 'flex',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <Link href="/boutique" legacyBehavior>
-                  <a className={internalStyles.primaryButton}>
-                    Retourner à la boutique
-                  </a>
-                </Link>
-                <Link href="/" legacyBehavior>
-                  <a className={internalStyles.primaryButton}>
-                    Revenir à l&apos;accueil
-                  </a>
-                </Link>
-              </div>
-            </section>
+              {shouldShowGuestAccountPrompt && (
+                <section className={internalStyles.card}>
+                  <h2 className={internalStyles.sectionTitle}>
+                    Créer un compte plus tard
+                  </h2>
+
+                  <p className={internalStyles.text}>
+                    Votre commande est bien enregistrée, même sans compte client.
+                  </p>
+
+                  <p className={internalStyles.text}>
+                    Si vous le souhaitez, vous pouvez maintenant créer un compte
+                    avec la même adresse email pour retrouver plus facilement vos
+                    prochaines commandes et vos informations personnelles.
+                  </p>
+
+                  <p className={internalStyles.text}>
+                    Cette étape reste totalement facultative.
+                  </p>
+
+                  <div
+                    style={{
+                      marginTop: '24px',
+                      display: 'flex',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <Link href={registrationHref} legacyBehavior>
+                      <a className={internalStyles.primaryButton}>
+                        Créer mon compte
+                      </a>
+                    </Link>
+                  </div>
+                </section>
+              )}
+            </>
           )}
         </div>
       </main>
