@@ -1,6 +1,6 @@
 // pages/inscription.js
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Header from '../components/Header';
@@ -8,19 +8,34 @@ import Footer from '../components/Footer';
 import AuthCard from '../components/AuthCard';
 import styles from '../styles/Auth.module.css';
 
+function getSingleQueryParam(value) {
+  if (Array.isArray(value)) {
+    return typeof value[0] === 'string' ? value[0].trim() : '';
+  }
+
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export default function InscriptionPage() {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const initialValues = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  };
+  const prefilledEmail = useMemo(() => {
+    return getSingleQueryParam(router.query?.email);
+  }, [router.query?.email]);
+
+  const initialValues = useMemo(
+    () => ({
+      firstName: '',
+      lastName: '',
+      email: prefilledEmail,
+      password: '',
+      confirmPassword: '',
+    }),
+    [prefilledEmail]
+  );
 
   const handleSubmit = async (values) => {
     if (isSubmitting) return;

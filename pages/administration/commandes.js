@@ -60,9 +60,7 @@ function getDefaultEmailMessage(order) {
     return `Bonjour ${getCustomerFullName(
       order
     )},\n\nVotre commande ${order.id} a bien été expédiée.\n${
-      order.trackingNumber
-        ? `Votre numéro de suivi : ${order.trackingNumber}\n`
-        : ''
+      order.trackingNumber ? `Votre numéro de suivi : ${order.trackingNumber}\n` : ''
     }\nBelle journée,\nCrackers by VB`;
   }
 
@@ -395,7 +393,8 @@ export default function AdminOrdersPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          testEmail: 'spupucemail@gmail.com',
+          recipientType: 'customer',
+          testEmail: '',
           orderId: order.id,
           customerName: getCustomerFullName(order),
           customerEmail: order.customer.email,
@@ -411,7 +410,9 @@ export default function AdminOrdersPage() {
         throw new Error(data?.message || "L'envoi de l'email a échoué.");
       }
 
-      window.alert(`Email envoyé pour ${order.id} à spupucemail@gmail.com.`);
+      window.alert(
+        `Email envoyé pour ${order.id} à ${order.customer.email}.`
+      );
     } catch (error) {
       window.alert(error?.message || "Impossible d'envoyer l'email.");
     } finally {
@@ -434,7 +435,8 @@ export default function AdminOrdersPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          testEmail: 'spupucemail@gmail.com',
+          recipientType: 'customer',
+          testEmail: '',
           orderId: selectedOrder.id,
           customerName: getCustomerFullName(selectedOrder),
           customerEmail: selectedOrder.customer.email,
@@ -453,7 +455,7 @@ export default function AdminOrdersPage() {
 
       setDetailEmailFeedback({
         type: 'success',
-        message: `Email envoyé à spupucemail@gmail.com pour ${selectedOrder.id}.`,
+        message: `Email envoyé à ${selectedOrder.customer.email} pour ${selectedOrder.id}.`,
       });
     } catch (error) {
       setDetailEmailFeedback({
@@ -722,7 +724,8 @@ export default function AdminOrdersPage() {
                       {getCustomerFullName(selectedOrder)}
                     </p>
                     <p>
-                      <strong>Email :</strong> {selectedOrder.customer.email}
+                      <strong>Email :</strong>{' '}
+                      {selectedOrder.customer.email}
                     </p>
                     <p>
                       <strong>Téléphone :</strong>{' '}
@@ -739,7 +742,10 @@ export default function AdminOrdersPage() {
                   <h2 className={styles.sectionTitle}>Notes de commande</h2>
 
                   <div className={styles.infoCard}>
-                    <p>{selectedOrder.notes || 'Aucune note laissée par la cliente.'}</p>
+                    <p>
+                      {selectedOrder.notes ||
+                        'Aucune note laissée par la cliente.'}
+                    </p>
                   </div>
                 </div>
 
@@ -822,8 +828,8 @@ export default function AdminOrdersPage() {
                       <strong>{selectedOrder.customer.email}</strong>
                     </p>
                     <p className={styles.emailPanelHint}>
-                      Pour ce test, l’envoi part encore vers
-                      <strong> spupucemail@gmail.com</strong>.
+                      Cet email sera envoyé directement à la cliente à l&apos;adresse
+                      ci-dessus.
                     </p>
 
                     <label
@@ -892,7 +898,8 @@ export default function AdminOrdersPage() {
                     {STATUS_OPTIONS.map((option) => {
                       const Icon = option.icon;
                       const isActive = selectedOrder.status === option.value;
-                      const isUpdating = statusUpdatingFor === selectedOrder.id;
+                      const isUpdating =
+                        statusUpdatingFor === selectedOrder.id;
 
                       return (
                         <button
