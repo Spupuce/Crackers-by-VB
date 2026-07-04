@@ -122,7 +122,7 @@
 - ✅ Vérifier le comportement non connecté.
 - 🟡 Vérifier les erreurs serveur Stripe / API.
   (Le back Stripe a été renforcé, mais le tunnel complet et le comportement côté front ne sont pas encore entièrement validés.)
-- 🔴 Permettre la commande sans création de compte.
+- 🟡 Permettre la commande sans création de compte.
 - 🔴 Vérifier le parcours complet invité : panier, checkout, paiement Stripe, retour succès / annulation.
 - 🔴 Créer la commande MongoDB sans `userId` quand l’acheteur n’est pas connecté.
 - 🔴 Vérifier que les emails, l’adresse de livraison et les lignes de commande restent correctement enregistrés pour un invité.

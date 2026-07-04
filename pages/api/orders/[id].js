@@ -4,6 +4,14 @@ import mongoose from 'mongoose';
 import { connectMongo } from '../../../lib/mongodb';
 import Order from '../../../models/Order';
 
+function getSingleQueryParam(value) {
+  if (Array.isArray(value)) {
+    return typeof value[0] === 'string' ? value[0].trim() : '';
+  }
+
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export default async function handler(req, res) {
   const { method } = req;
 
@@ -15,7 +23,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const { id } = req.query || {};
+  const id = getSingleQueryParam(req.query?.id);
+  const sessionId = getSingleQueryParam(req.query?.session_id);
 
   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
@@ -36,6 +45,20 @@ export default async function handler(req, res) {
         code: 'ORDER_NOT_FOUND',
         message:
           "Cette commande n'existe pas ou n'est plus disponible.",
+      });
+    }
+
+    if (
+      sessionId &&
+      typeof order.stripeSessionId === 'string' &&
+      order.stripeSessionId.trim() &&
+      order.stripeSessionId.trim() !== sessionId
+    ) {
+      return res.status(403).json({
+        ok: false,
+        code: 'ORDER_SESSION_MISMATCH',
+        message:
+          "Cette commande ne correspond pas à la session de paiement fournie.",
       });
     }
 

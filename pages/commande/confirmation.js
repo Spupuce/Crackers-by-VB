@@ -76,6 +76,28 @@ function getDeliveryFollowUpMessage(orderData) {
   return 'Votre commande sera préparée puis confiée au transporteur dès qu’elle sera prête.';
 }
 
+function getSingleQueryParam(value) {
+  if (Array.isArray(value)) {
+    return typeof value[0] === 'string' ? value[0] : '';
+  }
+
+  return typeof value === 'string' ? value : '';
+}
+
+function buildConfirmationFetchUrl(orderId, sessionId) {
+  const searchParams = new URLSearchParams();
+
+  if (sessionId) {
+    searchParams.set('session_id', sessionId);
+  }
+
+  const queryString = searchParams.toString();
+
+  return queryString
+    ? `/api/orders/${orderId}?${queryString}`
+    : `/api/orders/${orderId}`;
+}
+
 export default function ConfirmationCommandePage() {
   const router = useRouter();
   const { clearCart } = useCart();
@@ -92,9 +114,10 @@ export default function ConfirmationCommandePage() {
       return;
     }
 
-    const { orderId } = router.query || {};
+    const orderId = getSingleQueryParam(router.query?.orderId);
+    const sessionId = getSingleQueryParam(router.query?.session_id);
 
-    if (!orderId || typeof orderId !== 'string') {
+    if (!orderId) {
       setConfirmationError(
         "Impossible de retrouver cette commande. Merci de vérifier le lien de confirmation."
       );
@@ -110,6 +133,8 @@ export default function ConfirmationCommandePage() {
       setOrderData(null);
       setAttemptCount(1);
 
+      const confirmationUrl = buildConfirmationFetchUrl(orderId, sessionId);
+
       for (let attempt = 1; attempt <= MAX_CONFIRMATION_ATTEMPTS; attempt += 1) {
         if (!isMounted) {
           return;
@@ -118,7 +143,7 @@ export default function ConfirmationCommandePage() {
         setAttemptCount(attempt);
 
         try {
-          const response = await fetch(`/api/orders/${orderId}`);
+          const response = await fetch(confirmationUrl);
           const data = await response.json().catch(() => null);
 
           if (response.ok && data?.ok && data?.order?.paymentStatus === 'paid') {
