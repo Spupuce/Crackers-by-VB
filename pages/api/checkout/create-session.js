@@ -5,6 +5,11 @@ import { connectMongo } from '../../../lib/mongodb';
 import { getSessionFromRequest } from '../../../lib/session';
 import Order from '../../../models/Order';
 import Product from '../../../models/Product';
+import {
+  computeShippingAmount,
+  getParcelSizeFromItems,
+  normalizeDeliveryMethod,
+} from '../../../utils/shipping';
 
 function buildOrigin(req) {
   const originHeader =
@@ -90,31 +95,6 @@ function getSafeNumber(value) {
 function getSafeStock(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-}
-
-function normalizeDeliveryMethod(value) {
-  return value === 'home' ? 'home' : 'relay';
-}
-
-function getParcelSizeFromItems(resolvedItems) {
-  const totalItems = resolvedItems.reduce(
-    (sum, item) => sum + getSafeNumber(item.quantity),
-    0
-  );
-
-  return totalItems > 2 ? 'medium' : 'small';
-}
-
-function computeShippingAmount({ subtotalAmount, deliveryMethod, parcelSize }) {
-  if (subtotalAmount >= 69) {
-    return 0;
-  }
-
-  if (parcelSize === 'medium') {
-    return deliveryMethod === 'home' ? 8.9 : 5.9;
-  }
-
-  return deliveryMethod === 'home' ? 7.9 : 4.9;
 }
 
 function hasValidPromoPrice(product) {
@@ -393,6 +373,17 @@ function getStripeClient(stripeSecretKey) {
   });
 }
 
+function getEnabledPaymentMethodTypes() {
+  const enablePaypal =
+    normalizeText(process.env.STRIPE_ENABLE_PAYPAL || '').toLowerCase() === 'true';
+
+  if (enablePaypal) {
+    return ['card', 'paypal'];
+  }
+
+  return ['card'];
+}
+
 function getStripeErrorResponse(stripeError) {
   const knownStripeCodes = new Set([
     'authentication_error',
@@ -663,12 +654,13 @@ export default async function handler(req, res) {
         shippingAmount,
         normalizedDeliveryMethod
       );
+      const paymentMethodTypes = getEnabledPaymentMethodTypes();
 
       const successUrl = `${origin}/commande/confirmation?orderId=${pendingOrder._id}&session_id={CHECKOUT_SESSION_ID}`;
 
       const stripeSession = await stripe.checkout.sessions.create({
         mode: 'payment',
-        payment_method_types: ['card'],
+        payment_method_types: paymentMethodTypes,
         line_items: lineItems,
         success_url: successUrl,
         cancel_url: cancelUrl,

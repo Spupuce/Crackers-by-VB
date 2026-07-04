@@ -127,9 +127,9 @@
 - ✅ Créer la commande MongoDB sans `userId` quand l’acheteur n’est pas connecté.
 - ✅ Vérifier que les emails, l’adresse de livraison et les lignes de commande restent correctement enregistrés pour un invité.
 - ✅ Définir le comportement post-achat pour proposer la création de compte sans la rendre obligatoire.
-- 🟡 Vérifier l’envoi réel des emails liés aux commandes depuis l’administration.
-- 🔴 Vérifier la délivrabilité des emails transactionnels sur Gmail.
-- 🔴 Intégrer Paypal dans Stripe si possible.
+- ✅ Vérifier l’envoi réel des emails liés aux commandes depuis l’administration.
+- 🟡 Vérifier la délivrabilité des emails transactionnels sur Gmail.
+- 🔴 Intégrer virement dans Stripe si possible.
 
 ### 3.4 Frais de port
 - 🔴 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
