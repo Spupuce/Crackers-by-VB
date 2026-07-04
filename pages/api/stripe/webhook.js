@@ -262,7 +262,10 @@ function getOrderCustomerEmail(order, session) {
 }
 
 function getOrderCustomerName(order) {
-  if (typeof order?.customer?.firstName === 'string' && order.customer.firstName.trim()) {
+  if (
+    typeof order?.customer?.firstName === 'string' &&
+    order.customer.firstName.trim()
+  ) {
     return order.customer.firstName.trim();
   }
 
@@ -321,6 +324,29 @@ async function sendConfirmationEmailForOrder(order, session) {
   });
 }
 
+function isStripeSignatureError(error) {
+  const message =
+    typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+  const type = typeof error?.type === 'string' ? error.type : '';
+
+  return (
+    type === 'StripeSignatureVerificationError' ||
+    message.includes('signature') ||
+    message.includes('webhook')
+  );
+}
+
+function logWebhookError(scope, error, context = {}) {
+  console.error(scope, {
+    ...context,
+    message: error?.message || null,
+    code: error?.code || null,
+    type: error?.type || null,
+    stack: error?.stack || null,
+    raw: error,
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -339,6 +365,8 @@ export default async function handler(req, res) {
     });
   }
 
+  let event;
+
   try {
     const stripe = getStripeClient();
     const rawBody = await buffer(req);
@@ -351,12 +379,17 @@ export default async function handler(req, res) {
       });
     }
 
-    const event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      webhookSecret
-    );
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+  } catch (error) {
+    logWebhookError('STRIPE_WEBHOOK_SIGNATURE_ERROR', error);
 
+    return res.status(400).json({
+      ok: false,
+      message: 'Signature Stripe invalide.',
+    });
+  }
+
+  try {
     await connectMongo();
 
     switch (event.type) {
@@ -365,13 +398,27 @@ export default async function handler(req, res) {
         const { order, didMarkAsPaid } = await markOrderAsPaid(session);
 
         if (order && didMarkAsPaid) {
-          await sendConfirmationEmailForOrder(order, session);
+          try {
+            await sendConfirmationEmailForOrder(order, session);
+          } catch (emailError) {
+            logWebhookError(
+              'STRIPE_ORDER_CONFIRMATION_EMAIL_ERROR',
+              emailError,
+              {
+                orderId: order?._id ? String(order._id) : null,
+                stripeSessionId: session?.id || null,
+              }
+            );
+          }
         }
 
         break;
       }
 
       default:
+        console.log('STRIPE_WEBHOOK_EVENT_IGNORED', {
+          eventType: event.type,
+        });
         break;
     }
 
@@ -380,16 +427,23 @@ export default async function handler(req, res) {
       received: true,
     });
   } catch (error) {
-    console.error('STRIPE_WEBHOOK_ERROR', {
-      message: error?.message || error,
-      code: error?.code || null,
-      type: error?.type || null,
-      stack: error?.stack || null,
+    if (isStripeSignatureError(error)) {
+      logWebhookError('STRIPE_WEBHOOK_SIGNATURE_ERROR', error);
+
+      return res.status(400).json({
+        ok: false,
+        message: 'Signature Stripe invalide.',
+      });
+    }
+
+    logWebhookError('STRIPE_WEBHOOK_PROCESSING_ERROR', error, {
+      eventType: event?.type || null,
+      eventId: event?.id || null,
     });
 
-    return res.status(400).json({
+    return res.status(500).json({
       ok: false,
-      message: 'Erreur lors du traitement du webhook Stripe.',
+      message: 'Erreur serveur lors du traitement du webhook Stripe.',
     });
   }
 }

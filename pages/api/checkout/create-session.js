@@ -125,11 +125,6 @@ function getActiveProductPrice(product) {
   return getSafeNumber(product?.price);
 }
 
-/**
- * Retourne les données de variante + stock dispo réel.
- * Si colorName est fourni mais non trouvé dans product.colors,
- * on remonte un flag invalidColorRequested.
- */
 function resolveVariantDataWithStock(product, colorName) {
   const basePrice = getActiveProductPrice(product);
   const baseImage = typeof product.imageUrl === 'string' ? product.imageUrl : '';
@@ -183,11 +178,6 @@ function resolveVariantDataWithStock(product, colorName) {
   };
 }
 
-/**
- * Construit les lignes de commande à partir des produits Mongo,
- * en vérifiant le stock (produit ou couleur).
- * Si une incohérence est trouvée, on lève une erreur avec un message clair.
- */
 async function resolveOrderItemsFromProducts(incomingItems) {
   const slugs = [...new Set(incomingItems.map((item) => item.slug))];
 
@@ -376,6 +366,95 @@ function getStripeClient(stripeSecretKey) {
   return new Stripe(stripeSecretKey, {
     apiVersion: '2023-10-16',
   });
+}
+
+function getStripeErrorResponse(stripeError) {
+  const knownStripeCodes = new Set([
+    'authentication_error',
+    'api_connection_error',
+    'api_error',
+    'card_error',
+    'idempotency_error',
+    'invalid_request_error',
+    'rate_limit_error',
+  ]);
+
+  const errorType =
+    typeof stripeError?.type === 'string' ? stripeError.type : '';
+  const errorCode =
+    typeof stripeError?.code === 'string' ? stripeError.code : '';
+  const isKnownStripeError =
+    knownStripeCodes.has(errorType) || errorType.startsWith('Stripe');
+
+  if (!isKnownStripeError) {
+    return {
+      status: 500,
+      code: 'STRIPE_SESSION_ERROR',
+      message:
+        'Une erreur est survenue lors de la création de la session de paiement.',
+    };
+  }
+
+  if (errorType === 'invalid_request_error') {
+    return {
+      status: 500,
+      code: 'STRIPE_INVALID_REQUEST',
+      message:
+        'Une erreur de configuration du paiement est survenue. Merci de réessayer plus tard.',
+    };
+  }
+
+  if (errorType === 'api_connection_error' || errorType === 'api_error') {
+    return {
+      status: 502,
+      code: 'STRIPE_UNAVAILABLE',
+      message:
+        'Le service de paiement est momentanément indisponible. Merci de réessayer dans quelques instants.',
+    };
+  }
+
+  if (errorType === 'rate_limit_error') {
+    return {
+      status: 503,
+      code: 'STRIPE_RATE_LIMIT',
+      message:
+        'Le service de paiement est temporairement saturé. Merci de réessayer dans quelques instants.',
+    };
+  }
+
+  if (errorType === 'authentication_error') {
+    return {
+      status: 500,
+      code: 'STRIPE_AUTH_ERROR',
+      message:
+        'Une erreur de configuration du paiement est survenue. Merci de réessayer plus tard.',
+    };
+  }
+
+  if (errorType === 'idempotency_error') {
+    return {
+      status: 409,
+      code: 'STRIPE_IDEMPOTENCY_ERROR',
+      message:
+        'Une tentative de paiement en double a été détectée. Merci de réessayer.',
+    };
+  }
+
+  if (errorType === 'card_error' && errorCode === 'amount_too_small') {
+    return {
+      status: 400,
+      code: 'STRIPE_AMOUNT_INVALID',
+      message:
+        'Le montant de la commande est invalide. Merci de vérifier votre panier.',
+    };
+  }
+
+  return {
+    status: 500,
+    code: 'STRIPE_SESSION_ERROR',
+    message:
+      'Une erreur est survenue lors de la création de la session de paiement.',
+  };
 }
 
 export default async function handler(req, res) {
@@ -580,19 +659,39 @@ export default async function handler(req, res) {
         url: stripeSession.url,
       });
     } catch (stripeError) {
-      await Order.deleteOne({ _id: pendingOrder._id });
+      console.error('CHECKOUT_STRIPE_SESSION_ERROR', {
+        orderId: String(pendingOrder._id),
+        userId: authenticatedUserId ? String(authenticatedUserId) : null,
+        errorType: stripeError?.type || null,
+        errorCode: stripeError?.code || null,
+        errorMessage: stripeError?.message || null,
+        raw: stripeError,
+      });
 
-      console.error('CHECKOUT_STRIPE_SESSION_ERROR', stripeError);
+      try {
+        await Order.deleteOne({ _id: pendingOrder._id });
+      } catch (deleteError) {
+        console.error('CHECKOUT_PENDING_ORDER_DELETE_ERROR', {
+          orderId: String(pendingOrder._id),
+          errorMessage: deleteError?.message || null,
+          raw: deleteError,
+        });
+      }
 
-      return res.status(500).json({
+      const stripeErrorResponse = getStripeErrorResponse(stripeError);
+
+      return res.status(stripeErrorResponse.status).json({
         ok: false,
-        code: 'STRIPE_SESSION_ERROR',
-        message:
-          'Une erreur est survenue lors de la création de la session de paiement.',
+        code: stripeErrorResponse.code,
+        message: stripeErrorResponse.message,
       });
     }
   } catch (error) {
-    console.error('CHECKOUT_CREATE_SESSION_ERROR', error);
+    console.error('CHECKOUT_CREATE_SESSION_ERROR', {
+      errorMessage: error?.message || null,
+      stack: error?.stack || null,
+      raw: error,
+    });
 
     return res.status(500).json({
       ok: false,

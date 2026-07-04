@@ -134,8 +134,8 @@
 - 🔴 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
 - 🔴 Intégrer le calcul des frais de port dans le panier.
 - 🔴 Répercuter les frais de port dans la session Stripe.
-- 🔴 Stocker le montant des frais de port dans la commande.
-- 🔴 Afficher distinctement sous-total, livraison et total dans /panier, Stripe, mon-compte et l’administration.
+- ✅ Stocker le montant des frais de port dans la commande.
+- ✅ Afficher distinctement sous-total, livraison et total dans /panier, Stripe, mon-compte et l’administration.
 - 🔴 Vérifier la cohérence des frais de port entre front, webhook et MongoDB.
 
 ### 3.5 Commandes admin
@@ -143,7 +143,7 @@
 - 🔴 Vérifier la compatibilité entre les commandes seedées et les commandes MongoDB réelles.
 - 🔴 Harmoniser les statuts réels (pending, paid, processing, etc.) avec les filtres visuels admin.
 - 🔴 Vérifier le tri par date et l’affichage du client, du total et du paiement.
-- 🔴Ajouter les suivi des commandes via Mondial Relay
+- 🟡 Ajouter les suivi des commandes via Mondial Relay
 
 ---
 
@@ -206,10 +206,11 @@
 - 🔴 Contrôler formulaires, panier, commandes, compte et administration en environnement réel.
 
 Le bouton rechercher fonctionne mais ne montre un résultat que sur la page Boutique
-Option cadeau ?
+Option cadeau 
 Pas de TVA a affiché ?
 Gros colis ?
 Photo stock depuis Google photo
 Mettre les images du produit et l'adresse de livraison à domicile ou de point relay si on choisi un lieu ?
 ![alt text](image.png)
 lien de suivi dans le mail 
+Vérifier les couleurs utilisé
