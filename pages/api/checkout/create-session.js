@@ -630,7 +630,7 @@ export default async function handler(req, res) {
         })
       );
 
-      const successUrl = `${origin}/commande/confirmation?orderId=${simulatedOrder._id}`;
+      const successUrl = `${origin}/commande/confirmation?orderId=${simulatedOrder._id}&session_id=SIMULATED_SESSION`;
 
       return res.status(200).json({
         ok: true,
@@ -664,7 +664,7 @@ export default async function handler(req, res) {
         normalizedDeliveryMethod
       );
 
-      const successUrl = `${origin}/commande/confirmation?orderId=${pendingOrder._id}`;
+      const successUrl = `${origin}/commande/confirmation?orderId=${pendingOrder._id}&session_id={CHECKOUT_SESSION_ID}`;
 
       const stripeSession = await stripe.checkout.sessions.create({
         mode: 'payment',
