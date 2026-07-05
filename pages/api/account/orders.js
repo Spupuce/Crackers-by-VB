@@ -71,11 +71,34 @@ export default async function handler(req, res) {
       });
     }
 
-    const orders = await Order.find({
-      userId: session.userId,
-    })
+    // On récupère d’abord les commandes liées au userId.
+    const userId = session.userId;
+
+    const primaryOrdersQuery = {
+      userId,
+    };
+
+    let orders = await Order.find(primaryOrdersQuery)
       .sort({ createdAt: -1 })
       .lean();
+
+    // Si aucune commande n’est liée par userId, on tente un fallback par email.
+    // On ne casse pas la logique existante, on ajoute seulement un cas de rattrapage
+    // pour les commandes passées en invité mais avec la même adresse email.
+    if (!orders.length && typeof session.email === 'string' && session.email.trim()) {
+      const normalizedEmail = session.email.trim().toLowerCase();
+
+      const fallbackOrders = await Order.find({
+        $or: [
+          { userId },
+          { userId: null, 'customer.email': normalizedEmail },
+        ],
+      })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      orders = fallbackOrders;
+    }
 
     return res.status(200).json({
       ok: true,

@@ -11,6 +11,11 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import internalStyles from '../styles/InternalPages.module.css';
 import styles from '../styles/CartPage.module.css';
+import {
+  computeShippingAmount,
+  getParcelSizeFromItems,
+  normalizeDeliveryMethod,
+} from '../utils/shipping';
 
 const phoneRegex = /^(?:(?:\+33|0)[1-9](?:[ .-]?\d{2}){4})$/;
 const postalCodeRegex = /^\d{5}$/;
@@ -223,26 +228,8 @@ function buildCartLineKey(item) {
   return `${slug}::${color || 'default'}`;
 }
 
-function getParcelSize(totalItems) {
-  return totalItems > 2 ? 'medium' : 'small';
-}
-
 function getParcelLabel(parcelSize) {
   return parcelSize === 'medium' ? 'Colis moyen' : 'Petit colis';
-}
-
-function getShippingPrice(deliveryMethod, totalItems, cartTotal) {
-  if (cartTotal >= 69) {
-    return 0;
-  }
-
-  const parcelSize = getParcelSize(totalItems);
-
-  if (parcelSize === 'medium') {
-    return deliveryMethod === 'home' ? 8.9 : 5.9;
-  }
-
-  return deliveryMethod === 'home' ? 7.9 : 4.9;
 }
 
 function getDeliveryMethodLabel(deliveryMethod) {
@@ -405,11 +392,24 @@ export default function PanierPage() {
     [items]
   );
 
-  const parcelSize = useMemo(() => getParcelSize(totalItems), [totalItems]);
+  const normalizedDeliveryMethod = useMemo(
+    () => normalizeDeliveryMethod(deliveryMethod),
+    [deliveryMethod]
+  );
+
+  const parcelSize = useMemo(
+    () => getParcelSizeFromItems(items),
+    [items]
+  );
 
   const shippingPrice = useMemo(
-    () => getShippingPrice(deliveryMethod, totalItems, cartTotal),
-    [deliveryMethod, totalItems, cartTotal]
+    () =>
+      computeShippingAmount({
+        subtotalAmount: cartTotal,
+        deliveryMethod: normalizedDeliveryMethod,
+        parcelSize,
+      }),
+    [cartTotal, normalizedDeliveryMethod, parcelSize]
   );
 
   const estimatedTotal = useMemo(
@@ -703,7 +703,7 @@ export default function PanierPage() {
             zip: trimmedShipping.zip,
             country: trimmedShipping.country,
           },
-          deliveryMethod,
+          deliveryMethod: normalizedDeliveryMethod,
           parcelSize,
           notes: notes.trim(),
         }),
@@ -1077,7 +1077,7 @@ export default function PanierPage() {
                       <button
                         type="button"
                         className={`${styles.deliveryOption} ${
-                          deliveryMethod === 'relay'
+                          normalizedDeliveryMethod === 'relay'
                             ? styles.deliveryOptionActive
                             : ''
                         }`}
@@ -1107,7 +1107,7 @@ export default function PanierPage() {
                       <button
                         type="button"
                         className={`${styles.deliveryOption} ${
-                          deliveryMethod === 'home'
+                          normalizedDeliveryMethod === 'home'
                             ? styles.deliveryOptionActive
                             : ''
                         }`}
@@ -1229,7 +1229,7 @@ export default function PanierPage() {
 
                       <div className={styles.summaryRow}>
                         <span>
-                          Frais de port ({getDeliveryMethodLabel(deliveryMethod)})
+                          Frais de port ({getDeliveryMethodLabel(normalizedDeliveryMethod)})
                         </span>
                         <span>
                           {isFreeShipping

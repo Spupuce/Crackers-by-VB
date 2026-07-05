@@ -132,7 +132,7 @@
 - 🔴 Intégrer virement dans Stripe si possible.
 
 ### 3.4 Frais de port
-- 🔴 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
+- 🟡 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
 - 🔴 Intégrer le calcul des frais de port dans le panier.
 - 🔴 Répercuter les frais de port dans la session Stripe.
 - ✅ Stocker le montant des frais de port dans la commande.

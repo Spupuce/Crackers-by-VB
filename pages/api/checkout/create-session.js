@@ -374,13 +374,6 @@ function getStripeClient(stripeSecretKey) {
 }
 
 function getEnabledPaymentMethodTypes() {
-  const enablePaypal =
-    normalizeText(process.env.STRIPE_ENABLE_PAYPAL || '').toLowerCase() === 'true';
-
-  if (enablePaypal) {
-    return ['card', 'paypal'];
-  }
-
   return ['card'];
 }
 
@@ -661,6 +654,29 @@ export default async function handler(req, res) {
       const stripeSession = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: paymentMethodTypes,
+        customer_email: normalizedCustomer.email,
+        billing_address_collection: 'required',
+        phone_number_collection: {
+          enabled: true,
+        },
+        shipping_address_collection: {
+          allowed_countries: ['FR'],
+        },
+        customer_creation: 'always',
+        payment_intent_data: {
+          receipt_email: normalizedCustomer.email,
+          shipping: {
+            name: `${normalizedCustomer.firstName} ${normalizedCustomer.lastName}`.trim(),
+            phone: normalizedCustomer.phone,
+            address: {
+              line1: normalizedShipping.address,
+              line2: '',
+              postal_code: normalizedShipping.zip,
+              city: normalizedShipping.city,
+              country: 'FR',
+            },
+          },
+        },
         line_items: lineItems,
         success_url: successUrl,
         cancel_url: cancelUrl,
@@ -670,6 +686,7 @@ export default async function handler(req, res) {
           customer_email: normalizedCustomer.email || '',
           customer_firstname: normalizedCustomer.firstName || '',
           customer_lastname: normalizedCustomer.lastName || '',
+          customer_phone: normalizedCustomer.phone || '',
           shipping_address: normalizedShipping.address || '',
           shipping_city: normalizedShipping.city || '',
           shipping_zip: normalizedShipping.zip || '',
