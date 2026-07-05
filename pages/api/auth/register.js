@@ -3,6 +3,7 @@
 import bcrypt from 'bcryptjs';
 import { connectMongo } from '../../../lib/mongodb';
 import User from '../../../models/User';
+import Order from '../../../models/Order';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -89,6 +90,21 @@ export default async function handler(req, res) {
       passwordHash,
       favorites: [],
     });
+
+    await Order.updateMany(
+      {
+        userId: null,
+        isUserDeleted: { $ne: true },
+        anonymizedAt: null,
+        'customer.email': normalizedEmail,
+      },
+      {
+        $set: {
+          userId: user._id,
+          isUserDeleted: false,
+        },
+      }
+    );
 
     return res.status(201).json({
       message: 'Compte créé avec succès.',
