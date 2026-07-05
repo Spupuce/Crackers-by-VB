@@ -665,17 +665,6 @@ export default async function handler(req, res) {
         customer_creation: 'always',
         payment_intent_data: {
           receipt_email: normalizedCustomer.email,
-          shipping: {
-            name: `${normalizedCustomer.firstName} ${normalizedCustomer.lastName}`.trim(),
-            phone: normalizedCustomer.phone,
-            address: {
-              line1: normalizedShipping.address,
-              line2: '',
-              postal_code: normalizedShipping.zip,
-              city: normalizedShipping.city,
-              country: 'FR',
-            },
-          },
         },
         line_items: lineItems,
         success_url: successUrl,
