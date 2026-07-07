@@ -53,6 +53,10 @@ export default function ProductForm({
 
   const initialColorsSnapshotRef = useRef(sanitizeColors(initialValues?.colors));
 
+  const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl || "");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState("");
+
   useEffect(() => {
     const normalizedInitialColors =
       initialValues?.colors && Array.isArray(initialValues.colors)
@@ -62,6 +66,8 @@ export default function ProductForm({
     setColors(normalizedInitialColors);
     setStockInputValue(initialValues?.stock ?? "");
     initialColorsSnapshotRef.current = sanitizeColors(normalizedInitialColors);
+    setImageUrl(initialValues?.imageUrl || "");
+    setImageUploadError("");
   }, [initialValues]);
 
   const activeColors = useMemo(
@@ -223,6 +229,47 @@ export default function ProductForm({
     setShowColorForm(true);
   }
 
+  async function handleMainImageUpload(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setImageUploadError("");
+    setIsUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        setImageUploadError("Échec du téléversement de l’image.");
+        setIsUploadingImage(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!data?.imageUrl) {
+        setImageUploadError("Aucune URL d’image retournée par le serveur.");
+        setIsUploadingImage(false);
+        return;
+      }
+
+      setImageUrl(data.imageUrl);
+    } catch (error) {
+      setImageUploadError("Une erreur est survenue pendant le téléversement.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
   function handleFormSubmit(event) {
     event.preventDefault();
 
@@ -235,7 +282,7 @@ export default function ProductForm({
       price: Number(formData.get("price")),
       promoPrice: promoPriceValue === "" ? null : Number(promoPriceValue),
       description: formData.get("description")?.toString().trim() || "",
-      imageUrl: formData.get("imageUrl")?.toString().trim() || "",
+      imageUrl: imageUrl?.toString().trim() || "",
       stock: hasColors ? Number(visualStock) || 0 : Number(stockInputValue) || 0,
       colors,
     };
@@ -383,19 +430,59 @@ export default function ProductForm({
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="imageUrl" className={styles.label}>
-            URL de l’image *
+          <label className={styles.label}>
+            Image principale *
           </label>
-          <input
-            id="imageUrl"
-            name="imageUrl"
-            type="url"
-            placeholder="https://..."
-            className={styles.input}
-            defaultValue={initialValues?.imageUrl || ""}
-            autoComplete="url"
-            required
-          />
+
+          <div className={styles.imageFieldRow}>
+            <div className={styles.imageUploadColumn}>
+              <input
+                id="mainImageFile"
+                name="mainImageFile"
+                type="file"
+                accept="image/*"
+                className={styles.fileInput}
+                onChange={handleMainImageUpload}
+              />
+
+              {isUploadingImage && (
+                <p className={styles.stockHint}>
+                  Téléversement de l’image en cours...
+                </p>
+              )}
+
+              {imageUploadError && (
+                <p className={styles.errorText}>{imageUploadError}</p>
+              )}
+            </div>
+
+            <div className={styles.imageUrlColumn}>
+              <label htmlFor="imageUrl" className={styles.smallLabel}>
+                URL de l’image (remplie automatiquement)
+              </label>
+              <input
+                id="imageUrl"
+                name="imageUrl"
+                type="url"
+                placeholder="https://..."
+                className={styles.input}
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                autoComplete="url"
+                required
+              />
+            </div>
+          </div>
+
+          {imageUrl && (
+            <div className={styles.mainImagePreviewWrapper}>
+              <img
+                src={imageUrl}
+                alt="Prévisualisation de l’image principale du produit"
+                className={styles.mainImagePreview}
+              />
+            </div>
+          )}
         </div>
 
         <div className={styles.field}>
