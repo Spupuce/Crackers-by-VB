@@ -57,6 +57,9 @@ export default function ProductForm({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState("");
 
+  const [isUploadingColorImage, setIsUploadingColorImage] = useState(false);
+  const [colorImageUploadError, setColorImageUploadError] = useState("");
+
   useEffect(() => {
     const normalizedInitialColors =
       initialValues?.colors && Array.isArray(initialValues.colors)
@@ -68,6 +71,7 @@ export default function ProductForm({
     initialColorsSnapshotRef.current = sanitizeColors(normalizedInitialColors);
     setImageUrl(initialValues?.imageUrl || "");
     setImageUploadError("");
+    setColorImageUploadError("");
   }, [initialValues]);
 
   const activeColors = useMemo(
@@ -107,6 +111,8 @@ export default function ProductForm({
     setColorDraft(createEmptyColorDraft());
     setEditingColorIndex(null);
     setShowColorForm(false);
+    setColorImageUploadError("");
+    setIsUploadingColorImage(false);
   }
 
   function handleColorDraftChange(field, value) {
@@ -211,6 +217,7 @@ export default function ProductForm({
     setEditingColorIndex(null);
     setColorDraft(createEmptyColorDraft());
     setShowColorForm(true);
+    setColorImageUploadError("");
   }
 
   function handleEditColor(index) {
@@ -227,6 +234,7 @@ export default function ProductForm({
       imageUrl: colorToEdit.imageUrl || "",
     });
     setShowColorForm(true);
+    setColorImageUploadError("");
   }
 
   async function handleMainImageUpload(event) {
@@ -267,6 +275,54 @@ export default function ProductForm({
       setImageUploadError("Une erreur est survenue pendant le téléversement.");
     } finally {
       setIsUploadingImage(false);
+    }
+  }
+
+  async function handleColorImageUpload(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setColorImageUploadError("");
+    setIsUploadingColorImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        setColorImageUploadError("Échec du téléversement de la photo couleur.");
+        setIsUploadingColorImage(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!data?.imageUrl) {
+        setColorImageUploadError(
+          "Aucune URL d’image retournée pour la photo couleur."
+        );
+        setIsUploadingColorImage(false);
+        return;
+      }
+
+      setColorDraft((prev) => ({
+        ...prev,
+        imageUrl: data.imageUrl,
+      }));
+    } catch (error) {
+      setColorImageUploadError(
+        "Une erreur est survenue pendant le téléversement de la photo couleur."
+      );
+    } finally {
+      setIsUploadingColorImage(false);
     }
   }
 
@@ -430,9 +486,7 @@ export default function ProductForm({
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>
-            Image principale *
-          </label>
+          <label className={styles.label}>Image principale *</label>
 
           <div className={styles.imageFieldRow}>
             <div className={styles.imageUploadColumn}>
@@ -577,6 +631,40 @@ export default function ProductForm({
                   autoComplete="url"
                 />
               </div>
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="colorImageFile" className={styles.smallLabel}>
+                Téléverser une photo couleur
+              </label>
+              <input
+                id="colorImageFile"
+                name="colorImageFile"
+                type="file"
+                accept="image/*"
+                className={styles.fileInput}
+                onChange={handleColorImageUpload}
+              />
+
+              {isUploadingColorImage && (
+                <p className={styles.stockHint}>
+                  Téléversement de la photo couleur en cours...
+                </p>
+              )}
+
+              {colorImageUploadError && (
+                <p className={styles.errorText}>{colorImageUploadError}</p>
+              )}
+
+              {colorDraft.imageUrl && (
+                <div className={styles.mainImagePreviewWrapper}>
+                  <img
+                    src={colorDraft.imageUrl}
+                    alt="Prévisualisation de la photo couleur"
+                    className={styles.mainImagePreview}
+                  />
+                </div>
+              )}
             </div>
 
             <div className={styles.colorActions}>
