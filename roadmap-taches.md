@@ -132,16 +132,16 @@
 - 🔴 Intégrer virement dans Stripe si possible.
 
 ### 3.4 Frais de port
-- 🟡 Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
-- 🔴 Intégrer le calcul des frais de port dans le panier.
-- 🔴 Répercuter les frais de port dans la session Stripe.
+- ✅ Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
+- ✅ Intégrer le calcul des frais de port dans le panier.
+- ✅ Répercuter les frais de port dans la session Stripe.
 - ✅ Stocker le montant des frais de port dans la commande.
 - ✅ Afficher distinctement sous-total, livraison et total dans `/panier`, Stripe, `mon-compte` et l’administration.
-- 🔴 Vérifier la cohérence des frais de port entre front, webhook et MongoDB.
+- 🟡 Vérifier la cohérence des frais de port entre front, webhook et MongoDB.
 
 ### 3.5 Commandes admin
 - ✅ Afficher les commandes Stripe réelles dans `/administration/commandes`.
-- 🔴 Vérifier la compatibilité entre les commandes seedées et les commandes MongoDB réelles.
+- 🟡 Vérifier la compatibilité entre les commandes seedées et les commandes MongoDB réelles.
 - 🔴 Harmoniser les statuts réels (pending, paid, processing, etc.) avec les filtres visuels admin.
 - 🔴 Vérifier le tri par date et l’affichage du client, du total et du paiement.
 - 🟡 Ajouter les suivi des commandes via Mondial Relay.
@@ -182,7 +182,7 @@
 - 🔴 Le bouton rechercher fonctionne mais ne montre un résultat que sur la page Boutique.
 
 ### 5.3 Gestion des médias et images
-- 🔴 Photo stock depuis Google photo.
+- ✅ Photo stock depuis Google photo.
 
 ### 5.4 Cohérence visuelle et design système
 - 🔴 Vérifier les couleurs utilisés il faut utilisé par tout les variables de couleurs déja prêtes.

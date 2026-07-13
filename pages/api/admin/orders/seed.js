@@ -4,53 +4,128 @@ import dbConnect from '../../../../lib/mongodb';
 import Order from '../../../../models/Order';
 import Product from '../../../../models/Product';
 
+function getSafeNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getProductImage(product) {
+  if (typeof product?.imageUrl === 'string' && product.imageUrl.trim()) {
+    return product.imageUrl.trim();
+  }
+
+  if (Array.isArray(product?.imageUrls) && typeof product.imageUrls[0] === 'string') {
+    return product.imageUrls[0].trim();
+  }
+
+  return '';
+}
+
+function buildCustomer(index) {
+  const customers = [
+    {
+      firstName: 'Camille',
+      lastName: 'Martin',
+      email: 'camille.martin@example.com',
+      phone: '0612345678',
+    },
+    {
+      firstName: 'Julie',
+      lastName: 'Bernard',
+      email: 'julie.bernard@example.com',
+      phone: '0687654321',
+    },
+    {
+      firstName: 'Sophie',
+      lastName: 'Durand',
+      email: 'sophie.durand@example.com',
+      phone: '0677889900',
+    },
+  ];
+
+  return customers[index] || customers[0];
+}
+
+function buildItems(products, quantitiesByIndex) {
+  return products.map((product, index) => ({
+    productId: product._id,
+    name: product.name || '',
+    slug: product.slug || '',
+    color: '',
+    quantity: quantitiesByIndex[index] || 1,
+    unitPrice: getSafeNumber(product.price),
+    imageUrl: getProductImage(product),
+  }));
+}
+
+function computeSubtotal(items) {
+  return items.reduce(
+    (sum, item) => sum + getSafeNumber(item.unitPrice) * getSafeNumber(item.quantity),
+    0
+  );
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, message: 'Méthode non autorisée.' });
+    return res.status(405).json({
+      ok: false,
+      message: 'Méthode non autorisée.',
+    });
   }
 
   try {
     await dbConnect();
 
-    const { userId } = req.body;
+    const { userId } = req.body || {};
 
     if (!userId) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "userId est obligatoire pour générer des commandes." });
+      return res.status(400).json({
+        ok: false,
+        message: "userId est obligatoire pour générer des commandes.",
+      });
     }
 
-    const products = await Product.find().limit(3).lean();
+    const products = await Product.find({}).limit(3).lean();
 
     if (!products || products.length === 0) {
       return res.status(400).json({
         ok: false,
-        message: 'Aucun produit trouvé en base. Ajoute quelques produits avant de générer des commandes.',
+        message:
+          'Aucun produit trouvé en base. Ajoute quelques produits avant de générer des commandes.',
       });
     }
 
-    const sampleItems = products.map((product, index) => ({
-      productId: product._id,
-      name: product.name,
-      slug: product.slug,
-      quantity: index === 0 ? 1 : 2,
-      unitPrice: product.price,
-      imageUrl: product.imageUrls?.[0] || '',
-    }));
-
     const now = new Date();
+
+    const deliveredItems = buildItems(products, [1, 2, 2]);
+    const deliveredSubtotal = computeSubtotal(deliveredItems);
+    const deliveredShippingAmount = 0;
+
+    const preparingItems = buildItems(products.slice(0, 2), [1, 1]);
+    const preparingSubtotal = computeSubtotal(preparingItems);
+    const preparingShippingAmount = 4.9;
+
+    const pendingItems = buildItems(products.slice(0, 1), [1]);
+    const pendingSubtotal = computeSubtotal(pendingItems);
+    const pendingShippingAmount = 7.9;
 
     const fakeOrders = [
       {
         userId,
+        isUserDeleted: false,
+        anonymizedAt: null,
+        orderNumber: '',
         status: 'delivered',
-        totalAmount: sampleItems.reduce(
-          (sum, item) => sum + item.unitPrice * item.quantity,
-          0
-        ),
+        paymentStatus: 'paid',
+        customer: buildCustomer(0),
+        subtotalAmount: deliveredSubtotal,
+        shippingAmount: deliveredShippingAmount,
+        totalAmount: deliveredSubtotal + deliveredShippingAmount,
         currency: 'EUR',
-        items: sampleItems,
+        items: deliveredItems,
         notes: 'Première commande de test pour le compte.',
+        stripeSessionId: '',
+        stripePaymentIntentId: '',
         shippingAddress: {
           addressLine1: '12 rue des Lilas',
           addressLine2: '',
@@ -58,19 +133,34 @@ export default async function handler(req, res) {
           city: 'Paris',
           country: 'France',
         },
+        shipping: {
+          method: 'relay',
+          parcelSize: 'medium',
+          carrier: '',
+          trackingNumber: 'XR123456789FR',
+          trackingUrl: '',
+          shippedAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 5),
+          deliveredAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3),
+        },
         createdAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6),
         updatedAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3),
       },
       {
         userId,
+        isUserDeleted: false,
+        anonymizedAt: null,
+        orderNumber: '',
         status: 'preparing',
-        totalAmount: sampleItems[0].unitPrice * 1 + (sampleItems[1]?.unitPrice || 0),
+        paymentStatus: 'paid',
+        customer: buildCustomer(1),
+        subtotalAmount: preparingSubtotal,
+        shippingAmount: preparingShippingAmount,
+        totalAmount: preparingSubtotal + preparingShippingAmount,
         currency: 'EUR',
-        items: sampleItems.slice(0, 2).map((item, index) => ({
-          ...item,
-          quantity: index === 0 ? 1 : 1,
-        })),
+        items: preparingItems,
         notes: 'Commande de test en préparation.',
+        stripeSessionId: '',
+        stripePaymentIntentId: '',
         shippingAddress: {
           addressLine1: '4 impasse des Ateliers',
           addressLine2: 'Bâtiment B',
@@ -78,27 +168,49 @@ export default async function handler(req, res) {
           city: 'Nantes',
           country: 'France',
         },
+        shipping: {
+          method: 'relay',
+          parcelSize: 'small',
+          carrier: '',
+          trackingNumber: '',
+          trackingUrl: '',
+          shippedAt: null,
+          deliveredAt: null,
+        },
         createdAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 20),
         updatedAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1),
       },
       {
         userId,
-        status: 'paid',
-        totalAmount: sampleItems[0].unitPrice,
+        isUserDeleted: false,
+        anonymizedAt: null,
+        orderNumber: '',
+        status: 'pending',
+        paymentStatus: 'paid',
+        customer: buildCustomer(2),
+        subtotalAmount: pendingSubtotal,
+        shippingAmount: pendingShippingAmount,
+        totalAmount: pendingSubtotal + pendingShippingAmount,
         currency: 'EUR',
-        items: [
-          {
-            ...sampleItems[0],
-            quantity: 1,
-          },
-        ],
+        items: pendingItems,
         notes: 'Commande de test payée, en attente de préparation.',
+        stripeSessionId: '',
+        stripePaymentIntentId: '',
         shippingAddress: {
           addressLine1: '8 avenue des Fleurs',
           addressLine2: '',
           postalCode: '13008',
           city: 'Marseille',
           country: 'France',
+        },
+        shipping: {
+          method: 'home',
+          parcelSize: 'small',
+          carrier: '',
+          trackingNumber: '',
+          trackingUrl: '',
+          shippedAt: null,
+          deliveredAt: null,
         },
         createdAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 40),
         updatedAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 40),
@@ -116,7 +228,7 @@ export default async function handler(req, res) {
     console.error('Seed orders error:', error);
     return res.status(500).json({
       ok: false,
-      message: "Impossible de créer les commandes de test.",
+      message: 'Impossible de créer les commandes de test.',
     });
   }
 }
