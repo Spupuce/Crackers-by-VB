@@ -14,6 +14,24 @@ function normalizeStatus(value) {
   return value.trim().toLowerCase();
 }
 
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeTrackingUrl(value) {
+  const normalizedValue = normalizeText(value);
+
+  if (!normalizedValue) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  return `https://${normalizedValue}`;
+}
+
 function ensureShippingObject(order) {
   if (!order.shipping) {
     order.shipping = {};
@@ -50,8 +68,11 @@ export default async function handler(req, res) {
   try {
     await connectMongo();
 
-    const { status } = req.body || {};
+    const { status, carrier, trackingNumber, trackingUrl } = req.body || {};
     const nextStatus = normalizeStatus(status);
+    const normalizedCarrier = normalizeText(carrier);
+    const normalizedTrackingNumber = normalizeText(trackingNumber);
+    const normalizedTrackingUrl = normalizeTrackingUrl(trackingUrl);
 
     if (!ALLOWED_STATUSES.includes(nextStatus)) {
       return res.status(400).json({
@@ -73,6 +94,10 @@ export default async function handler(req, res) {
 
     const now = new Date();
     ensureShippingObject(order);
+
+    order.shipping.carrier = normalizedCarrier;
+    order.shipping.trackingNumber = normalizedTrackingNumber;
+    order.shipping.trackingUrl = normalizedTrackingUrl;
 
     if (nextStatus === 'pending' || nextStatus === 'preparing') {
       order.shipping.shippedAt = null;
