@@ -77,6 +77,14 @@ function ensureShippingObject(order) {
   }
 }
 
+function resolveNextStatus(status, trackingNumber) {
+  if (status === 'preparing' && normalizeText(trackingNumber)) {
+    return 'shipped';
+  }
+
+  return status;
+}
+
 export default async function handler(req, res) {
   const { id } = req.query;
 
@@ -108,9 +116,10 @@ export default async function handler(req, res) {
     await connectMongo();
 
     const { status, carrier, trackingNumber, trackingUrl } = req.body || {};
-    const nextStatus = normalizeStatus(status);
+    const requestedStatus = normalizeStatus(status);
     const normalizedCarrier = normalizeText(carrier);
     const normalizedTrackingNumber = normalizeText(trackingNumber);
+    const nextStatus = resolveNextStatus(requestedStatus, normalizedTrackingNumber);
     const resolvedTrackingUrl = resolveTrackingUrl({
       carrier: normalizedCarrier,
       trackingNumber: normalizedTrackingNumber,
