@@ -1,6 +1,8 @@
 // pages/api/admin/orders/send-test-email.js
 
 import { requireAdminSession } from '../../../../lib/session';
+import { connectMongo } from '../../../../lib/mongodb';
+import Order from '../../../../models/Order';
 import {
   isValidEmail,
   normalizeCustomMessage,
@@ -10,6 +12,36 @@ import {
   buildCustomEmailHtml,
   sendEmail,
 } from '../../../../lib/services/emailService';
+
+function normalizeStatusLabel(statusLabel) {
+  if (!statusLabel || typeof statusLabel !== 'string') {
+    return '';
+  }
+
+  const normalizedLabel = statusLabel.trim().toLowerCase();
+
+  if (normalizedLabel === 'en attente') {
+    return 'pending';
+  }
+
+  if (normalizedLabel === 'en préparation') {
+    return 'preparing';
+  }
+
+  if (normalizedLabel === 'expédiée' || normalizedLabel === 'expediee') {
+    return 'shipped';
+  }
+
+  if (normalizedLabel === 'livrée' || normalizedLabel === 'livree') {
+    return 'delivered';
+  }
+
+  if (normalizedLabel === 'annulée' || normalizedLabel === 'annulee') {
+    return 'cancelled';
+  }
+
+  return '';
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -78,6 +110,26 @@ export default async function handler(req, res) {
       text,
       html,
     });
+
+    if (recipientType === 'customer') {
+      await connectMongo();
+
+      const normalizedStatus = normalizeStatusLabel(statusLabel);
+      const order = await Order.findOne({
+        $or: [{ orderNumber: orderId }, { _id: orderId }],
+      });
+
+      if (order) {
+        order.statusEmail = {
+          status: normalizedStatus,
+          sentAt: new Date(),
+          recipient: finalRecipient,
+          messageId: info?.messageId || '',
+        };
+
+        await order.save();
+      }
+    }
 
     console.log('ORDER_STATUS_MAIL_RESULT:', {
       adminUserId: session.userId,
