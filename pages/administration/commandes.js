@@ -32,6 +32,16 @@ const STATUS_OPTIONS = [
   { value: 'delivered', label: 'Livrée', icon: FiCheckCircle },
 ];
 
+const CARRIER_OPTIONS = [
+  { value: '', label: 'Sélectionner un transporteur' },
+  { value: 'Mondial Relay', label: 'Mondial Relay' },
+  { value: 'Colissimo', label: 'Colissimo' },
+  { value: 'Chronopost', label: 'Chronopost' },
+  { value: 'Lettre Suivie', label: 'Lettre Suivie' },
+  { value: 'Colis Privé', label: 'Colis Privé' },
+  { value: 'Autre', label: 'Autre' },
+];
+
 function formatPrice(value) {
   return `${Number(value || 0).toFixed(2)} €`;
 }
@@ -898,9 +908,8 @@ export default function AdminOrdersPage() {
                     <label className={styles.emailLabel} htmlFor="order-shipping-carrier">
                       Transporteur
                     </label>
-                    <input
+                    <select
                       id="order-shipping-carrier"
-                      type="text"
                       className={styles.statusSelect}
                       value={shippingForm.carrier}
                       onChange={(event) =>
@@ -909,9 +918,14 @@ export default function AdminOrdersPage() {
                           carrier: event.target.value,
                         }))
                       }
-                      placeholder="Ex. : Mondial Relay"
                       disabled={shippingSavingFor === selectedOrder.id}
-                    />
+                    >
+                      {CARRIER_OPTIONS.map((option) => (
+                        <option key={option.value || 'empty'} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
 
                     <label
                       className={styles.emailLabel}
@@ -954,8 +968,7 @@ export default function AdminOrdersPage() {
 
                     {selectedOrder.trackingUrl ? (
                       <p className={styles.emailPanelHint}>
-                        Lien actuel :
-                        {' '}
+                        Lien actuel :{' '}
                         <a
                           href={selectedOrder.trackingUrl}
                           target="_blank"

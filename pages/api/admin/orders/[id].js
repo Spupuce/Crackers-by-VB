@@ -32,6 +32,45 @@ function normalizeTrackingUrl(value) {
   return `https://${normalizedValue}`;
 }
 
+function normalizeCarrierKey(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function buildTrackingUrl(carrier, trackingNumber) {
+  const normalizedCarrier = normalizeCarrierKey(carrier);
+  const normalizedTrackingNumber = normalizeText(trackingNumber);
+
+  if (!normalizedCarrier || !normalizedTrackingNumber) {
+    return '';
+  }
+
+  const encodedTrackingNumber = encodeURIComponent(normalizedTrackingNumber);
+
+  if (normalizedCarrier === 'colissimo') {
+    return `https://www.laposte.fr/outils/suivre-vos-envois?code=${encodedTrackingNumber}`;
+  }
+
+  if (normalizedCarrier === 'chronopost') {
+    return `https://www.chronopost.fr/tracking-no-cms/suivi-page?listeNumerosLT=${encodedTrackingNumber}`;
+  }
+
+  if (normalizedCarrier === 'mondial relay') {
+    return `https://www.mondialrelay.fr/suivi-de-colis/?numeroExpedition=${encodedTrackingNumber}`;
+  }
+
+  return '';
+}
+
+function resolveTrackingUrl({ carrier, trackingNumber, trackingUrl }) {
+  const autoTrackingUrl = buildTrackingUrl(carrier, trackingNumber);
+
+  if (autoTrackingUrl) {
+    return autoTrackingUrl;
+  }
+
+  return normalizeTrackingUrl(trackingUrl);
+}
+
 function ensureShippingObject(order) {
   if (!order.shipping) {
     order.shipping = {};
@@ -72,7 +111,11 @@ export default async function handler(req, res) {
     const nextStatus = normalizeStatus(status);
     const normalizedCarrier = normalizeText(carrier);
     const normalizedTrackingNumber = normalizeText(trackingNumber);
-    const normalizedTrackingUrl = normalizeTrackingUrl(trackingUrl);
+    const resolvedTrackingUrl = resolveTrackingUrl({
+      carrier: normalizedCarrier,
+      trackingNumber: normalizedTrackingNumber,
+      trackingUrl,
+    });
 
     if (!ALLOWED_STATUSES.includes(nextStatus)) {
       return res.status(400).json({
@@ -97,7 +140,7 @@ export default async function handler(req, res) {
 
     order.shipping.carrier = normalizedCarrier;
     order.shipping.trackingNumber = normalizedTrackingNumber;
-    order.shipping.trackingUrl = normalizedTrackingUrl;
+    order.shipping.trackingUrl = resolvedTrackingUrl;
 
     if (nextStatus === 'pending' || nextStatus === 'preparing') {
       order.shipping.shippedAt = null;
