@@ -184,6 +184,13 @@ function normalizeAdminOrder(apiOrder) {
   };
 }
 
+function mergeOrderUpdates(order, updates) {
+  return {
+    ...order,
+    ...updates,
+  };
+}
+
 export default function AdminOrdersPage() {
   const router = useRouter();
   const { isAuthenticated, isAdmin, isAuthReady } = useAuth();
@@ -394,20 +401,28 @@ export default function AdminOrdersPage() {
         data?.order?.shipping?.carrier ||
         targetOrder.shippingMethod;
 
+      const updatedOrder = mergeOrderUpdates(targetOrder, {
+        status: updatedStatus,
+        trackingNumber: updatedTrackingNumber,
+        trackingUrl: updatedTrackingUrl,
+        shippingCarrier: updatedCarrier,
+        shippingMethod: updatedShippingMethod,
+      });
+
       setOrders((currentOrders) =>
         currentOrders.map((order) =>
-          order.id === orderId
-            ? {
-                ...order,
-                status: updatedStatus,
-                trackingNumber: updatedTrackingNumber,
-                trackingUrl: updatedTrackingUrl,
-                shippingCarrier: updatedCarrier,
-                shippingMethod: updatedShippingMethod,
-              }
-            : order
+          order.id === orderId ? updatedOrder : order
         )
       );
+
+      if (selectedOrderId === orderId) {
+        setShippingForm({
+          carrier: updatedOrder.shippingCarrier || '',
+          trackingNumber: updatedOrder.trackingNumber || '',
+          trackingUrl: updatedOrder.trackingUrl || '',
+        });
+        setDetailEmailMessage(getDefaultEmailMessage(updatedOrder));
+      }
 
       setStatusFeedback({
         type: 'success',
@@ -468,17 +483,16 @@ export default function AdminOrdersPage() {
         data?.order?.shipping?.carrier ||
         selectedOrder.shippingMethod;
 
+      const updatedOrder = mergeOrderUpdates(selectedOrder, {
+        shippingCarrier: updatedCarrier,
+        trackingNumber: updatedTrackingNumber,
+        trackingUrl: updatedTrackingUrl,
+        shippingMethod: updatedShippingMethod,
+      });
+
       setOrders((currentOrders) =>
         currentOrders.map((order) =>
-          order.id === selectedOrder.id
-            ? {
-                ...order,
-                shippingCarrier: updatedCarrier,
-                trackingNumber: updatedTrackingNumber,
-                trackingUrl: updatedTrackingUrl,
-                shippingMethod: updatedShippingMethod,
-              }
-            : order
+          order.id === selectedOrder.id ? updatedOrder : order
         )
       );
 
@@ -487,6 +501,8 @@ export default function AdminOrdersPage() {
         trackingNumber: updatedTrackingNumber,
         trackingUrl: updatedTrackingUrl,
       });
+
+      setDetailEmailMessage(getDefaultEmailMessage(updatedOrder));
 
       setShippingFeedback({
         type: 'success',
@@ -846,9 +862,7 @@ export default function AdminOrdersPage() {
                   <h2 className={styles.sectionTitle}>Notes de commande</h2>
 
                   <div className={styles.infoCard}>
-                    <p>
-                      {selectedOrder.notes || 'Aucune note laissée par la cliente.'}
-                    </p>
+                    <p>{selectedOrder.notes || 'Aucune note laissée par la cliente.'}</p>
                   </div>
                 </div>
 
