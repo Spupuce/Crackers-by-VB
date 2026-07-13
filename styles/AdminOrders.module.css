@@ -471,6 +471,9 @@
 }
 
 .emailPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   background: #f7f8fb;
   border-radius: 14px;
   padding: 16px;
@@ -484,14 +487,14 @@
 }
 
 .emailPanelHint {
-  margin: 8px 0 0;
+  margin: 0;
   color: var(--color-gray-600);
   line-height: 1.5;
 }
 
 .emailLabel {
-  display: inline-block;
-  margin: 18px 0 8px;
+  display: block;
+  margin: 4px 0 0;
   color: var(--color-gray-900);
   font-weight: 700;
 }
@@ -509,20 +512,34 @@
   resize: vertical;
 }
 
-.emailTextarea:focus {
+.emailTextarea:focus,
+.emailPanel input:focus,
+.statusSelect:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(248, 184, 131, 0.18);
 }
 
+.emailPanel input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 12px;
+  background: var(--color-white);
+  color: var(--color-gray-700);
+  font: inherit;
+}
+
 .emailPanelActions {
   display: flex;
   justify-content: flex-start;
-  margin-top: 14px;
+  margin-top: 6px;
 }
 
 .emailFeedback {
-  margin: 12px 0 0;
+  margin: 0;
   padding: 12px 14px;
   border-radius: 12px;
   font-weight: 600;
@@ -538,7 +555,6 @@
   background: rgba(239, 68, 68, 0.12);
   color: #dc2626;
 }
-
 
 @media (max-width: 768px) {
   .hero {
@@ -614,6 +630,7 @@
     width: 100%;
     justify-content: center;
   }
+
   .emailPanelActions {
     justify-content: stretch;
   }
