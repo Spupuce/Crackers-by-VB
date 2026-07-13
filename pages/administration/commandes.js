@@ -45,8 +45,7 @@ function getCustomerFullName(order) {
 }
 
 function getAddressLabel(order) {
-  const { addressLine1, addressLine2, postalCode, city, country } =
-    order.shippingAddress;
+  const { addressLine1, addressLine2, postalCode, city, country } = order.shippingAddress;
 
   return [addressLine1, addressLine2, `${postalCode} ${city}`, country]
     .filter(Boolean)
@@ -57,11 +56,9 @@ function getDefaultEmailMessage(order) {
   const statusLabel = getStatusLabel(order.status);
 
   if (order.status === 'shipped') {
-    return `Bonjour ${getCustomerFullName(
-      order
-    )},\n\nVotre commande ${order.id} a bien été expédiée.\n${
+    return `Bonjour ${getCustomerFullName(order)},\n\nVotre commande ${order.id} a bien été expédiée.\n${
       order.trackingNumber ? `Votre numéro de suivi : ${order.trackingNumber}\n` : ''
-    }\nBelle journée,\nCrackers by VB`;
+    }${order.trackingUrl ? `Suivre mon colis : ${order.trackingUrl}\n` : ''}\nBelle journée,\nCrackers by VB`;
   }
 
   if (order.status === 'delivered') {
@@ -164,8 +161,8 @@ function normalizeAdminOrder(apiOrder) {
     status: apiOrder.status || 'pending',
     trackingNumber: apiOrder.shipping?.trackingNumber || '',
     trackingUrl: apiOrder.shipping?.trackingUrl || '',
-    shippingMethod:
-      apiOrder.shipping?.method || apiOrder.shipping?.carrier || 'Livraison',
+    shippingCarrier: apiOrder.shipping?.carrier || '',
+    shippingMethod: apiOrder.shipping?.method || apiOrder.shipping?.carrier || 'Livraison',
     notes: apiOrder.notes || '',
     items,
   };
@@ -191,9 +188,18 @@ export default function AdminOrdersPage() {
     type: '',
     message: '',
   });
+  const [shippingForm, setShippingForm] = useState({
+    carrier: '',
+    trackingNumber: '',
+    trackingUrl: '',
+  });
+  const [shippingSavingFor, setShippingSavingFor] = useState('');
+  const [shippingFeedback, setShippingFeedback] = useState({
+    type: '',
+    message: '',
+  });
 
-  const selectedOrder =
-    orders.find((order) => order.id === selectedOrderId) || null;
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
 
   useEffect(() => {
     if (!isAuthReady) {
@@ -226,9 +232,7 @@ export default function AdminOrdersPage() {
         const data = await response.json().catch(() => null);
 
         if (!response.ok) {
-          throw new Error(
-            data?.message || 'Impossible de récupérer les commandes.'
-          );
+          throw new Error(data?.message || 'Impossible de récupérer les commandes.');
         }
 
         if (isCancelled) {
@@ -246,9 +250,7 @@ export default function AdminOrdersPage() {
         }
 
         setOrders([]);
-        setOrdersError(
-          error?.message || 'Impossible de charger les commandes.'
-        );
+        setOrdersError(error?.message || 'Impossible de charger les commandes.');
       } finally {
         if (!isCancelled) {
           setIsLoadingOrders(false);
@@ -267,11 +269,23 @@ export default function AdminOrdersPage() {
     if (!selectedOrder) {
       setDetailEmailMessage('');
       setDetailEmailFeedback({ type: '', message: '' });
+      setShippingForm({
+        carrier: '',
+        trackingNumber: '',
+        trackingUrl: '',
+      });
+      setShippingFeedback({ type: '', message: '' });
       return;
     }
 
     setDetailEmailMessage(getDefaultEmailMessage(selectedOrder));
     setDetailEmailFeedback({ type: '', message: '' });
+    setShippingForm({
+      carrier: selectedOrder.shippingCarrier || '',
+      trackingNumber: selectedOrder.trackingNumber || '',
+      trackingUrl: selectedOrder.trackingUrl || '',
+    });
+    setShippingFeedback({ type: '', message: '' });
   }, [selectedOrderId, selectedOrder]);
 
   useEffect(() => {
@@ -330,15 +344,16 @@ export default function AdminOrdersPage() {
         },
         body: JSON.stringify({
           status: nextStatus,
+          carrier: targetOrder.shippingCarrier || '',
+          trackingNumber: targetOrder.trackingNumber || '',
+          trackingUrl: targetOrder.trackingUrl || '',
         }),
       });
 
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(
-          data?.message || 'Impossible de mettre à jour le statut.'
-        );
+        throw new Error(data?.message || 'Impossible de mettre à jour le statut.');
       }
 
       const updatedStatus = data?.order?.status || nextStatus;
@@ -346,6 +361,8 @@ export default function AdminOrdersPage() {
         data?.order?.shipping?.trackingNumber ?? targetOrder.trackingNumber;
       const updatedTrackingUrl =
         data?.order?.shipping?.trackingUrl ?? targetOrder.trackingUrl;
+      const updatedCarrier =
+        data?.order?.shipping?.carrier ?? targetOrder.shippingCarrier;
       const updatedShippingMethod =
         data?.order?.shipping?.method ||
         data?.order?.shipping?.carrier ||
@@ -359,6 +376,7 @@ export default function AdminOrdersPage() {
                 status: updatedStatus,
                 trackingNumber: updatedTrackingNumber,
                 trackingUrl: updatedTrackingUrl,
+                shippingCarrier: updatedCarrier,
                 shippingMethod: updatedShippingMethod,
               }
             : order
@@ -375,11 +393,87 @@ export default function AdminOrdersPage() {
       setStatusFeedback({
         type: 'error',
         message:
-          error?.message ||
-          'Impossible de mettre à jour le statut de la commande.',
+          error?.message || 'Impossible de mettre à jour le statut de la commande.',
       });
     } finally {
       setStatusUpdatingFor('');
+    }
+  }
+
+  async function handleSaveShipping() {
+    if (!selectedOrder || !selectedOrder.sourceId) {
+      setShippingFeedback({
+        type: 'error',
+        message: 'Commande introuvable pour la mise à jour du suivi.',
+      });
+      return;
+    }
+
+    setShippingSavingFor(selectedOrder.id);
+    setShippingFeedback({ type: '', message: '' });
+
+    try {
+      const response = await fetch(`/api/admin/orders/${selectedOrder.sourceId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: selectedOrder.status,
+          carrier: shippingForm.carrier,
+          trackingNumber: shippingForm.trackingNumber,
+          trackingUrl: shippingForm.trackingUrl,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || 'Impossible de mettre à jour les informations de suivi.'
+        );
+      }
+
+      const updatedCarrier = data?.order?.shipping?.carrier || '';
+      const updatedTrackingNumber = data?.order?.shipping?.trackingNumber || '';
+      const updatedTrackingUrl = data?.order?.shipping?.trackingUrl || '';
+      const updatedShippingMethod =
+        data?.order?.shipping?.method ||
+        data?.order?.shipping?.carrier ||
+        selectedOrder.shippingMethod;
+
+      setOrders((currentOrders) =>
+        currentOrders.map((order) =>
+          order.id === selectedOrder.id
+            ? {
+                ...order,
+                shippingCarrier: updatedCarrier,
+                trackingNumber: updatedTrackingNumber,
+                trackingUrl: updatedTrackingUrl,
+                shippingMethod: updatedShippingMethod,
+              }
+            : order
+        )
+      );
+
+      setShippingForm({
+        carrier: updatedCarrier,
+        trackingNumber: updatedTrackingNumber,
+        trackingUrl: updatedTrackingUrl,
+      });
+
+      setShippingFeedback({
+        type: 'success',
+        message: 'Informations de suivi enregistrées avec succès.',
+      });
+    } catch (error) {
+      setShippingFeedback({
+        type: 'error',
+        message:
+          error?.message || 'Impossible de mettre à jour les informations de suivi.',
+      });
+    } finally {
+      setShippingSavingFor('');
     }
   }
 
@@ -410,9 +504,7 @@ export default function AdminOrdersPage() {
         throw new Error(data?.message || "L'envoi de l'email a échoué.");
       }
 
-      window.alert(
-        `Email envoyé pour ${order.id} à ${order.customer.email}.`
-      );
+      window.alert(`Email envoyé pour ${order.id} à ${order.customer.email}.`);
     } catch (error) {
       window.alert(error?.message || "Impossible d'envoyer l'email.");
     } finally {
@@ -538,9 +630,7 @@ export default function AdminOrdersPage() {
                       key={status.value}
                       type="button"
                       className={`${styles.filterButton} ${
-                        activeFilter === status.value
-                          ? styles.filterButtonActive
-                          : ''
+                        activeFilter === status.value ? styles.filterButtonActive : ''
                       }`}
                       onClick={() => setActiveFilter(status.value)}
                     >
@@ -565,9 +655,7 @@ export default function AdminOrdersPage() {
 
               {isLoadingOrders ? (
                 <div className={styles.loadingContainer}>
-                  <div className={styles.loadingBox}>
-                    Chargement des commandes...
-                  </div>
+                  <div className={styles.loadingBox}>Chargement des commandes...</div>
                 </div>
               ) : ordersError ? (
                 <div className={styles.loadingContainer}>
@@ -610,12 +698,8 @@ export default function AdminOrdersPage() {
 
                         <div className={styles.orderAside}>
                           <div className={styles.orderPriceBlock}>
-                            <p className={styles.orderTotal}>
-                              {formatPrice(order.total)}
-                            </p>
-                            <p className={styles.paymentMethod}>
-                              {order.paymentMethod}
-                            </p>
+                            <p className={styles.orderTotal}>{formatPrice(order.total)}</p>
+                            <p className={styles.paymentMethod}>{order.paymentMethod}</p>
                           </div>
 
                           <button
@@ -665,7 +749,7 @@ export default function AdminOrdersPage() {
                           </span>
                         </button>
 
-                        {statusUpdatingFor === order.id ? (
+                        {statusUpdatingFor === order.id || shippingSavingFor === order.id ? (
                           <span className={styles.trackingBadge}>
                             <FiClock aria-hidden="true" />
                             <span>Mise à jour...</span>
@@ -698,9 +782,7 @@ export default function AdminOrdersPage() {
               <article className={styles.detailCard}>
                 <div className={styles.detailHero}>
                   <div>
-                    <h1 className={styles.detailTitle}>
-                      Commande {selectedOrder.id}
-                    </h1>
+                    <h1 className={styles.detailTitle}>Commande {selectedOrder.id}</h1>
                     <p className={styles.detailDate}>
                       {selectedOrder.placedAtLabel || 'Date indisponible'}
                     </p>
@@ -720,20 +802,16 @@ export default function AdminOrdersPage() {
 
                   <div className={styles.infoCard}>
                     <p>
-                      <strong>Nom :</strong>{' '}
-                      {getCustomerFullName(selectedOrder)}
+                      <strong>Nom :</strong> {getCustomerFullName(selectedOrder)}
                     </p>
                     <p>
-                      <strong>Email :</strong>{' '}
-                      {selectedOrder.customer.email}
+                      <strong>Email :</strong> {selectedOrder.customer.email}
                     </p>
                     <p>
-                      <strong>Téléphone :</strong>{' '}
-                      {selectedOrder.customer.phone || '—'}
+                      <strong>Téléphone :</strong> {selectedOrder.customer.phone || '—'}
                     </p>
                     <p>
-                      <strong>Adresse :</strong>{' '}
-                      {getAddressLabel(selectedOrder)}
+                      <strong>Adresse :</strong> {getAddressLabel(selectedOrder)}
                     </p>
                   </div>
                 </div>
@@ -743,8 +821,7 @@ export default function AdminOrdersPage() {
 
                   <div className={styles.infoCard}>
                     <p>
-                      {selectedOrder.notes ||
-                        'Aucune note laissée par la cliente.'}
+                      {selectedOrder.notes || 'Aucune note laissée par la cliente.'}
                     </p>
                   </div>
                 </div>
@@ -781,9 +858,7 @@ export default function AdminOrdersPage() {
                           </div>
                         </div>
 
-                        <p className={styles.itemTotal}>
-                          {formatPrice(item.lineTotal)}
-                        </p>
+                        <p className={styles.itemTotal}>{formatPrice(item.lineTotal)}</p>
                       </div>
                     ))}
                   </div>
@@ -799,8 +874,7 @@ export default function AdminOrdersPage() {
                     </div>
                     <div className={styles.paymentRow}>
                       <span>
-                        Frais de port (
-                        {selectedOrder.shippingMethod || 'Livraison'})
+                        Frais de port ({selectedOrder.shippingMethod || 'Livraison'})
                       </span>
                       <span>{formatPrice(selectedOrder.shippingAmount)}</span>
                     </div>
@@ -808,9 +882,7 @@ export default function AdminOrdersPage() {
                       <strong>Mode de paiement</strong>
                       <span>{selectedOrder.paymentMethod}</span>
                     </div>
-                    <div
-                      className={`${styles.paymentRow} ${styles.paymentTotalRow}`}
-                    >
+                    <div className={`${styles.paymentRow} ${styles.paymentTotalRow}`}>
                       <strong>Total</strong>
                       <strong className={styles.paymentTotalValue}>
                         {formatPrice(selectedOrder.total)}
@@ -820,12 +892,116 @@ export default function AdminOrdersPage() {
                 </div>
 
                 <div className={styles.detailSection}>
+                  <h2 className={styles.sectionTitle}>Suivi de commande</h2>
+
+                  <div className={styles.emailPanel}>
+                    <label className={styles.emailLabel} htmlFor="order-shipping-carrier">
+                      Transporteur
+                    </label>
+                    <input
+                      id="order-shipping-carrier"
+                      type="text"
+                      className={styles.statusSelect}
+                      value={shippingForm.carrier}
+                      onChange={(event) =>
+                        setShippingForm((current) => ({
+                          ...current,
+                          carrier: event.target.value,
+                        }))
+                      }
+                      placeholder="Ex. : Mondial Relay"
+                      disabled={shippingSavingFor === selectedOrder.id}
+                    />
+
+                    <label
+                      className={styles.emailLabel}
+                      htmlFor="order-shipping-tracking-number"
+                    >
+                      Numéro de suivi
+                    </label>
+                    <input
+                      id="order-shipping-tracking-number"
+                      type="text"
+                      className={styles.statusSelect}
+                      value={shippingForm.trackingNumber}
+                      onChange={(event) =>
+                        setShippingForm((current) => ({
+                          ...current,
+                          trackingNumber: event.target.value,
+                        }))
+                      }
+                      placeholder="Ex. : 12345678"
+                      disabled={shippingSavingFor === selectedOrder.id}
+                    />
+
+                    <label className={styles.emailLabel} htmlFor="order-shipping-tracking-url">
+                      Lien de suivi
+                    </label>
+                    <input
+                      id="order-shipping-tracking-url"
+                      type="text"
+                      className={styles.statusSelect}
+                      value={shippingForm.trackingUrl}
+                      onChange={(event) =>
+                        setShippingForm((current) => ({
+                          ...current,
+                          trackingUrl: event.target.value,
+                        }))
+                      }
+                      placeholder="Ex. : https://www.mondialrelay.fr/suivi-de-colis/"
+                      disabled={shippingSavingFor === selectedOrder.id}
+                    />
+
+                    {selectedOrder.trackingUrl ? (
+                      <p className={styles.emailPanelHint}>
+                        Lien actuel :
+                        {' '}
+                        <a
+                          href={selectedOrder.trackingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Ouvrir le suivi
+                        </a>
+                      </p>
+                    ) : null}
+
+                    {shippingFeedback.message ? (
+                      <p
+                        className={`${styles.emailFeedback} ${
+                          shippingFeedback.type === 'success'
+                            ? styles.emailFeedbackSuccess
+                            : styles.emailFeedbackError
+                        }`}
+                      >
+                        {shippingFeedback.message}
+                      </p>
+                    ) : null}
+
+                    <div className={styles.emailPanelActions}>
+                      <button
+                        type="button"
+                        className={styles.emailButton}
+                        onClick={handleSaveShipping}
+                        disabled={shippingSavingFor === selectedOrder.id}
+                      >
+                        <FiTruck aria-hidden="true" />
+                        <span>
+                          {shippingSavingFor === selectedOrder.id
+                            ? 'Enregistrement...'
+                            : 'Enregistrer le suivi'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.detailSection}>
                   <h2 className={styles.sectionTitle}>Envoyer un email</h2>
 
                   <div className={styles.emailPanel}>
                     <p className={styles.emailPanelText}>
-                      Destinataire client :{' '}
-                      <strong>{selectedOrder.customer.email}</strong>
+                      Destinataire client : <strong>{selectedOrder.customer.email}</strong>
                     </p>
                     <p className={styles.emailPanelHint}>
                       Cet email sera envoyé directement à la cliente à l&apos;adresse
@@ -843,9 +1019,7 @@ export default function AdminOrdersPage() {
                       id="order-email-message"
                       className={styles.emailTextarea}
                       value={detailEmailMessage}
-                      onChange={(event) =>
-                        setDetailEmailMessage(event.target.value)
-                      }
+                      onChange={(event) => setDetailEmailMessage(event.target.value)}
                       rows={8}
                     />
 
@@ -898,8 +1072,7 @@ export default function AdminOrdersPage() {
                     {STATUS_OPTIONS.map((option) => {
                       const Icon = option.icon;
                       const isActive = selectedOrder.status === option.value;
-                      const isUpdating =
-                        statusUpdatingFor === selectedOrder.id;
+                      const isUpdating = statusUpdatingFor === selectedOrder.id;
 
                       return (
                         <button
@@ -909,10 +1082,7 @@ export default function AdminOrdersPage() {
                             isActive ? styles.statusTabActive : ''
                           }`}
                           onClick={() =>
-                            handleStatusChange(
-                              selectedOrder.id,
-                              option.value
-                            )
+                            handleStatusChange(selectedOrder.id, option.value)
                           }
                           disabled={isUpdating}
                         >
