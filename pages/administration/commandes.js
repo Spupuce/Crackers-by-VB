@@ -42,6 +42,8 @@ const CARRIER_OPTIONS = [
   { value: 'Autre', label: 'Autre' },
 ];
 
+const AUTO_TRACKING_CARRIERS = ['Mondial Relay', 'Colissimo', 'Chronopost'];
+
 function formatPrice(value) {
   return `${Number(value || 0).toFixed(2)} €`;
 }
@@ -132,6 +134,10 @@ function getPaymentMethodLabel(order) {
   return 'Paiement';
 }
 
+function isAutoTrackingCarrier(carrier) {
+  return AUTO_TRACKING_CARRIERS.includes(carrier);
+}
+
 function normalizeAdminOrder(apiOrder) {
   const items = Array.isArray(apiOrder?.items)
     ? apiOrder.items.map((item) => ({
@@ -210,6 +216,7 @@ export default function AdminOrdersPage() {
   });
 
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+  const selectedCarrierUsesAutoTracking = isAutoTrackingCarrier(shippingForm.carrier);
 
   useEffect(() => {
     if (!isAuthReady) {
@@ -309,6 +316,15 @@ export default function AdminOrdersPage() {
       setSelectedOrderId(null);
     }
   }, [orders, selectedOrderId]);
+
+  useEffect(() => {
+    if (selectedCarrierUsesAutoTracking && shippingForm.trackingUrl) {
+      setShippingForm((current) => ({
+        ...current,
+        trackingUrl: '',
+      }));
+    }
+  }, [selectedCarrierUsesAutoTracking, shippingForm.trackingUrl]);
 
   const filteredOrders = useMemo(() => {
     if (activeFilter === 'all') {
@@ -432,7 +448,7 @@ export default function AdminOrdersPage() {
           status: selectedOrder.status,
           carrier: shippingForm.carrier,
           trackingNumber: shippingForm.trackingNumber,
-          trackingUrl: shippingForm.trackingUrl,
+          trackingUrl: selectedCarrierUsesAutoTracking ? '' : shippingForm.trackingUrl,
         }),
       });
 
@@ -951,22 +967,43 @@ export default function AdminOrdersPage() {
                     <label className={styles.emailLabel} htmlFor="order-shipping-tracking-url">
                       Lien de suivi
                     </label>
-                    <input
-                      id="order-shipping-tracking-url"
-                      type="text"
-                      className={styles.statusSelect}
-                      value={shippingForm.trackingUrl}
-                      onChange={(event) =>
-                        setShippingForm((current) => ({
-                          ...current,
-                          trackingUrl: event.target.value,
-                        }))
-                      }
-                      placeholder="Ex. : https://www.mondialrelay.fr/suivi-de-colis/"
-                      disabled={shippingSavingFor === selectedOrder.id}
-                    />
+                    {selectedCarrierUsesAutoTracking ? (
+                      <div className={styles.infoCard}>
+                        <p>
+                          Le lien de suivi sera généré automatiquement à l&apos;enregistrement
+                          à partir du transporteur et du numéro de suivi.
+                        </p>
+                        {selectedOrder.trackingUrl ? (
+                          <p>
+                            <strong>Lien actuel :</strong>{' '}
+                            <a
+                              href={selectedOrder.trackingUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Ouvrir le suivi
+                            </a>
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <input
+                        id="order-shipping-tracking-url"
+                        type="text"
+                        className={styles.statusSelect}
+                        value={shippingForm.trackingUrl}
+                        onChange={(event) =>
+                          setShippingForm((current) => ({
+                            ...current,
+                            trackingUrl: event.target.value,
+                          }))
+                        }
+                        placeholder="Ex. : https://www.transporteur.fr/suivi"
+                        disabled={shippingSavingFor === selectedOrder.id}
+                      />
+                    )}
 
-                    {selectedOrder.trackingUrl ? (
+                    {!selectedCarrierUsesAutoTracking && selectedOrder.trackingUrl ? (
                       <p className={styles.emailPanelHint}>
                         Lien actuel :{' '}
                         <a
