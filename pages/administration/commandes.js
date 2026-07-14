@@ -114,6 +114,26 @@ function formatPlacedAtLabel(value) {
   })}`;
 }
 
+function formatEmailSentAt(value) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function getPaymentMethodLabel(order) {
   if (order.paymentStatus === 'paid') {
     return 'Carte bancaire';
@@ -136,6 +156,35 @@ function getPaymentMethodLabel(order) {
 
 function isAutoTrackingCarrier(carrier) {
   return AUTO_TRACKING_CARRIERS.includes(carrier);
+}
+
+function getStatusEmailInfo(order) {
+  const statusEmail = order?.statusEmail || {};
+  const sentForStatus = statusEmail?.sentForStatus || '';
+  const sent = Boolean(statusEmail?.sent) && sentForStatus === order.status;
+  const sentAt = statusEmail?.sentAt || '';
+
+  return {
+    sent,
+    sentAt,
+    sentForStatus,
+  };
+}
+
+function getStatusEmailLabel(order) {
+  const { sent, sentAt } = getStatusEmailInfo(order);
+
+  if (!sent) {
+    return `Mail "${getStatusLabel(order.status)}" non envoyé`;
+  }
+
+  const formattedSentAt = formatEmailSentAt(sentAt);
+
+  if (!formattedSentAt) {
+    return `Mail "${getStatusLabel(order.status)}" envoyé`;
+  }
+
+  return `Mail "${getStatusLabel(order.status)}" envoyé le ${formattedSentAt}`;
 }
 
 function normalizeAdminOrder(apiOrder) {
@@ -180,6 +229,11 @@ function normalizeAdminOrder(apiOrder) {
     shippingCarrier: apiOrder.shipping?.carrier || '',
     shippingMethod: apiOrder.shipping?.method || apiOrder.shipping?.carrier || 'Livraison',
     notes: apiOrder.notes || '',
+    statusEmail: {
+      sent: Boolean(apiOrder.statusEmail?.sent),
+      sentAt: apiOrder.statusEmail?.sentAt || '',
+      sentForStatus: apiOrder.statusEmail?.sentForStatus || '',
+    },
     items,
   };
 }
@@ -431,6 +485,12 @@ export default function AdminOrdersPage() {
       return;
     }
 
+    const trimmedTrackingNumber = shippingForm.trackingNumber.trim();
+    const nextStatus =
+      selectedOrder.status === 'pending' && trimmedTrackingNumber
+        ? 'shipped'
+        : selectedOrder.status;
+
     setShippingSavingFor(selectedOrder.id);
     setShippingFeedback({ type: '', message: '' });
 
@@ -441,9 +501,9 @@ export default function AdminOrdersPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: selectedOrder.status,
+          status: nextStatus,
           carrier: shippingForm.carrier,
-          trackingNumber: shippingForm.trackingNumber,
+          trackingNumber: trimmedTrackingNumber,
           trackingUrl: selectedCarrierUsesAutoTracking ? '' : shippingForm.trackingUrl,
         }),
       });
@@ -472,7 +532,10 @@ export default function AdminOrdersPage() {
 
       setShippingFeedback({
         type: 'success',
-        message: 'Informations de suivi enregistrées avec succès.',
+        message:
+          nextStatus !== selectedOrder.status
+            ? 'Suivi enregistré et statut mis à jour en "Expédiée".'
+            : 'Informations de suivi enregistrées avec succès.',
       });
     } catch (error) {
       setShippingFeedback({
@@ -487,6 +550,7 @@ export default function AdminOrdersPage() {
 
   async function handleEmail(order) {
     setEmailSendingFor(order.id);
+    setStatusFeedback({ type: '', message: '' });
 
     try {
       const response = await fetch('/api/admin/orders/send-test-email', {
@@ -512,9 +576,17 @@ export default function AdminOrdersPage() {
         throw new Error(data?.message || "L'envoi de l'email a échoué.");
       }
 
-      window.alert(`Email envoyé pour ${order.id} à ${order.customer.email}.`);
+      await loadOrders({ keepLoadingState: false });
+
+      setStatusFeedback({
+        type: 'success',
+        message: `Email envoyé pour ${order.id} à ${order.customer.email}.`,
+      });
     } catch (error) {
-      window.alert(error?.message || "Impossible d'envoyer l'email.");
+      setStatusFeedback({
+        type: 'error',
+        message: error?.message || "Impossible d'envoyer l'email.",
+      });
     } finally {
       setEmailSendingFor('');
     }
@@ -551,6 +623,15 @@ export default function AdminOrdersPage() {
 
       if (!response.ok) {
         throw new Error(data?.message || "L'envoi de l'email a échoué.");
+      }
+
+      const refreshedOrders = await loadOrders({ keepLoadingState: false });
+      const refreshedOrder = refreshedOrders.find(
+        (order) => order.id === selectedOrder.id
+      );
+
+      if (refreshedOrder) {
+        setDetailEmailMessage(getDefaultEmailMessage(refreshedOrder));
       }
 
       setDetailEmailFeedback({
@@ -677,100 +758,107 @@ export default function AdminOrdersPage() {
                 </div>
               ) : (
                 <div className={styles.ordersList}>
-                  {filteredOrders.map((order) => (
-                    <article key={order.id} className={styles.orderCard}>
-                      <div className={styles.orderTop}>
-                        <div className={styles.orderMain}>
-                          <div className={styles.orderHeaderRow}>
-                            <h2 className={styles.orderNumber}>{order.id}</h2>
-                            <span
-                              className={`${styles.statusBadge} ${
-                                styles[`status-${order.status}`]
-                              }`}
-                            >
-                              {getStatusLabel(order.status)}
-                            </span>
+                  {filteredOrders.map((order) => {
+                    const statusEmailInfo = getStatusEmailInfo(order);
+
+                    return (
+                      <article key={order.id} className={styles.orderCard}>
+                        <div className={styles.orderTop}>
+                          <div className={styles.orderMain}>
+                            <div className={styles.orderHeaderRow}>
+                              <h2 className={styles.orderNumber}>{order.id}</h2>
+                              <span
+                                className={`${styles.statusBadge} ${
+                                  styles[`status-${order.status}`]
+                                }`}
+                              >
+                                {getStatusLabel(order.status)}
+                              </span>
+                            </div>
+
+                            <div className={styles.orderMeta}>
+                              <p>
+                                Client : <strong>{getCustomerFullName(order)}</strong>
+                              </p>
+                              <p>Date : {order.date || '—'}</p>
+                              <p>
+                                {order.itemsCount} article
+                                {order.itemsCount > 1 ? 's' : ''}
+                              </p>
+                              <p>
+                                {statusEmailInfo.sent ? 'Mail statut envoyé' : 'Mail statut non envoyé'}
+                              </p>
+                            </div>
                           </div>
 
-                          <div className={styles.orderMeta}>
-                            <p>
-                              Client : <strong>{getCustomerFullName(order)}</strong>
-                            </p>
-                            <p>Date : {order.date || '—'}</p>
-                            <p>
-                              {order.itemsCount} article
-                              {order.itemsCount > 1 ? 's' : ''}
-                            </p>
+                          <div className={styles.orderAside}>
+                            <div className={styles.orderPriceBlock}>
+                              <p className={styles.orderTotal}>{formatPrice(order.total)}</p>
+                              <p className={styles.paymentMethod}>{order.paymentMethod}</p>
+                            </div>
+
+                            <button
+                              type="button"
+                              className={styles.viewButton}
+                              aria-label={`Voir la commande ${order.id}`}
+                              onClick={() => setSelectedOrderId(order.id)}
+                            >
+                              <FiEye aria-hidden="true" />
+                            </button>
                           </div>
                         </div>
 
-                        <div className={styles.orderAside}>
-                          <div className={styles.orderPriceBlock}>
-                            <p className={styles.orderTotal}>{formatPrice(order.total)}</p>
-                            <p className={styles.paymentMethod}>{order.paymentMethod}</p>
-                          </div>
+                        <div className={styles.separator} />
+
+                        <div className={styles.orderActions}>
+                          <select
+                            className={styles.statusSelect}
+                            value={order.status}
+                            onChange={(event) =>
+                              handleStatusChange(order.id, event.target.value)
+                            }
+                            aria-label={`Changer le statut de la commande ${order.id}`}
+                            disabled={statusUpdatingFor === order.id}
+                          >
+                            {STATUS_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
 
                           <button
                             type="button"
-                            className={styles.viewButton}
-                            aria-label={`Voir la commande ${order.id}`}
-                            onClick={() => setSelectedOrderId(order.id)}
+                            className={styles.emailButton}
+                            onClick={() => handleEmail(order)}
+                            disabled={
+                              emailSendingFor === order.id ||
+                              statusUpdatingFor === order.id
+                            }
                           >
-                            <FiEye aria-hidden="true" />
+                            <FiMail aria-hidden="true" />
+                            <span>
+                              {emailSendingFor === order.id
+                                ? 'Envoi en cours...'
+                                : 'Envoyer un email'}
+                            </span>
                           </button>
+
+                          {statusUpdatingFor === order.id || shippingSavingFor === order.id ? (
+                            <span className={styles.trackingBadge}>
+                              <FiClock aria-hidden="true" />
+                              <span>Mise à jour...</span>
+                            </span>
+                          ) : order.trackingNumber ? (
+                            <span className={styles.trackingBadge}>
+                              <FiTruck aria-hidden="true" />
+                              <span>Suivi : {order.trackingNumber}</span>
+                            </span>
+                          ) : null}
                         </div>
-                      </div>
-
-                      <div className={styles.separator} />
-
-                      <div className={styles.orderActions}>
-                        <select
-                          className={styles.statusSelect}
-                          value={order.status}
-                          onChange={(event) =>
-                            handleStatusChange(order.id, event.target.value)
-                          }
-                          aria-label={`Changer le statut de la commande ${order.id}`}
-                          disabled={statusUpdatingFor === order.id}
-                        >
-                          {STATUS_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-
-                        <button
-                          type="button"
-                          className={styles.emailButton}
-                          onClick={() => handleEmail(order)}
-                          disabled={
-                            emailSendingFor === order.id ||
-                            statusUpdatingFor === order.id
-                          }
-                        >
-                          <FiMail aria-hidden="true" />
-                          <span>
-                            {emailSendingFor === order.id
-                              ? 'Envoi en cours...'
-                              : 'Envoyer un email'}
-                          </span>
-                        </button>
-
-                        {statusUpdatingFor === order.id || shippingSavingFor === order.id ? (
-                          <span className={styles.trackingBadge}>
-                            <FiClock aria-hidden="true" />
-                            <span>Mise à jour...</span>
-                          </span>
-                        ) : order.trackingNumber ? (
-                          <span className={styles.trackingBadge}>
-                            <FiTruck aria-hidden="true" />
-                            <span>Suivi : {order.trackingNumber}</span>
-                          </span>
-                        ) : null}
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -1037,6 +1125,7 @@ export default function AdminOrdersPage() {
                       Cet email sera envoyé directement à la cliente à l&apos;adresse
                       ci-dessus.
                     </p>
+                    <p className={styles.emailPanelHint}>{getStatusEmailLabel(selectedOrder)}</p>
 
                     <label className={styles.emailLabel} htmlFor="order-email-message">
                       Message

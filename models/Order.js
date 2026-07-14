@@ -43,6 +43,32 @@ const OrderItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const StatusEmailSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: ['', 'pending', 'preparing', 'shipped', 'delivered', 'cancelled'],
+      default: '',
+      trim: true,
+    },
+    sentAt: {
+      type: Date,
+      default: null,
+    },
+    recipient: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    messageId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     userId: {
@@ -188,6 +214,11 @@ const OrderSchema = new mongoose.Schema(
         type: Date,
         default: null,
       },
+    },
+
+    statusEmail: {
+      type: StatusEmailSchema,
+      default: () => ({}),
     },
   },
   {

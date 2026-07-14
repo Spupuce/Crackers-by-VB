@@ -1,5 +1,6 @@
 # Liste de tâches du projet
 
+
 ## Légende des statuts
 - ✅ Terminé
 - 🟡 En cours / à valider
@@ -9,10 +10,12 @@
 
 ## 1. Administration et navigation admin
 
+
 ### 1.1 Navigation pour les comptes admin
 - ✅ Navbar admin avec accès à l’accueil, la boutique, le stock, les commandes et les fiches clients.
 - ✅ Permettre à l’admin de naviguer sur le site comme un client tout en gardant un accès clair à l’espace de gestion.
 - ✅ Définir le comportement global selon le rôle connecté : visiteur, client, admin.
+
 
 ### 1.2 Navigation cohérente avec l’état de connexion
 - ✅ Affichage des liens adapté selon le rôle.
@@ -23,6 +26,7 @@
   - `/administration/commandes`
   - `/administration/clients`
 
+
 ### 1.3 Finaliser l’administration
 - ✅ Consolider la page stock (harmonisation visuelle globale avec les autres pages admin).
 - ✅ Vérifier les actions admin sur produits actifs / archivés.
@@ -31,24 +35,30 @@
 - ✅ Corriger la logique de stock partagée pour gérer correctement les déclinaisons couleur partout.
 - ✅ Mieux intégrer les demandes de réassort dans l’admin stock.
 
+
 ---
 
+
 ## 2. Produits, stock et promotions
+
 
 ### 2.1 Prix promo dans l’administration produit
 - ✅ Ajouter un champ `prix promo` à droite du prix dans le formulaire produit.
 - ✅ Définir si la valeur est optionnelle et comment elle est stockée en base.
 - ✅ Vérifier l’impact sur la création, l’édition, l’affichage admin et les API produits.
 
+
 ### 2.2 Affichage promo côté front
 - ✅ Afficher le prix normal barré et le prix promo quand un prix promo est renseigné.
 - ✅ Vérifier cet affichage sur la page boutique, la fiche produit et toutes les cartes produit concernées.
 - ✅ S’assurer que les calculs restent cohérents partout.
 
+
 ### 2.3 Filtre “prix promo” sur la boutique
 - ✅ Permettre de filtrer uniquement les produits en promotion.
 - ✅ Vérifier la compatibilité avec les autres filtres existants.
 - ✅ Valider définitivement si le filtrage reste dynamique ou passe par un bouton d’application global.
+
 
 ### 2.4 Variantes couleur et galerie produit
 - ✅ Permettre l’ajout au panier par couleur sur la fiche produit.
@@ -59,11 +69,13 @@
 - ✅ Vérifier la cohérence complète de l’affichage variante/couleur sur le drawer panier.
 - ✅ Vérifier la cohérence complète de l’affichage variante/couleur sur la page `/panier`.
 
+
 ### 2.5 Réassort et notifications email
 - ✅ Valider le tunnel complet “Me prévenir quand disponible” → demande enregistrée → admin stock → “Notifier maintenant”.
 - ✅ Vérifier l’envoi réel des notifications de retour en stock sur différentes messageries, dont Gmail.
 - ✅ Clarifier la règle métier : notifier immédiatement à la remise en stock ou uniquement via action admin “Notifier maintenant”.
 - ✅ Vérifier qu’une même demande de réassort n’est pas notifiée plusieurs fois après envoi.
+
 
 ### 2.6 Réassort par couleur
 - ✅ Définir la règle métier des demandes de réassort au niveau couleur pour les produits à variantes.
@@ -90,7 +102,9 @@
 - ✅ Vérifier tous les comportements de notification / DMARC / Gmail autour des demandes de réassort par couleur.
 - ✅ Archiver les couleurs en remplacement de la suppression.
 
+
 ---
+
 
 ## 3. Paiement et commandes
 
@@ -110,6 +124,9 @@
 - ✅ Tester qu’une commande validée crée bien une entrée MongoDB exploitable.
 - ✅ Rendre persistant le changement de statut des commandes depuis `/administration/commandes`.
 - 🟡 Ajouter plus tard une vraie édition du suivi (trackingNumber / trackingUrl) côté admin, avec éventuellement des règles simples (par exemple : proposer d’ajouter un numéro de suivi quand on passe à “Expédiée”).
+- 🟡 Ajouter un champ structuré pour tracer l’envoi du dernier email de statut de commande.
+- 🔴 Vérifier la cohérence entre le statut de commande enregistré et le dernier email de statut envoyé.
+
 
 ### 3.3 Simulation d’achat de bout en bout
 - ✅ Se connecter avec un compte utilisateur de test.
@@ -131,6 +148,7 @@
 - 🟡 Vérifier la délivrabilité des emails transactionnels sur Gmail.
 - 🔴 Intégrer virement dans Stripe si possible.
 
+
 ### 3.4 Frais de port
 - ✅ Définir la règle métier des frais de port (fixes, par seuil, par poids ou par type de produit).
 - ✅ Intégrer le calcul des frais de port dans le panier.
@@ -139,16 +157,27 @@
 - ✅ Afficher distinctement sous-total, livraison et total dans `/panier`, Stripe, `mon-compte` et l’administration.
 - 🟡 Vérifier la cohérence des frais de port entre front, webhook et MongoDB.
 
+
 ### 3.5 Commandes admin
 - ✅ Afficher les commandes Stripe réelles dans `/administration/commandes`.
 - 🟡 Vérifier la compatibilité entre les commandes seedées et les commandes MongoDB réelles.
 - 🔴 Harmoniser les statuts réels (pending, paid, processing, etc.) avec les filtres visuels admin.
 - 🔴 Vérifier le tri par date et l’affichage du client, du total et du paiement.
 - 🟡 Ajouter les suivi des commandes via Mondial Relay.
+- 🔴 Étendre le suivi des commandes via Colissimo et Chronopost.
+- 🔴 Ajouter un bouton admin “Actualiser le suivi” sur les commandes expédiées.
+- 🔴 Interroger l’API transporteur au clic sur “Actualiser le suivi”.
+- 🔴 Mettre à jour automatiquement le statut `delivered` quand le transporteur confirme la livraison.
+- 🔴 Renseigner automatiquement `shipping.deliveredAt` lors du passage automatique à `delivered`.
+- 🔴 Vérifier la cohérence entre `status`, `shippedAt`, `deliveredAt`, `trackingNumber`, `trackingUrl` et le retour transporteur.
+- 🔴 Définir le comportement si le transporteur ne renvoie aucun statut exploitable ou une erreur API.
+- 🔴 Définir si l’email client “Livrée” est envoyé automatiquement ou reste manuel après détection transporteur.
+- 🔴 Vérifier la compatibilité de l’actualisation du suivi avec Mondial Relay, Colissimo et Chronopost.
 
 ---
 
 ## 4. Compte utilisateur et données liées
+
 
 ### 4.1 Suppression propre des données liées
 - ✅ Ajouter une route API sécurisée de suppression de compte avec confirmation par mot de passe.
@@ -160,6 +189,7 @@
 - ✅ Définir la règle métier : supprimer les commandes ou conserver l’historique en anonymisant le lien utilisateur.
 - ✅ Tester la suppression complète avec un compte de test.
 
+
 ### 4.2 Cohérence des données visibles
 - ✅ Déconnecter automatiquement l’utilisateur après suppression du compte.
 - ✅ Rediriger l’utilisateur vers l’accueil après suppression du compte.
@@ -168,7 +198,9 @@
 - ✅ Vérifier qu’aucune donnée supprimée ne reste visible dans le panier.
 - ✅ Contrôler la cohérence entre compte, favoris, panier et commandes après suppression.
 
+
 ---
+
 
 ## 5. Points complémentaires à intégrer
 
@@ -201,6 +233,9 @@
 - 🔴 Vérifier l’affichage des commandes réelles côté administration.
 - 🔴 Vérifier qu’une commande payée apparaît aussi côté compte client.
 - 🔴 Tester un rejeu webhook Stripe pour contrôler l’anti-doublon.
+- 🔴 Tester l’actualisation manuelle du suivi transporteur depuis l’administration.
+- 🔴 Vérifier la mise à jour automatique à `delivered` après retour API transporteur.
+- 🔴 Vérifier les cas limites de suivi : numéro invalide, API indisponible, statut inconnu, commande déjà livrée.
 
 ### 6.2 Audit
 - 🔴 Audit UX du parcours achat.
@@ -216,6 +251,8 @@
 - 🔴 Définir quels emails restent manuels et lesquels doivent devenir automatiques.
 - 🟡 Mettre en place SPF, DKIM et DMARC valides pour crackersbyvb.fr (SPF + DKIM OK, DMARC p=none + rua configuré).
 - 🔴 Vérifier la délivrabilité des emails de retour en stock vers Gmail (SPF, DKIM, DMARC, réputation IP).
+- 🔴 Vérifier la robustesse de la mise à jour automatique du statut livré en cas d’erreur ou d’indisponibilité API transporteur.
+- 🔴 Vérifier la cohérence entre statut interne de commande et statuts remontés par les transporteurs.
 
 ### 6.3 Déploiement sur o2switch
 - 🔴 Préparer l’environnement de production.
@@ -224,3 +261,4 @@
 - 🔴 Vérifier les URLs de retour Stripe en production.
 - 🔴 Refaire un test complet post-déploiement.
 - 🔴 Contrôler formulaires, panier, commandes, compte et administration en environnement réel.
+- 🔴 Vérifier en production l’accès aux APIs transporteurs pour l’actualisation manuelle du suivi.
