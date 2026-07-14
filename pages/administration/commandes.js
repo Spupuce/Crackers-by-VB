@@ -1,240 +1,26 @@
+// pages/administration/commandes.js
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
-import {
-  FiArrowLeft,
-  FiCheckCircle,
-  FiClock,
-  FiEye,
-  FiMail,
-  FiPackage,
-  FiTruck,
-} from 'react-icons/fi';
+import { FiArrowLeft, FiMail, FiClock, FiTruck } from 'react-icons/fi';
 import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import AdminOrdersList from '../../components/admin/orders/AdminOrdersList';
 import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/AdminOrders.module.css';
-
-const ORDER_STATUSES = [
-  { value: 'all', label: 'Toutes', icon: null },
-  { value: 'pending', label: 'En attente', icon: FiClock },
-  { value: 'preparing', label: 'En préparation', icon: FiPackage },
-  { value: 'shipped', label: 'Expédiée', icon: FiTruck },
-  { value: 'delivered', label: 'Livrée', icon: FiCheckCircle },
-];
-
-const STATUS_OPTIONS = [
-  { value: 'pending', label: 'En attente', icon: FiClock },
-  { value: 'preparing', label: 'En préparation', icon: FiPackage },
-  { value: 'shipped', label: 'Expédiée', icon: FiTruck },
-  { value: 'delivered', label: 'Livrée', icon: FiCheckCircle },
-];
-
-const CARRIER_OPTIONS = [
-  { value: '', label: 'Sélectionner un transporteur' },
-  { value: 'Mondial Relay', label: 'Mondial Relay' },
-  { value: 'Colissimo', label: 'Colissimo' },
-  { value: 'Chronopost', label: 'Chronopost' },
-  { value: 'Lettre Suivie', label: 'Lettre Suivie' },
-  { value: 'Colis Privé', label: 'Colis Privé' },
-  { value: 'Autre', label: 'Autre' },
-];
-
-const AUTO_TRACKING_CARRIERS = ['Mondial Relay', 'Colissimo', 'Chronopost'];
-
-function formatPrice(value) {
-  return `${Number(value || 0).toFixed(2)} €`;
-}
-
-function getStatusLabel(status) {
-  return STATUS_OPTIONS.find((option) => option.value === status)?.label || status;
-}
-
-function getCustomerFullName(order) {
-  return `${order.customer.firstName} ${order.customer.lastName}`.trim();
-}
-
-function getAddressLabel(order) {
-  const { addressLine1, addressLine2, postalCode, city, country } = order.shippingAddress;
-
-  return [addressLine1, addressLine2, `${postalCode} ${city}`, country]
-    .filter(Boolean)
-    .join(', ');
-}
-
-function getDefaultEmailMessage(order) {
-  const statusLabel = getStatusLabel(order.status);
-
-  if (order.status === 'shipped') {
-    return `Bonjour ${getCustomerFullName(order)},\n\nVotre commande ${order.id} a bien été expédiée.\n${
-      order.trackingNumber ? `Votre numéro de suivi : ${order.trackingNumber}\n` : ''
-    }${order.trackingUrl ? `Suivre mon colis : ${order.trackingUrl}\n` : ''}\nBelle journée,\nCrackers by VB`;
-  }
-
-  if (order.status === 'delivered') {
-    return `Bonjour ${getCustomerFullName(
-      order
-    )},\n\nVotre commande ${order.id} a bien été livrée.\nNous espérons qu'elle vous plaît.\n\nBelle journée,\nCrackers by VB`;
-  }
-
-  return `Bonjour ${getCustomerFullName(
-    order
-  )},\n\nNous vous contactons au sujet de votre commande ${
-    order.id
-  }.\nStatut actuel : ${statusLabel}.\n\nBelle journée,\nCrackers by VB`;
-}
-
-function formatOrderDate(value) {
-  if (!value) return '';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return date.toLocaleDateString('fr-FR');
-}
-
-function formatPlacedAtLabel(value) {
-  if (!value) return '';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return `Passée le ${date.toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })}`;
-}
-
-function formatEmailSentAt(value) {
-  if (!value) {
-    return '';
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return date.toLocaleString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function getPaymentMethodLabel(order) {
-  if (order.paymentStatus === 'paid') {
-    return 'Carte bancaire';
-  }
-
-  if (order.paymentStatus === 'pending') {
-    return 'Paiement en attente';
-  }
-
-  if (order.paymentStatus === 'failed') {
-    return 'Paiement échoué';
-  }
-
-  if (order.paymentStatus === 'refunded') {
-    return 'Paiement remboursé';
-  }
-
-  return 'Paiement';
-}
-
-function isAutoTrackingCarrier(carrier) {
-  return AUTO_TRACKING_CARRIERS.includes(carrier);
-}
-
-function getStatusEmailInfo(order) {
-  const statusEmail = order?.statusEmail || {};
-  const sentForStatus = statusEmail?.sentForStatus || '';
-  const sent = Boolean(statusEmail?.sent) && sentForStatus === order.status;
-  const sentAt = statusEmail?.sentAt || '';
-
-  return {
-    sent,
-    sentAt,
-    sentForStatus,
-  };
-}
-
-function getStatusEmailLabel(order) {
-  const { sent, sentAt } = getStatusEmailInfo(order);
-
-  if (!sent) {
-    return `Mail "${getStatusLabel(order.status)}" non envoyé`;
-  }
-
-  const formattedSentAt = formatEmailSentAt(sentAt);
-
-  if (!formattedSentAt) {
-    return `Mail "${getStatusLabel(order.status)}" envoyé`;
-  }
-
-  return `Mail "${getStatusLabel(order.status)}" envoyé le ${formattedSentAt}`;
-}
-
-function normalizeAdminOrder(apiOrder) {
-  const items = Array.isArray(apiOrder?.items)
-    ? apiOrder.items.map((item) => ({
-        name: item.name || '',
-        quantity: Number(item.quantity || 0),
-        unitPrice: Number(item.unitPrice || 0),
-        lineTotal: Number(item.unitPrice || 0) * Number(item.quantity || 0),
-        imageUrl: item.imageUrl || '',
-        color: item.color || '',
-      }))
-    : [];
-
-  return {
-    id: apiOrder.orderNumber || apiOrder._id || '',
-    sourceId: apiOrder._id || '',
-    customer: {
-      firstName: apiOrder.customer?.firstName || '',
-      lastName: apiOrder.customer?.lastName || '',
-      email: apiOrder.customer?.email || '',
-      phone: apiOrder.customer?.phone || '',
-    },
-    shippingAddress: {
-      addressLine1: apiOrder.shippingAddress?.addressLine1 || '',
-      addressLine2: apiOrder.shippingAddress?.addressLine2 || '',
-      postalCode: apiOrder.shippingAddress?.postalCode || '',
-      city: apiOrder.shippingAddress?.city || '',
-      country: apiOrder.shippingAddress?.country || '',
-    },
-    date: formatOrderDate(apiOrder.createdAt),
-    placedAtLabel: formatPlacedAtLabel(apiOrder.createdAt),
-    itemsCount: items.reduce((sum, item) => sum + item.quantity, 0),
-    subtotal: Number(apiOrder.subtotalAmount || 0),
-    shippingAmount: Number(apiOrder.shippingAmount || 0),
-    total: Number(apiOrder.totalAmount || 0),
-    paymentMethod: getPaymentMethodLabel(apiOrder),
-    paymentStatus: apiOrder.paymentStatus || 'pending',
-    status: apiOrder.status || 'pending',
-    trackingNumber: apiOrder.shipping?.trackingNumber || '',
-    trackingUrl: apiOrder.shipping?.trackingUrl || '',
-    shippingCarrier: apiOrder.shipping?.carrier || '',
-    shippingMethod: apiOrder.shipping?.method || apiOrder.shipping?.carrier || 'Livraison',
-    notes: apiOrder.notes || '',
-    statusEmail: {
-      sent: Boolean(apiOrder.statusEmail?.sent),
-      sentAt: apiOrder.statusEmail?.sentAt || '',
-      sentForStatus: apiOrder.statusEmail?.sentForStatus || '',
-    },
-    items,
-  };
-}
+import {
+  CARRIER_OPTIONS,
+  STATUS_OPTIONS,
+  formatPrice,
+  getAddressLabel,
+  getCustomerFullName,
+  getDefaultEmailMessage,
+  getStatusEmailLabel,
+  getStatusLabel,
+  isAutoTrackingCarrier,
+  normalizeAdminOrder,
+} from '../../utils/adminOrders';
 
 export default function AdminOrdersPage() {
   const router = useRouter();
@@ -706,163 +492,21 @@ export default function AdminOrdersPage() {
               </div>
             </section>
 
-            <section className={styles.content}>
-              <div className={styles.filters}>
-                {ORDER_STATUSES.map((status) => {
-                  const Icon = status.icon;
-                  const count = counts[status.value];
-
-                  return (
-                    <button
-                      key={status.value}
-                      type="button"
-                      className={`${styles.filterButton} ${
-                        activeFilter === status.value ? styles.filterButtonActive : ''
-                      }`}
-                      onClick={() => setActiveFilter(status.value)}
-                    >
-                      {Icon ? <Icon aria-hidden="true" /> : null}
-                      <span>
-                        {status.label} ({count})
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {statusFeedback.message ? (
-                <div
-                  className={`${styles.loadingContainer} ${
-                    styles.statusFeedbackWrapper || ''
-                  }`}
-                >
-                  <div className={styles.loadingBox}>{statusFeedback.message}</div>
-                </div>
-              ) : null}
-
-              {isLoadingOrders ? (
-                <div className={styles.loadingContainer}>
-                  <div className={styles.loadingBox}>Chargement des commandes...</div>
-                </div>
-              ) : ordersError ? (
-                <div className={styles.loadingContainer}>
-                  <div className={styles.loadingBox}>{ordersError}</div>
-                </div>
-              ) : filteredOrders.length === 0 ? (
-                <div className={styles.loadingContainer}>
-                  <div className={styles.loadingBox}>
-                    Aucune commande ne correspond au filtre sélectionné.
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.ordersList}>
-                  {filteredOrders.map((order) => {
-                    const statusEmailInfo = getStatusEmailInfo(order);
-                    const isUpdatingStatus = statusUpdatingFor === order.id;
-                    const isSendingEmail = emailSendingFor === order.id;
-                    const isSavingShipping = shippingSavingFor === order.id;
-
-                    const isBusy =
-                      isUpdatingStatus || isSendingEmail || isSavingShipping;
-
-                    return (
-                      <article key={order.id} className={styles.orderCard}>
-                        <div className={styles.orderTop}>
-                          <div className={styles.orderMain}>
-                            <div className={styles.orderHeaderRow}>
-                              <h2 className={styles.orderNumber}>{order.id}</h2>
-                              <span
-                                className={`${styles.statusBadge} ${
-                                  styles[`status-${order.status}`]
-                                }`}
-                              >
-                                {getStatusLabel(order.status)}
-                              </span>
-                            </div>
-
-                            <div className={styles.orderMeta}>
-                              <p>
-                                Client : <strong>{getCustomerFullName(order)}</strong>
-                              </p>
-                              <p>Date : {order.date || '—'}</p>
-                              <p>
-                                {order.itemsCount} article
-                                {order.itemsCount > 1 ? 's' : ''}
-                              </p>
-                              <p>
-                                {statusEmailInfo.sent
-                                  ? 'Mail statut envoyé'
-                                  : 'Mail statut non envoyé'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className={styles.orderAside}>
-                            <div className={styles.orderPriceBlock}>
-                              <p className={styles.orderTotal}>{formatPrice(order.total)}</p>
-                              <p className={styles.paymentMethod}>{order.paymentMethod}</p>
-                            </div>
-
-                            <button
-                              type="button"
-                              className={styles.viewButton}
-                              aria-label={`Voir la commande ${order.id}`}
-                              onClick={() => setSelectedOrderId(order.id)}
-                            >
-                              <FiEye aria-hidden="true" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className={styles.separator} />
-
-                        <div className={styles.orderActions}>
-                          <select
-                            className={styles.statusSelect}
-                            value={order.status}
-                            onChange={(event) =>
-                              handleStatusChange(order.id, event.target.value)
-                            }
-                            aria-label={`Changer le statut de la commande ${order.id}`}
-                            disabled={isUpdatingStatus}
-                          >
-                            {STATUS_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-
-                          <button
-                            type="button"
-                            className={styles.emailButton}
-                            onClick={() => handleEmail(order)}
-                            disabled={isSendingEmail || isUpdatingStatus}
-                          >
-                            <FiMail aria-hidden="true" />
-                            <span>
-                              {isSendingEmail ? 'Envoi en cours...' : 'Envoyer un email'}
-                            </span>
-                          </button>
-
-                          {isBusy ? (
-                            <span className={styles.trackingBadge}>
-                              <FiClock aria-hidden="true" />
-                              <span>Mise à jour...</span>
-                            </span>
-                          ) : order.trackingNumber ? (
-                            <span className={styles.trackingBadge}>
-                              <FiTruck aria-hidden="true" />
-                              <span>Suivi : {order.trackingNumber}</span>
-                            </span>
-                          ) : null}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+            <AdminOrdersList
+              activeFilter={activeFilter}
+              counts={counts}
+              emailSendingFor={emailSendingFor}
+              filteredOrders={filteredOrders}
+              handleEmail={handleEmail}
+              handleStatusChange={handleStatusChange}
+              isLoadingOrders={isLoadingOrders}
+              ordersError={ordersError}
+              setActiveFilter={setActiveFilter}
+              setSelectedOrderId={setSelectedOrderId}
+              shippingSavingFor={shippingSavingFor}
+              statusFeedback={statusFeedback}
+              statusUpdatingFor={statusUpdatingFor}
+            />
           </>
         ) : (
           <section className={styles.detailPage}>
@@ -1131,7 +775,6 @@ export default function AdminOrdersPage() {
                     <label className={styles.emailLabel} htmlFor="order-email-message">
                       Message
                     </label>
-
                     <textarea
                       id="order-email-message"
                       className={styles.emailTextarea}
