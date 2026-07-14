@@ -125,7 +125,7 @@
 - ✅ Rendre persistant le changement de statut des commandes depuis `/administration/commandes`.
 - 🟡 Ajouter plus tard une vraie édition du suivi (trackingNumber / trackingUrl) côté admin, avec éventuellement des règles simples (par exemple : proposer d’ajouter un numéro de suivi quand on passe à “Expédiée”).
 - 🟡 Ajouter un champ structuré pour tracer l’envoi du dernier email de statut de commande.
-- 🔴 Vérifier la cohérence entre le statut de commande enregistré et le dernier email de statut envoyé.
+- 🟡 Vérifier la cohérence entre le statut de commande enregistré et le dernier email de statut envoyé.
 
 
 ### 3.3 Simulation d’achat de bout en bout

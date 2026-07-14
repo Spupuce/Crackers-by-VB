@@ -5,6 +5,8 @@ import { requireAdminSession } from '../../../../lib/session';
 import Order from '../../../../models/Order';
 
 const ALLOWED_STATUSES = ['pending', 'preparing', 'shipped', 'delivered', 'cancelled'];
+const ALLOWED_METHODS = ['', 'relay', 'home'];
+const ALLOWED_CARRIERS = ['', 'mondial relay', 'colissimo', 'chronopost'];
 
 function normalizeStatus(value) {
   if (!value || typeof value !== 'string') {
@@ -34,6 +36,26 @@ function normalizeTrackingUrl(value) {
 
 function normalizeCarrierKey(value) {
   return normalizeText(value).toLowerCase();
+}
+
+function normalizeCarrier(value) {
+  const normalizedCarrier = normalizeCarrierKey(value);
+
+  if (!normalizedCarrier) {
+    return '';
+  }
+
+  return ALLOWED_CARRIERS.includes(normalizedCarrier) ? normalizedCarrier : '';
+}
+
+function normalizeMethod(value) {
+  const normalizedMethod = normalizeText(value).toLowerCase();
+
+  if (!normalizedMethod) {
+    return '';
+  }
+
+  return ALLOWED_METHODS.includes(normalizedMethod) ? normalizedMethod : '';
 }
 
 function buildTrackingUrl(carrier, trackingNumber) {
@@ -85,6 +107,17 @@ function resolveNextStatus(status, trackingNumber) {
   return status;
 }
 
+function shouldClearDeliveredAt(nextStatus) {
+  return nextStatus !== 'delivered';
+}
+
+function shouldClearShippedAt(nextStatus, trackingNumber) {
+  return (
+    (nextStatus === 'pending' || nextStatus === 'preparing') &&
+    !normalizeText(trackingNumber)
+  );
+}
+
 export default async function handler(req, res) {
   const { id } = req.query;
 
@@ -115,10 +148,11 @@ export default async function handler(req, res) {
   try {
     await connectMongo();
 
-    const { status, carrier, trackingNumber, trackingUrl } = req.body || {};
+    const { status, carrier, trackingNumber, trackingUrl, method } = req.body || {};
     const requestedStatus = normalizeStatus(status);
-    const normalizedCarrier = normalizeText(carrier);
+    const normalizedCarrier = normalizeCarrier(carrier);
     const normalizedTrackingNumber = normalizeText(trackingNumber);
+    const normalizedMethod = normalizeMethod(method);
     const nextStatus = resolveNextStatus(requestedStatus, normalizedTrackingNumber);
     const resolvedTrackingUrl = resolveTrackingUrl({
       carrier: normalizedCarrier,
@@ -142,31 +176,34 @@ export default async function handler(req, res) {
       });
     }
 
-    order.status = nextStatus;
-
     const now = new Date();
     ensureShippingObject(order);
+
+    order.status = nextStatus;
+
+    if (normalizedMethod) {
+      order.shipping.method = normalizedMethod;
+    }
 
     order.shipping.carrier = normalizedCarrier;
     order.shipping.trackingNumber = normalizedTrackingNumber;
     order.shipping.trackingUrl = resolvedTrackingUrl;
 
-    if (nextStatus === 'pending' || nextStatus === 'preparing') {
+    if (shouldClearShippedAt(nextStatus, normalizedTrackingNumber)) {
       order.shipping.shippedAt = null;
-      order.shipping.deliveredAt = null;
     }
 
-    if (nextStatus === 'shipped') {
+    if (nextStatus === 'shipped' || nextStatus === 'delivered') {
       if (!order.shipping.shippedAt) {
         order.shipping.shippedAt = now;
       }
+    }
+
+    if (shouldClearDeliveredAt(nextStatus)) {
       order.shipping.deliveredAt = null;
     }
 
     if (nextStatus === 'delivered') {
-      if (!order.shipping.shippedAt) {
-        order.shipping.shippedAt = now;
-      }
       if (!order.shipping.deliveredAt) {
         order.shipping.deliveredAt = now;
       }
