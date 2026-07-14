@@ -45,7 +45,11 @@ const OrderItemSchema = new mongoose.Schema(
 
 const StatusEmailSchema = new mongoose.Schema(
   {
-    status: {
+    sent: {
+      type: Boolean,
+      default: false,
+    },
+    sentForStatus: {
       type: String,
       enum: ['', 'pending', 'preparing', 'shipped', 'delivered', 'cancelled'],
       default: '',

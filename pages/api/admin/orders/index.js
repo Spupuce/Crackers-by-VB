@@ -46,6 +46,13 @@ function serializeOrder(order) {
       shippedAt: order.shipping?.shippedAt || null,
       deliveredAt: order.shipping?.deliveredAt || null,
     },
+    statusEmail: {
+      sent: Boolean(order.statusEmail?.sent),
+      sentAt: order.statusEmail?.sentAt || null,
+      sentForStatus: order.statusEmail?.sentForStatus || '',
+      recipient: order.statusEmail?.recipient || '',
+      messageId: order.statusEmail?.messageId || '',
+    },
     stripeSessionId: order.stripeSessionId || '',
     stripePaymentIntentId: order.stripePaymentIntentId || '',
     notes: order.notes || '',

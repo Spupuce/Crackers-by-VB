@@ -56,6 +56,23 @@ export default function AdminOrdersPage() {
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
   const selectedCarrierUsesAutoTracking = isAutoTrackingCarrier(shippingForm.carrier);
 
+  const patchOrderInState = useCallback((orderId, patch) => {
+    setOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              ...patch,
+              statusEmail: {
+                ...(order.statusEmail || {}),
+                ...(patch.statusEmail || {}),
+              },
+            }
+          : order
+      )
+    );
+  }, []);
+
   const loadOrders = useCallback(async ({ keepLoadingState = true } = {}) => {
     if (keepLoadingState) {
       setIsLoadingOrders(true);
@@ -360,6 +377,14 @@ export default function AdminOrdersPage() {
         throw new Error(data?.message || "L'envoi de l'email a échoué.");
       }
 
+      patchOrderInState(order.id, {
+        statusEmail: {
+          sent: true,
+          sentAt: new Date().toISOString(),
+          sentForStatus: order.status,
+        },
+      });
+
       await loadOrders({ keepLoadingState: false });
 
       setStatusFeedback({
@@ -408,6 +433,14 @@ export default function AdminOrdersPage() {
       if (!response.ok) {
         throw new Error(data?.message || "L'envoi de l'email a échoué.");
       }
+
+      patchOrderInState(selectedOrder.id, {
+        statusEmail: {
+          sent: true,
+          sentAt: new Date().toISOString(),
+          sentForStatus: selectedOrder.status,
+        },
+      });
 
       const refreshedOrders = await loadOrders({ keepLoadingState: false });
       const refreshedOrder = refreshedOrders.find(
