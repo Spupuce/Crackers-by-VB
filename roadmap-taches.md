@@ -170,7 +170,7 @@
 - 🔴 Mettre à jour automatiquement le statut `delivered` quand le transporteur confirme la livraison.
 - 🔴 Renseigner automatiquement `shipping.deliveredAt` lors du passage automatique à `delivered`.
 - 🔴 Vérifier la cohérence entre `status`, `shippedAt`, `deliveredAt`, `trackingNumber`, `trackingUrl` et le retour transporteur.
-- 🔴 Définir le comportement si le transporteur ne renvoie aucun statut exploitable ou une erreur API.
+- 🟡 Définir le comportement si le transporteur ne renvoie aucun statut exploitable ou une erreur API.
 - 🔴 Définir si l’email client “Livrée” est envoyé automatiquement ou reste manuel après détection transporteur.
 - 🔴 Vérifier la compatibilité de l’actualisation du suivi avec Mondial Relay, Colissimo et Chronopost.
 
