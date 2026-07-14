@@ -5,6 +5,28 @@ import { requireAdminSession } from '../../../../../lib/session';
 import Order from '../../../../../models/Order';
 import { refreshOrderTracking } from '../../../../../lib/services/trackingService';
 
+function ensureShippingObject(order) {
+  if (!order.shipping) {
+    order.shipping = {};
+  }
+}
+
+function serializeOrder(order) {
+  return {
+    _id: order._id.toString(),
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    shipping: {
+      method: order.shipping?.method || '',
+      carrier: order.shipping?.carrier || '',
+      trackingNumber: order.shipping?.trackingNumber || '',
+      trackingUrl: order.shipping?.trackingUrl || '',
+      shippedAt: order.shipping?.shippedAt || null,
+      deliveredAt: order.shipping?.deliveredAt || null,
+    },
+  };
+}
+
 export default async function handler(req, res) {
   const { id } = req.query;
 
@@ -45,23 +67,30 @@ export default async function handler(req, res) {
     }
 
     const trackingResult = await refreshOrderTracking(order);
+    let updated = false;
+
+    if (trackingResult.shouldUpdateOrder) {
+      ensureShippingObject(order);
+
+      if (trackingResult.nextOrderStatus) {
+        order.status = trackingResult.nextOrderStatus;
+      }
+
+      if (trackingResult.shouldClearDeliveredAt) {
+        order.shipping.deliveredAt = null;
+      } else if (trackingResult.nextDeliveredAt) {
+        order.shipping.deliveredAt = trackingResult.nextDeliveredAt;
+      }
+
+      await order.save();
+      updated = true;
+    }
 
     return res.status(200).json({
       ok: trackingResult.ok,
+      updated,
       message: trackingResult.message,
-      order: {
-        _id: order._id.toString(),
-        status: order.status,
-        paymentStatus: order.paymentStatus,
-        shipping: {
-          method: order.shipping?.method || '',
-          carrier: order.shipping?.carrier || '',
-          trackingNumber: order.shipping?.trackingNumber || '',
-          trackingUrl: order.shipping?.trackingUrl || '',
-          shippedAt: order.shipping?.shippedAt || null,
-          deliveredAt: order.shipping?.deliveredAt || null,
-        },
-      },
+      order: serializeOrder(order),
       tracking: trackingResult,
     });
   } catch (error) {
