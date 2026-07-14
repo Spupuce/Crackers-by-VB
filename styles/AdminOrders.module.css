@@ -240,6 +240,22 @@
   background: var(--color-primary-dark);
 }
 
+.emailButton:disabled,
+.viewButton:disabled,
+.statusTab:disabled,
+.filterButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.emailButton:disabled:hover,
+.viewButton:disabled:hover,
+.statusTab:disabled:hover,
+.filterButton:disabled:hover {
+  transform: none;
+}
+
 .trackingBadge {
   display: inline-flex;
   align-items: center;
@@ -534,7 +550,9 @@
 
 .emailPanelActions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-start;
+  gap: 10px;
   margin-top: 6px;
 }
 
