@@ -121,8 +121,9 @@ export default async function handler(req, res) {
 
       if (order) {
         order.statusEmail = {
-          status: normalizedStatus,
+          sent: true,
           sentAt: new Date(),
+          sentForStatus: normalizedStatus,
           recipient: finalRecipient,
           messageId: info?.messageId || '',
         };
