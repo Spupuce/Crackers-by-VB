@@ -266,7 +266,6 @@ export default function AdminOrdersPage() {
     type: '',
     message: '',
   });
-  const [trackingRefreshingFor, setTrackingRefreshingFor] = useState('');
 
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
   const selectedCarrierUsesAutoTracking = isAutoTrackingCarrier(shippingForm.carrier);
@@ -547,122 +546,6 @@ export default function AdminOrdersPage() {
     }
   }
 
-  async function handleRefreshTracking() {
-    if (!selectedOrder || !selectedOrder.sourceId) {
-      setShippingFeedback({
-        type: 'error',
-        message: "Commande introuvable pour l'actualisation du suivi.",
-      });
-      return;
-    }
-
-    setTrackingRefreshingFor(selectedOrder.id);
-    setShippingFeedback({ type: '', message: '' });
-
-    try {
-      const response = await fetch(
-        `/api/admin/orders/${selectedOrder.sourceId}/refresh-tracking`,
-        {
-          method: 'POST',
-        }
-      );
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.message || "Impossible d'actualiser le suivi.");
-      }
-
-      const refreshedOrders = await loadOrders({ keepLoadingState: false });
-      const refreshedOrder = refreshedOrders.find(
-        (order) => order.id === selectedOrder.id
-      );
-
-      if (refreshedOrder) {
-        setShippingForm({
-          carrier: refreshedOrder.shippingCarrier || '',
-          trackingNumber: refreshedOrder.trackingNumber || '',
-          trackingUrl: refreshedOrder.trackingUrl || '',
-        });
-        setDetailEmailMessage(getDefaultEmailMessage(refreshedOrder));
-      }
-
-      setShippingFeedback({
-        type: data?.updated ? 'success' : 'success',
-        message:
-          data?.message ||
-          (data?.updated
-            ? 'Le suivi a été actualisé et la commande a été mise à jour.'
-            : 'Le suivi a été vérifié, sans changement sur la commande.'),
-      });
-    } catch (error) {
-      setShippingFeedback({
-        type: 'error',
-        message: error?.message || "Impossible d'actualiser le suivi.",
-      });
-    } finally {
-      setTrackingRefreshingFor('');
-    }
-  }
-
-  async function handleRefreshTrackingFromList(order) {
-    if (!order || !order.sourceId) {
-      setStatusFeedback({
-        type: 'error',
-        message: "Commande introuvable pour l'actualisation du suivi.",
-      });
-      return;
-    }
-
-    setTrackingRefreshingFor(order.id);
-    setStatusFeedback({ type: '', message: '' });
-
-    try {
-      const response = await fetch(
-        `/api/admin/orders/${order.sourceId}/refresh-tracking`,
-        {
-          method: 'POST',
-        }
-      );
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.message || "Impossible d'actualiser le suivi.");
-      }
-
-      const refreshedOrders = await loadOrders({ keepLoadingState: false });
-      const refreshedOrder = refreshedOrders.find(
-        (refOrder) => refOrder.id === order.id
-      );
-
-      if (refreshedOrder && selectedOrderId === order.id) {
-        setShippingForm({
-          carrier: refreshedOrder.shippingCarrier || '',
-          trackingNumber: refreshedOrder.trackingNumber || '',
-          trackingUrl: refreshedOrder.trackingUrl || '',
-        });
-        setDetailEmailMessage(getDefaultEmailMessage(refreshedOrder));
-      }
-
-      setStatusFeedback({
-        type: 'success',
-        message:
-          data?.message ||
-          (data?.updated
-            ? `Suivi actualisé pour la commande ${order.id}.`
-            : `Suivi vérifié pour la commande ${order.id}, sans changement.`),
-      });
-    } catch (error) {
-      setStatusFeedback({
-        type: 'error',
-        message: error?.message || "Impossible d'actualiser le suivi.",
-      });
-    } finally {
-      setTrackingRefreshingFor('');
-    }
-  }
-
   async function handleEmail(order) {
     setEmailSendingFor(order.id);
     setStatusFeedback({ type: '', message: '' });
@@ -877,14 +760,10 @@ export default function AdminOrdersPage() {
                     const statusEmailInfo = getStatusEmailInfo(order);
                     const isUpdatingStatus = statusUpdatingFor === order.id;
                     const isSendingEmail = emailSendingFor === order.id;
-                    const isRefreshingTracking = trackingRefreshingFor === order.id;
                     const isSavingShipping = shippingSavingFor === order.id;
 
                     const isBusy =
-                      isUpdatingStatus ||
-                      isSendingEmail ||
-                      isRefreshingTracking ||
-                      isSavingShipping;
+                      isUpdatingStatus || isSendingEmail || isSavingShipping;
 
                     return (
                       <article key={order.id} className={styles.orderCard}>
@@ -945,7 +824,7 @@ export default function AdminOrdersPage() {
                               handleStatusChange(order.id, event.target.value)
                             }
                             aria-label={`Changer le statut de la commande ${order.id}`}
-                            disabled={isUpdatingStatus || isRefreshingTracking}
+                            disabled={isUpdatingStatus}
                           >
                             {STATUS_OPTIONS.map((option) => (
                               <option key={option.value} value={option.value}>
@@ -958,25 +837,11 @@ export default function AdminOrdersPage() {
                             type="button"
                             className={styles.emailButton}
                             onClick={() => handleEmail(order)}
-                            disabled={isSendingEmail || isUpdatingStatus || isRefreshingTracking}
+                            disabled={isSendingEmail || isUpdatingStatus}
                           >
                             <FiMail aria-hidden="true" />
                             <span>
                               {isSendingEmail ? 'Envoi en cours...' : 'Envoyer un email'}
-                            </span>
-                          </button>
-
-                          <button
-                            type="button"
-                            className={styles.emailButton}
-                            onClick={() => handleRefreshTrackingFromList(order)}
-                            disabled={isRefreshingTracking || isUpdatingStatus}
-                          >
-                            <FiClock aria-hidden="true" />
-                            <span>
-                              {isRefreshingTracking
-                                ? 'Actualisation...'
-                                : 'Actualiser le suivi'}
                             </span>
                           </button>
 
@@ -1138,10 +1003,7 @@ export default function AdminOrdersPage() {
                           carrier: event.target.value,
                         }))
                       }
-                      disabled={
-                        shippingSavingFor === selectedOrder.id ||
-                        trackingRefreshingFor === selectedOrder.id
-                      }
+                      disabled={shippingSavingFor === selectedOrder.id}
                     >
                       {CARRIER_OPTIONS.map((option) => (
                         <option key={option.value || 'empty'} value={option.value}>
@@ -1168,10 +1030,7 @@ export default function AdminOrdersPage() {
                         }))
                       }
                       placeholder="Ex. : 12345678"
-                      disabled={
-                        shippingSavingFor === selectedOrder.id ||
-                        trackingRefreshingFor === selectedOrder.id
-                      }
+                      disabled={shippingSavingFor === selectedOrder.id}
                     />
 
                     <label className={styles.emailLabel} htmlFor="order-shipping-tracking-url">
@@ -1209,10 +1068,7 @@ export default function AdminOrdersPage() {
                           }))
                         }
                         placeholder="Ex. : https://www.transporteur.fr/suivi"
-                        disabled={
-                          shippingSavingFor === selectedOrder.id ||
-                          trackingRefreshingFor === selectedOrder.id
-                        }
+                        disabled={shippingSavingFor === selectedOrder.id}
                       />
                     )}
 
@@ -1246,33 +1102,13 @@ export default function AdminOrdersPage() {
                         type="button"
                         className={styles.emailButton}
                         onClick={handleSaveShipping}
-                        disabled={
-                          shippingSavingFor === selectedOrder.id ||
-                          trackingRefreshingFor === selectedOrder.id
-                        }
+                        disabled={shippingSavingFor === selectedOrder.id}
                       >
                         <FiTruck aria-hidden="true" />
                         <span>
                           {shippingSavingFor === selectedOrder.id
                             ? 'Enregistrement...'
                             : 'Enregistrer le suivi'}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={styles.emailButton}
-                        onClick={handleRefreshTracking}
-                        disabled={
-                          shippingSavingFor === selectedOrder.id ||
-                          trackingRefreshingFor === selectedOrder.id
-                        }
-                      >
-                        <FiClock aria-hidden="true" />
-                        <span>
-                          {trackingRefreshingFor === selectedOrder.id
-                            ? 'Actualisation...'
-                            : 'Actualiser le suivi'}
                         </span>
                       </button>
                     </div>
