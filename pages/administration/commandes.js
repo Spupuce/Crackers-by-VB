@@ -1,5 +1,3 @@
-// pages/administration/commandes.js
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import {
@@ -607,6 +605,64 @@ export default function AdminOrdersPage() {
     }
   }
 
+  async function handleRefreshTrackingFromList(order) {
+    if (!order || !order.sourceId) {
+      setStatusFeedback({
+        type: 'error',
+        message: "Commande introuvable pour l'actualisation du suivi.",
+      });
+      return;
+    }
+
+    setTrackingRefreshingFor(order.id);
+    setStatusFeedback({ type: '', message: '' });
+
+    try {
+      const response = await fetch(
+        `/api/admin/orders/${order.sourceId}/refresh-tracking`,
+        {
+          method: 'POST',
+        }
+      );
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.message || "Impossible d'actualiser le suivi.");
+      }
+
+      const refreshedOrders = await loadOrders({ keepLoadingState: false });
+      const refreshedOrder = refreshedOrders.find(
+        (refOrder) => refOrder.id === order.id
+      );
+
+      if (refreshedOrder && selectedOrderId === order.id) {
+        setShippingForm({
+          carrier: refreshedOrder.shippingCarrier || '',
+          trackingNumber: refreshedOrder.trackingNumber || '',
+          trackingUrl: refreshedOrder.trackingUrl || '',
+        });
+        setDetailEmailMessage(getDefaultEmailMessage(refreshedOrder));
+      }
+
+      setStatusFeedback({
+        type: 'success',
+        message:
+          data?.message ||
+          (data?.updated
+            ? `Suivi actualisé pour la commande ${order.id}.`
+            : `Suivi vérifié pour la commande ${order.id}, sans changement.`),
+      });
+    } catch (error) {
+      setStatusFeedback({
+        type: 'error',
+        message: error?.message || "Impossible d'actualiser le suivi.",
+      });
+    } finally {
+      setTrackingRefreshingFor('');
+    }
+  }
+
   async function handleEmail(order) {
     setEmailSendingFor(order.id);
     setStatusFeedback({ type: '', message: '' });
@@ -819,6 +875,16 @@ export default function AdminOrdersPage() {
                 <div className={styles.ordersList}>
                   {filteredOrders.map((order) => {
                     const statusEmailInfo = getStatusEmailInfo(order);
+                    const isUpdatingStatus = statusUpdatingFor === order.id;
+                    const isSendingEmail = emailSendingFor === order.id;
+                    const isRefreshingTracking = trackingRefreshingFor === order.id;
+                    const isSavingShipping = shippingSavingFor === order.id;
+
+                    const isBusy =
+                      isUpdatingStatus ||
+                      isSendingEmail ||
+                      isRefreshingTracking ||
+                      isSavingShipping;
 
                     return (
                       <article key={order.id} className={styles.orderCard}>
@@ -879,7 +945,7 @@ export default function AdminOrdersPage() {
                               handleStatusChange(order.id, event.target.value)
                             }
                             aria-label={`Changer le statut de la commande ${order.id}`}
-                            disabled={statusUpdatingFor === order.id}
+                            disabled={isUpdatingStatus || isRefreshingTracking}
                           >
                             {STATUS_OPTIONS.map((option) => (
                               <option key={option.value} value={option.value}>
@@ -892,20 +958,29 @@ export default function AdminOrdersPage() {
                             type="button"
                             className={styles.emailButton}
                             onClick={() => handleEmail(order)}
-                            disabled={
-                              emailSendingFor === order.id ||
-                              statusUpdatingFor === order.id
-                            }
+                            disabled={isSendingEmail || isUpdatingStatus || isRefreshingTracking}
                           >
                             <FiMail aria-hidden="true" />
                             <span>
-                              {emailSendingFor === order.id
-                                ? 'Envoi en cours...'
-                                : 'Envoyer un email'}
+                              {isSendingEmail ? 'Envoi en cours...' : 'Envoyer un email'}
                             </span>
                           </button>
 
-                          {statusUpdatingFor === order.id || shippingSavingFor === order.id ? (
+                          <button
+                            type="button"
+                            className={styles.emailButton}
+                            onClick={() => handleRefreshTrackingFromList(order)}
+                            disabled={isRefreshingTracking || isUpdatingStatus}
+                          >
+                            <FiClock aria-hidden="true" />
+                            <span>
+                              {isRefreshingTracking
+                                ? 'Actualisation...'
+                                : 'Actualiser le suivi'}
+                            </span>
+                          </button>
+
+                          {isBusy ? (
                             <span className={styles.trackingBadge}>
                               <FiClock aria-hidden="true" />
                               <span>Mise à jour...</span>
