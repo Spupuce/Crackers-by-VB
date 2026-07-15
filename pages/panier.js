@@ -9,6 +9,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CartContactForm from '../components/CartContactForm';
 import CartShippingForm from '../components/CartShippingForm';
+import CartSummary from '../components/CartSummary';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import internalStyles from '../styles/InternalPages.module.css';
@@ -701,49 +702,18 @@ export default function PanierPage() {
                   </div>
                 </div>
 
-                <aside className={styles.summaryColumn}>
-                  <section
-                    className={`${internalStyles.card} ${styles.summaryCard}`}
-                  >
-                    <div className={styles.summaryHeader}>
-                      <h2 className={styles.sectionTitle}>Récapitulatif</h2>
-                      <span className={styles.summaryBadge}>
-                        {totalItems} article{totalItems > 1 ? 's' : ''}
-                      </span>
-                    </div>
-
-                    <div className={styles.itemsList}>{cartLines}</div>
-
-                    <div className={styles.summaryTotals}>
-                      <div className={styles.summaryRow}>
-                        <span>Sous-total</span>
-                        <span>{cartTotal.toFixed(2)} €</span>
-                      </div>
-
-                      <div className={styles.summaryRow}>
-                        <span>
-                          Frais de port ({getDeliveryMethodLabel(normalizedDeliveryMethod)})
-                        </span>
-                        <span>
-                          {isFreeShipping
-                            ? 'Offert'
-                            : `${shippingPrice.toFixed(2)} €`}
-                        </span>
-                      </div>
-
-                      <div className={styles.summaryRowTotal}>
-                        <span>Total estimé</span>
-                        <span>{estimatedTotal.toFixed(2)} €</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.summaryBottomNote}>
-                      {isFreeShipping
-                        ? 'La livraison est offerte pour cette commande.'
-                        : `${getParcelLabel(parcelSize)} appliqué pour ce panier.`}
-                    </div>
-                  </section>
-                </aside>
+                <CartSummary
+                  totalItems={totalItems}
+                  cartLines={cartLines}
+                  cartTotal={cartTotal}
+                  normalizedDeliveryMethod={normalizedDeliveryMethod}
+                  shippingPrice={shippingPrice}
+                  estimatedTotal={estimatedTotal}
+                  isFreeShipping={isFreeShipping}
+                  parcelSize={parcelSize}
+                  getDeliveryMethodLabel={getDeliveryMethodLabel}
+                  getParcelLabel={getParcelLabel}
+                />
               </div>
             </>
           )}
