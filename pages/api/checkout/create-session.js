@@ -44,7 +44,7 @@ function normalizeIncomingItems(items) {
     return [];
   }
 
-  return items
+  const normalized = items
     .map((item) => {
       if (!item || typeof item !== 'object') {
         return null;
@@ -73,6 +73,29 @@ function normalizeIncomingItems(items) {
       };
     })
     .filter(Boolean);
+
+  if (!normalized.length) {
+    return [];
+  }
+
+  // Fusionner les lignes identiques (même produit + même couleur)
+  const mergedMap = new Map();
+
+  for (const item of normalized) {
+    const key = `${item.slug}::${item.color || ''}`;
+    const existing = mergedMap.get(key);
+
+    if (existing) {
+      mergedMap.set(key, {
+        ...existing,
+        quantity: existing.quantity + item.quantity,
+      });
+    } else {
+      mergedMap.set(key, item);
+    }
+  }
+
+  return Array.from(mergedMap.values());
 }
 
 function normalizeEmail(value) {
@@ -475,6 +498,8 @@ export default async function handler(req, res) {
     });
   }
 
+  let pendingOrder = null;
+
   try {
     if (!req.body || typeof req.body !== 'object') {
       return res.status(400).json({
@@ -554,6 +579,17 @@ export default async function handler(req, res) {
       });
     }
 
+    // Blocage clair des commandes hors France
+    const normalizedCountry = normalizedShipping.country.trim().toLowerCase();
+    if (normalizedCountry !== 'france') {
+      return res.status(400).json({
+        ok: false,
+        code: 'UNSUPPORTED_COUNTRY',
+        message:
+          'Les commandes ne sont actuellement possibles que vers la France.',
+      });
+    }
+
     await connectMongo();
 
     let resolvedItems;
@@ -625,7 +661,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const pendingOrder = await Order.create(
+    pendingOrder = await Order.create(
       buildOrderPayload({
         userId: authenticatedUserId,
         customer: normalizedCustomer,
@@ -650,6 +686,11 @@ export default async function handler(req, res) {
       const paymentMethodTypes = getEnabledPaymentMethodTypes();
 
       const successUrl = `${origin}/commande/confirmation?orderId=${pendingOrder._id}&session_id={CHECKOUT_SESSION_ID}`;
+
+      const safeNotesForMetadata =
+        typeof notes === 'string'
+          ? normalizeText(notes).slice(0, 490)
+          : '';
 
       const stripeSession = await stripe.checkout.sessions.create({
         mode: 'payment',
@@ -683,7 +724,7 @@ export default async function handler(req, res) {
           delivery_method: normalizedDeliveryMethod,
           parcel_size: parcelSize,
           shipping_amount: String(shippingAmount),
-          notes: normalizeText(notes) || '',
+          notes: safeNotesForMetadata,
         },
       });
 
@@ -731,6 +772,18 @@ export default async function handler(req, res) {
       stack: error?.stack || null,
       raw: error,
     });
+
+    if (pendingOrder && pendingOrder._id) {
+      try {
+        await Order.deleteOne({ _id: pendingOrder._id });
+      } catch (deleteError) {
+        console.error('CHECKOUT_PENDING_ORDER_DELETE_ERROR_GLOBAL', {
+          orderId: String(pendingOrder._id),
+          errorMessage: deleteError?.message || null,
+          raw: deleteError,
+        });
+      }
+    }
 
     return res.status(500).json({
       ok: false,
