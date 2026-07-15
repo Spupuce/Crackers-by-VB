@@ -127,7 +127,7 @@ function buildEmailOrderSummary(order) {
 
 async function decrementStockForOrder(order, mongoSession) {
   if (!Array.isArray(order?.items) || order.items.length === 0) {
-    return;
+    throw new Error('Impossible de décrémenter le stock : aucun article trouvé.');
   }
 
   for (const item of order.items) {
@@ -135,22 +135,25 @@ async function decrementStockForOrder(order, mongoSession) {
       !item.productId ||
       !mongoose.Types.ObjectId.isValid(String(item.productId))
     ) {
-      // eslint-disable-next-line no-continue
-      continue;
+      throw new Error(
+        `Produit invalide dans la commande pour "${item?.name || 'Produit'}".`
+      );
     }
 
     const product = await Product.findById(item.productId).session(mongoSession);
 
     if (!product) {
-      // eslint-disable-next-line no-continue
-      continue;
+      throw new Error(
+        `Le produit "${item?.name || 'Produit'}" est introuvable au moment du paiement.`
+      );
     }
 
     const orderedQty = Number(item.quantity) || 0;
 
     if (orderedQty <= 0) {
-      // eslint-disable-next-line no-continue
-      continue;
+      throw new Error(
+        `La quantité commandée pour "${item?.name || 'Produit'}" est invalide.`
+      );
     }
 
     if (
@@ -165,15 +168,31 @@ async function decrementStockForOrder(order, mongoSession) {
         return String(c.name).trim().toLowerCase() === normalizedColorName;
       });
 
-      if (colorVariant) {
-        const currentQty = Number(colorVariant.quantity) || 0;
-        const newQty = Math.max(currentQty - orderedQty, 0);
-        colorVariant.quantity = newQty;
+      if (!colorVariant) {
+        throw new Error(
+          `La variante couleur "${item.color}" est introuvable pour "${item?.name || 'Produit'}".`
+        );
       }
+
+      const currentQty = Number(colorVariant.quantity) || 0;
+
+      if (currentQty < orderedQty) {
+        throw new Error(
+          `Stock insuffisant pour "${item?.name || 'Produit'}"${item.color ? ` (couleur "${item.color}")` : ''}.`
+        );
+      }
+
+      colorVariant.quantity = currentQty - orderedQty;
     } else {
       const currentStock = Number(product.stock) || 0;
-      const newStock = Math.max(currentStock - orderedQty, 0);
-      product.stock = newStock;
+
+      if (currentStock < orderedQty) {
+        throw new Error(
+          `Stock insuffisant pour "${item?.name || 'Produit'}".`
+        );
+      }
+
+      product.stock = currentStock - orderedQty;
     }
 
     await product.save({ session: mongoSession });
@@ -209,6 +228,7 @@ async function markOrderAsPaid(session) {
     return {
       order: null,
       didMarkAsPaid: false,
+      alreadyPaid: false,
     };
   }
 
@@ -222,6 +242,7 @@ async function markOrderAsPaid(session) {
     let result = {
       order: null,
       didMarkAsPaid: false,
+      alreadyPaid: false,
     };
 
     await mongoSession.withTransaction(async () => {
@@ -239,6 +260,7 @@ async function markOrderAsPaid(session) {
         result = {
           order,
           didMarkAsPaid: false,
+          alreadyPaid: true,
         };
         return;
       }
@@ -246,6 +268,7 @@ async function markOrderAsPaid(session) {
       await decrementStockForOrder(order, mongoSession);
 
       order.paymentStatus = 'paid';
+      order.status = 'preparing';
 
       if (stripeSessionId) {
         order.stripeSessionId = stripeSessionId;
@@ -260,6 +283,7 @@ async function markOrderAsPaid(session) {
       result = {
         order,
         didMarkAsPaid: true,
+        alreadyPaid: false,
       };
     });
 
@@ -425,14 +449,17 @@ export default async function handler(req, res) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const { order, didMarkAsPaid } = await markOrderAsPaid(session);
+        const { order, didMarkAsPaid, alreadyPaid } =
+          await markOrderAsPaid(session);
 
         console.log('STRIPE_CHECKOUT_SESSION_COMPLETED_PROCESSED', {
           eventId: event?.id || null,
           stripeSessionId: session?.id || null,
           orderId: order?._id ? String(order._id) : null,
           didMarkAsPaid,
+          alreadyPaid,
           paymentStatus: order?.paymentStatus || null,
+          orderStatus: order?.status || null,
         });
 
         if (order && didMarkAsPaid) {
