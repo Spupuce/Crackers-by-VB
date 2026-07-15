@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
-import { FiArrowLeft, FiMail, FiClock, FiTruck } from 'react-icons/fi';
+import { FiArrowLeft, FiMail, FiTruck } from 'react-icons/fi';
 import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -120,13 +120,11 @@ export default function AdminOrdersPage() {
 
     async function initOrders() {
       try {
-        const nextOrders = await loadOrders();
+        await loadOrders();
 
         if (isCancelled) {
           return;
         }
-
-        setOrders(nextOrders);
       } catch (error) {
         if (isCancelled) {
           return;
@@ -287,8 +285,19 @@ export default function AdminOrdersPage() {
     }
 
     const trimmedTrackingNumber = shippingForm.trackingNumber.trim();
+    const trimmedTrackingUrl = shippingForm.trackingUrl.trim();
+
+    if (!shippingForm.carrier && (trimmedTrackingNumber || trimmedTrackingUrl)) {
+      setShippingFeedback({
+        type: 'error',
+        message: 'Merci de sélectionner un transporteur avant d’enregistrer le suivi.',
+      });
+      return;
+    }
+
     const nextStatus =
-      selectedOrder.status === 'pending' && trimmedTrackingNumber
+      (selectedOrder.status === 'pending' || selectedOrder.status === 'preparing') &&
+      trimmedTrackingNumber
         ? 'shipped'
         : selectedOrder.status;
 
@@ -305,7 +314,7 @@ export default function AdminOrdersPage() {
           status: nextStatus,
           carrier: shippingForm.carrier,
           trackingNumber: trimmedTrackingNumber,
-          trackingUrl: selectedCarrierUsesAutoTracking ? '' : shippingForm.trackingUrl,
+          trackingUrl: selectedCarrierUsesAutoTracking ? '' : trimmedTrackingUrl,
         }),
       });
 

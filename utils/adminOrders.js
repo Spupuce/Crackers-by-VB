@@ -24,15 +24,15 @@ export const STATUS_OPTIONS = [
 
 export const CARRIER_OPTIONS = [
   { value: '', label: 'Sélectionner un transporteur' },
-  { value: 'Mondial Relay', label: 'Mondial Relay' },
-  { value: 'Colissimo', label: 'Colissimo' },
-  { value: 'Chronopost', label: 'Chronopost' },
-  { value: 'Lettre Suivie', label: 'Lettre Suivie' },
-  { value: 'Colis Privé', label: 'Colis Privé' },
-  { value: 'Autre', label: 'Autre' },
+  { value: 'mondial relay', label: 'Mondial Relay' },
+  { value: 'colissimo', label: 'Colissimo' },
+  { value: 'chronopost', label: 'Chronopost' },
+  { value: 'lettre suivie', label: 'Lettre Suivie' },
+  { value: 'colis privé', label: 'Colis Privé' },
+  { value: 'autre', label: 'Autre' },
 ];
 
-export const AUTO_TRACKING_CARRIERS = ['Mondial Relay', 'Colissimo', 'Chronopost'];
+export const AUTO_TRACKING_CARRIERS = ['mondial relay', 'colissimo', 'chronopost'];
 
 export function formatPrice(value) {
   return `${Number(value || 0).toFixed(2)} €`;
@@ -52,6 +52,10 @@ export function getAddressLabel(order) {
   return [addressLine1, addressLine2, `${postalCode} ${city}`, country]
     .filter(Boolean)
     .join(', ');
+}
+
+export function getCarrierLabel(carrier) {
+  return CARRIER_OPTIONS.find((option) => option.value === carrier)?.label || carrier || '—';
 }
 
 export function getDefaultEmailMessage(order) {
@@ -145,7 +149,7 @@ export function getPaymentMethodLabel(order) {
 }
 
 export function isAutoTrackingCarrier(carrier) {
-  return AUTO_TRACKING_CARRIERS.includes(carrier);
+  return AUTO_TRACKING_CARRIERS.includes((carrier || '').trim().toLowerCase());
 }
 
 export function getStatusEmailInfo(order) {
@@ -189,6 +193,8 @@ export function normalizeAdminOrder(apiOrder) {
       }))
     : [];
 
+  const shippingCarrier = (apiOrder.shipping?.carrier || '').trim().toLowerCase();
+
   return {
     id: apiOrder.orderNumber || apiOrder._id || '',
     sourceId: apiOrder._id || '',
@@ -216,8 +222,9 @@ export function normalizeAdminOrder(apiOrder) {
     status: apiOrder.status || 'pending',
     trackingNumber: apiOrder.shipping?.trackingNumber || '',
     trackingUrl: apiOrder.shipping?.trackingUrl || '',
-    shippingCarrier: apiOrder.shipping?.carrier || '',
-    shippingMethod: apiOrder.shipping?.method || apiOrder.shipping?.carrier || 'Livraison',
+    shippingCarrier,
+    shippingCarrierLabel: getCarrierLabel(shippingCarrier),
+    shippingMethod: apiOrder.shipping?.method || shippingCarrier || 'Livraison',
     notes: apiOrder.notes || '',
     statusEmail: {
       sent: Boolean(apiOrder.statusEmail?.sent),
