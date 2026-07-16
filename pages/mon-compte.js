@@ -7,6 +7,12 @@ import { FiEye, FiLock, FiPackage, FiUser, FiX } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import {
+  formatOrderDate,
+  getOrderDisplayLabel,
+  getSafeAmount,
+  getStatusClassName,
+} from '../utils/accountOrders';
 import styles from '../styles/AccountPage.module.css';
 
 function buildInitialForm(user) {
@@ -28,53 +34,6 @@ function buildInitialPasswordForm() {
     newPassword: '',
     confirmPassword: '',
   };
-}
-
-function formatOrderDate(value) {
-  if (!value) {
-    return '';
-  }
-
-  return new Date(value).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-function getStatusClassName(status, stylesObject) {
-  switch (status) {
-    case 'Livrée':
-      return stylesObject.orderStatusDelivered;
-    case 'En préparation':
-      return stylesObject.orderStatusPreparing;
-    case 'Payée':
-      return stylesObject.orderStatusPaid;
-    case 'En attente':
-      return stylesObject.orderStatusPending;
-    case 'Expédiée':
-    case 'Expédié':
-      return stylesObject.orderStatusShipped;
-    default:
-      return '';
-  }
-}
-
-function getOrderDisplayLabel(order) {
-  if (typeof order?.orderNumber === 'string' && order.orderNumber.trim()) {
-    return order.orderNumber.trim();
-  }
-
-  if (typeof order?.id === 'string' && order.id.trim()) {
-    return order.id.trim();
-  }
-
-  return 'Commande';
-}
-
-function getSafeAmount(value) {
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
 export default function MonComptePage() {
