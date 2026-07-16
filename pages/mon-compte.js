@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { FiEye, FiLock, FiPackage, FiUser, FiX } from 'react-icons/fi';
+import { FiLock, FiPackage, FiUser, FiX } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import OrdersList from '../components/account/OrdersList';
 import {
   formatOrderDate,
   getOrderDisplayLabel,
@@ -41,7 +42,9 @@ export default function MonComptePage() {
   const { user, isAuthenticated, isAuthReady, logout, updateUser } = useAuth();
 
   const [formValues, setFormValues] = useState(buildInitialForm(user));
-  const [passwordValues, setPasswordValues] = useState(buildInitialPasswordForm());
+  const [passwordValues, setPasswordValues] = useState(
+    buildInitialPasswordForm()
+  );
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -159,7 +162,9 @@ export default function MonComptePage() {
       return;
     }
 
-    const updatedSelectedOrder = orders.find((order) => order.id === selectedOrder.id);
+    const updatedSelectedOrder = orders.find(
+      (order) => order.id === selectedOrder.id
+    );
 
     if (!updatedSelectedOrder) {
       setSelectedOrder(null);
@@ -783,7 +788,9 @@ export default function MonComptePage() {
               {!isPasswordOpen ? (
                 <>
                   {passwordSuccessMessage ? (
-                    <p className={styles.successMessage}>{passwordSuccessMessage}</p>
+                    <p className={styles.successMessage}>
+                      {passwordSuccessMessage}
+                    </p>
                   ) : null}
 
                   <button
@@ -856,7 +863,9 @@ export default function MonComptePage() {
                     </div>
 
                     {passwordErrorMessage ? (
-                      <p className={styles.errorMessage}>{passwordErrorMessage}</p>
+                      <p className={styles.errorMessage}>
+                        {passwordErrorMessage}
+                      </p>
                     ) : null}
 
                     {passwordSuccessMessage ? (
@@ -901,97 +910,13 @@ export default function MonComptePage() {
               </div>
             </div>
 
-            {isLoadingOrders ? (
-              <div className={styles.ordersEmpty}>
-                <p className={styles.emptyTitle}>Chargement des commandes...</p>
-              </div>
-            ) : ordersErrorMessage ? (
-              <div className={styles.ordersEmpty}>
-                <p className={styles.emptyTitle}>Impossible de charger vos commandes</p>
-                <p className={styles.emptyText}>{ordersErrorMessage}</p>
-              </div>
-            ) : orders.length === 0 ? (
-              <div className={styles.ordersEmpty}>
-                <p className={styles.emptyTitle}>Aucune commande pour le moment</p>
-                <p className={styles.emptyText}>
-                  Vos futures commandes apparaîtront ici.
-                </p>
-              </div>
-            ) : (
-              <div className={styles.ordersList}>
-                {orders.map((order) => (
-                  <div key={order.id} className={styles.orderCardButton}>
-                    <div
-                      className={styles.orderTopRow}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedOrder(order)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          setSelectedOrder(order);
-                        }
-                      }}
-                    >
-                      <div className={styles.orderIdentity}>
-                        <p className={styles.orderNumber}>
-                          {getOrderDisplayLabel(order)}
-                        </p>
-                        <p className={styles.orderDate}>
-                          Commande du {formatOrderDate(order.createdAt)}
-                        </p>
-                      </div>
-
-                      <div className={styles.orderActions}>
-                        <span
-                          className={`${styles.orderStatus} ${getStatusClassName(
-                            order.status,
-                            styles
-                          )}`}
-                        >
-                          {order.status}
-                        </span>
-
-                        <button
-                          type="button"
-                          className={styles.orderViewButton}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedOrder(order);
-                          }}
-                          aria-label={`Voir le détail de la commande ${getOrderDisplayLabel(
-                            order
-                          )}`}
-                          title="Voir le détail"
-                        >
-                          <FiEye />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div
-                      className={styles.orderSummaryRow}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedOrder(order)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          setSelectedOrder(order);
-                        }
-                      }}
-                    >
-                      <span className={styles.orderSummaryText}>
-                        {order.itemCount} article{order.itemCount > 1 ? 's' : ''}
-                      </span>
-                      <span className={styles.orderTotalValue}>
-                        {getSafeAmount(order.total).toFixed(2)} €
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <OrdersList
+              orders={orders}
+              isLoadingOrders={isLoadingOrders}
+              ordersErrorMessage={ordersErrorMessage}
+              setSelectedOrder={setSelectedOrder}
+              styles={styles}
+            />
           </section>
 
           <section className={styles.dangerZone}>
@@ -1022,15 +947,9 @@ export default function MonComptePage() {
                 </button>
               </>
             ) : (
-              <form
-                className={styles.deleteForm}
-                onSubmit={handleDeleteSubmit}
-              >
+              <form className={styles.deleteForm} onSubmit={handleDeleteSubmit}>
                 <div className={styles.formGroup}>
-                  <label
-                    htmlFor="deletePassword"
-                    className={styles.label}
-                  >
+                  <label htmlFor="deletePassword" className={styles.label}>
                     Mot de passe actuel
                   </label>
                   <input
@@ -1039,9 +958,7 @@ export default function MonComptePage() {
                     type="password"
                     className={styles.input}
                     value={deletePassword}
-                    onChange={(event) =>
-                      setDeletePassword(event.target.value)
-                    }
+                    onChange={(event) => setDeletePassword(event.target.value)}
                     disabled={isDeletingAccount}
                     autoComplete="current-password"
                   />
