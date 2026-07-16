@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { FiLock, FiPackage, FiUser, FiX } from 'react-icons/fi';
+import { FiEye, FiLock, FiPackage, FiUser, FiX } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
@@ -50,6 +50,11 @@ function getStatusClassName(status, stylesObject) {
       return stylesObject.orderStatusPreparing;
     case 'Payée':
       return stylesObject.orderStatusPaid;
+    case 'En attente':
+      return stylesObject.orderStatusPending;
+    case 'Expédiée':
+    case 'Expédié':
+      return stylesObject.orderStatusShipped;
     default:
       return '';
   }
@@ -956,13 +961,19 @@ export default function MonComptePage() {
             ) : (
               <div className={styles.ordersList}>
                 {orders.map((order) => (
-                  <button
-                    key={order.id}
-                    type="button"
-                    className={styles.orderCardButton}
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    <div className={styles.orderTopRow}>
+                  <div key={order.id} className={styles.orderCardButton}>
+                    <div
+                      className={styles.orderTopRow}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedOrder(order)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedOrder(order);
+                        }
+                      }}
+                    >
                       <div className={styles.orderIdentity}>
                         <p className={styles.orderNumber}>
                           {getOrderDisplayLabel(order)}
@@ -972,17 +983,45 @@ export default function MonComptePage() {
                         </p>
                       </div>
 
-                      <span
-                        className={`${styles.orderStatus} ${getStatusClassName(
-                          order.status,
-                          styles
-                        )}`}
-                      >
-                        {order.status}
-                      </span>
+                      <div className={styles.orderActions}>
+                        <span
+                          className={`${styles.orderStatus} ${getStatusClassName(
+                            order.status,
+                            styles
+                          )}`}
+                        >
+                          {order.status}
+                        </span>
+
+                        <button
+                          type="button"
+                          className={styles.orderViewButton}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedOrder(order);
+                          }}
+                          aria-label={`Voir le détail de la commande ${getOrderDisplayLabel(
+                            order
+                          )}`}
+                          title="Voir le détail"
+                        >
+                          <FiEye />
+                        </button>
+                      </div>
                     </div>
 
-                    <div className={styles.orderSummaryRow}>
+                    <div
+                      className={styles.orderSummaryRow}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedOrder(order)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedOrder(order);
+                        }
+                      }}
+                    >
                       <span className={styles.orderSummaryText}>
                         {order.itemCount} article{order.itemCount > 1 ? 's' : ''}
                       </span>
@@ -990,7 +1029,7 @@ export default function MonComptePage() {
                         {getSafeAmount(order.total).toFixed(2)} €
                       </span>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -1127,33 +1166,38 @@ export default function MonComptePage() {
               </div>
 
               <div className={styles.orderModalItems}>
-                {selectedOrder.items.map((item) => (
-                  <div key={item.id} className={styles.orderModalItem}>
-                    <div className={styles.orderModalImageWrapper}>
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className={styles.orderModalImage}
-                      />
-                    </div>
+                {(Array.isArray(selectedOrder.items) ? selectedOrder.items : []).map(
+                  (item) => (
+                    <div key={item.id} className={styles.orderModalItem}>
+                      <div className={styles.orderModalImageWrapper}>
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className={styles.orderModalImage}
+                        />
+                      </div>
 
-                    <div className={styles.orderModalItemContent}>
-                      <p className={styles.orderModalItemName}>{item.name}</p>
-                      {item.color ? (
+                      <div className={styles.orderModalItemContent}>
+                        <p className={styles.orderModalItemName}>{item.name}</p>
+                        {item.color ? (
+                          <p className={styles.orderModalItemMeta}>
+                            Couleur : {item.color}
+                          </p>
+                        ) : null}
                         <p className={styles.orderModalItemMeta}>
-                          Couleur : {item.color}
+                          Quantité : {item.quantity}
                         </p>
-                      ) : null}
-                      <p className={styles.orderModalItemMeta}>
-                        Quantité : {item.quantity}
+                      </div>
+
+                      <p className={styles.orderModalItemPrice}>
+                        {(
+                          getSafeAmount(item.price) * getSafeAmount(item.quantity)
+                        ).toFixed(2)}{' '}
+                        €
                       </p>
                     </div>
-
-                    <p className={styles.orderModalItemPrice}>
-                      {(getSafeAmount(item.price) * getSafeAmount(item.quantity)).toFixed(2)} €
-                    </p>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
 
               <div className={styles.orderModalFooter}>
