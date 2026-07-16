@@ -46,6 +46,7 @@
 ## 5. Emails et réassurance
 - 🔴 Vérifier la délivrabilité réelle des emails transactionnels sur Gmail.
 - 🔴 Harmoniser les emails de confirmation, expédition et livraison.
+- 🔴 Envoyer un email à contact@crackersbyvbfr.wodo0523.odns.fr lorsqu’une nouvelle commande est payée.
 - 🔴 Ajouter le lien de suivi dans les emails de commande quand il est disponible.
 - 🟡 Définir quels emails restent manuels et lesquels deviennent automatiques.
 - 🔴 Vérifier la cohérence entre emails de contact, emails de commande et emails de retour en stock.

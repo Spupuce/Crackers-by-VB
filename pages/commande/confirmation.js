@@ -8,10 +8,18 @@ import { FiArrowLeft } from 'react-icons/fi';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import internalStyles from '../../styles/InternalPages.module.css';
 
 const MAX_CONFIRMATION_ATTEMPTS = 6;
 const CONFIRMATION_RETRY_DELAY = 1500;
+
+const actionRowStyle = {
+  marginTop: '24px',
+  display: 'flex',
+  gap: '12px',
+  flexWrap: 'wrap',
+};
 
 function wait(delay) {
   return new Promise((resolve) => {
@@ -98,9 +106,42 @@ function buildConfirmationFetchUrl(orderId, sessionId) {
     : `/api/orders/${orderId}`;
 }
 
+async function parseJsonSafely(response) {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (!contentType.includes('application/json')) {
+    return null;
+  }
+
+  return response.json().catch(() => null);
+}
+
+function shouldRetryConfirmation(data, responseStatus) {
+  if (responseStatus >= 500) {
+    return true;
+  }
+
+  const code = typeof data?.code === 'string' ? data.code : '';
+
+  return code === 'ORDER_NOT_PAID' || code === 'ORDER_NOT_FOUND';
+}
+
+function getConfirmationErrorMessage(data, responseStatus) {
+  if (typeof data?.message === 'string' && data.message.trim()) {
+    return data.message.trim();
+  }
+
+  if (responseStatus >= 500) {
+    return 'La confirmation du paiement est temporairement indisponible. Merci de réessayer dans quelques instants.';
+  }
+
+  return "Cette commande n'est pas confirmée pour le moment.";
+}
+
 export default function ConfirmationCommandePage() {
   const router = useRouter();
   const { clearCart } = useCart();
+  const { isAuthenticated } = useAuth();
 
   const hasClearedCartRef = useRef(false);
 
@@ -109,18 +150,26 @@ export default function ConfirmationCommandePage() {
   const [orderData, setOrderData] = useState(null);
   const [attemptCount, setAttemptCount] = useState(1);
 
+  const orderId = useMemo(
+    () => getSingleQueryParam(router.query?.orderId),
+    [router.query?.orderId]
+  );
+
+  const sessionId = useMemo(
+    () => getSingleQueryParam(router.query?.session_id),
+    [router.query?.session_id]
+  );
+
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
 
-    const orderId = getSingleQueryParam(router.query?.orderId);
-    const sessionId = getSingleQueryParam(router.query?.session_id);
-
     if (!orderId) {
       setConfirmationError(
         "Impossible de retrouver cette commande. Merci de vérifier le lien de confirmation."
       );
+      setOrderData(null);
       setIsLoading(false);
       return;
     }
@@ -143,8 +192,14 @@ export default function ConfirmationCommandePage() {
         setAttemptCount(attempt);
 
         try {
-          const response = await fetch(confirmationUrl);
-          const data = await response.json().catch(() => null);
+          const response = await fetch(confirmationUrl, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+            },
+          });
+
+          const data = await parseJsonSafely(response);
 
           if (response.ok && data?.ok && data?.order?.paymentStatus === 'paid') {
             if (!isMounted) {
@@ -163,28 +218,26 @@ export default function ConfirmationCommandePage() {
             return;
           }
 
-          const shouldRetry =
-            data?.code === 'ORDER_NOT_PAID' ||
-            data?.code === 'ORDER_NOT_FOUND';
+          const canRetry =
+            attempt < MAX_CONFIRMATION_ATTEMPTS &&
+            shouldRetryConfirmation(data, response.status);
 
-          if (!shouldRetry || attempt === MAX_CONFIRMATION_ATTEMPTS) {
-            throw new Error(
-              data?.message ||
-                "Cette commande n'est pas confirmée pour le moment."
-            );
+          if (!canRetry) {
+            throw new Error(getConfirmationErrorMessage(data, response.status));
           }
         } catch (error) {
           const errorMessage =
             error?.message ||
             'Une erreur est survenue lors de la vérification de votre commande.';
 
-          const shouldRetry =
+          const canRetry =
             attempt < MAX_CONFIRMATION_ATTEMPTS &&
             (errorMessage.includes("n'est pas encore validée") ||
               errorMessage.includes("n'est pas confirmée") ||
-              errorMessage.includes("n'existe pas"));
+              errorMessage.includes("n'existe pas") ||
+              errorMessage.includes('temporairement indisponible'));
 
-          if (!shouldRetry) {
+          if (!canRetry) {
             if (!isMounted) {
               return;
             }
@@ -200,7 +253,7 @@ export default function ConfirmationCommandePage() {
 
       if (isMounted) {
         setConfirmationError(
-          "La confirmation du paiement prend plus de temps que prévu. Merci de rafraîchir la page dans quelques instants."
+          'La confirmation du paiement prend plus de temps que prévu. Merci de rafraîchir la page dans quelques instants.'
         );
         setIsLoading(false);
       }
@@ -211,7 +264,7 @@ export default function ConfirmationCommandePage() {
     return () => {
       isMounted = false;
     };
-  }, [router.isReady, router.query, clearCart]);
+  }, [router.isReady, orderId, sessionId, clearCart]);
 
   const isConfirmed = !isLoading && !confirmationError && orderData;
   const deliverySummary = isConfirmed ? buildDeliverySummary(orderData) : '';
@@ -232,7 +285,8 @@ export default function ConfirmationCommandePage() {
     return `/inscription?email=${encodeURIComponent(customerEmail)}`;
   }, [customerEmail]);
 
-  const shouldShowGuestAccountPrompt = isConfirmed && Boolean(customerEmail);
+  const shouldShowGuestAccountPrompt =
+    isConfirmed && Boolean(customerEmail) && !isAuthenticated;
 
   return (
     <>
@@ -312,14 +366,7 @@ export default function ConfirmationCommandePage() {
                 </p>
               </div>
 
-              <div
-                style={{
-                  marginTop: '24px',
-                  display: 'flex',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                }}
-              >
+              <div style={actionRowStyle}>
                 <Link href="/contact" legacyBehavior>
                   <a className={internalStyles.primaryButton}>Contacter</a>
                 </Link>
@@ -377,14 +424,7 @@ export default function ConfirmationCommandePage() {
                   </p>
                 </div>
 
-                <div
-                  style={{
-                    marginTop: '24px',
-                    display: 'flex',
-                    gap: '12px',
-                    flexWrap: 'wrap',
-                  }}
-                >
+                <div style={actionRowStyle}>
                   <Link href="/boutique" legacyBehavior>
                     <a className={internalStyles.primaryButton}>
                       Retourner à la boutique
@@ -416,14 +456,7 @@ export default function ConfirmationCommandePage() {
                     que vous venez de valider.
                   </p>
 
-                  <div
-                    style={{
-                      marginTop: '24px',
-                      display: 'flex',
-                      gap: '12px',
-                      flexWrap: 'wrap',
-                    }}
-                  >
+                  <div style={actionRowStyle}>
                     <Link href={registrationHref} legacyBehavior>
                       <a className={internalStyles.primaryButton}>
                         Créer mon compte
