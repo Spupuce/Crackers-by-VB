@@ -8,7 +8,13 @@
 ---
 
 ## 1. Tunnel d’achat et commandes
-- 🟡 Vérifier complètement le parcours invité : panier, checkout Stripe, retour succès / annulation, création de commande, affichage correct des données client.
+- 🟡 Vérifier complètement le parcours invité : panier, checkout Stripe, retour succès / annulation, création de commande, affichage correct des données client. Reste a tester a la maison : 
+                - ajout au panier puis accès à /panier avec un panier correct ;
+                - création de session Stripe depuis /api/checkout/create-session ;
+                - paiement test réussi avec redirection vers /commande/confirmation ;
+                - passage de la commande à paymentStatus: paid via webhook ;
+                - affichage correct des données cliente, des lignes de commande et du total ;
+                - vidage du panier après confirmation.
 - 🔴 Vérifier que les commandes payées apparaissent bien côté compte client.
 - 🔴 Tester un rejeu webhook Stripe pour valider l’anti-doublon.
 - 🔴 Vérifier la cohérence des frais de port entre front, session Stripe, webhook et MongoDB.
