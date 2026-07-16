@@ -2,6 +2,7 @@
 
 import mongoose from 'mongoose';
 import { connectMongo } from '../../../lib/mongodb';
+import { getSessionFromRequest } from '../../../lib/session';
 import Order from '../../../models/Order';
 
 function getSingleQueryParam(value) {
@@ -10,6 +11,30 @@ function getSingleQueryParam(value) {
   }
 
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function isOrderOwnedBySession(order, session) {
+  if (!order || !session?.userId) {
+    return false;
+  }
+
+  if (!order.userId) {
+    return false;
+  }
+
+  return String(order.userId) === String(session.userId);
+}
+
+function hasMatchingStripeSession(order, sessionId) {
+  if (!sessionId) {
+    return false;
+  }
+
+  if (typeof order?.stripeSessionId !== 'string') {
+    return false;
+  }
+
+  return order.stripeSessionId.trim() === sessionId;
 }
 
 export default async function handler(req, res) {
@@ -25,12 +50,13 @@ export default async function handler(req, res) {
 
   const id = getSingleQueryParam(req.query?.id);
   const sessionId = getSingleQueryParam(req.query?.session_id);
+  const session = getSessionFromRequest(req);
 
   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
       ok: false,
       code: 'INVALID_ORDER_ID',
-      message: "Identifiant de commande invalide.",
+      message: 'Identifiant de commande invalide.',
     });
   }
 
@@ -43,8 +69,19 @@ export default async function handler(req, res) {
       return res.status(404).json({
         ok: false,
         code: 'ORDER_NOT_FOUND',
+        message: "Cette commande n'existe pas ou n'est plus disponible.",
+      });
+    }
+
+    const hasSessionMatch = hasMatchingStripeSession(order, sessionId);
+    const isOwner = isOrderOwnedBySession(order, session);
+
+    if (!hasSessionMatch && !isOwner) {
+      return res.status(403).json({
+        ok: false,
+        code: 'ORDER_ACCESS_DENIED',
         message:
-          "Cette commande n'existe pas ou n'est plus disponible.",
+          "Vous n'êtes pas autorisée à consulter cette commande.",
       });
     }
 
@@ -52,13 +89,14 @@ export default async function handler(req, res) {
       sessionId &&
       typeof order.stripeSessionId === 'string' &&
       order.stripeSessionId.trim() &&
-      order.stripeSessionId.trim() !== sessionId
+      order.stripeSessionId.trim() !== sessionId &&
+      !isOwner
     ) {
       return res.status(403).json({
         ok: false,
         code: 'ORDER_SESSION_MISMATCH',
         message:
-          "Cette commande ne correspond pas à la session de paiement fournie.",
+          'Cette commande ne correspond pas à la session de paiement fournie.',
       });
     }
 
@@ -97,18 +135,27 @@ export default async function handler(req, res) {
           shippedAt: order.shipping?.shippedAt || null,
           deliveredAt: order.shipping?.deliveredAt || null,
         },
-        items: order.items.map((item) => ({
-          name: item.name,
-          slug: item.slug,
-          color: item.color || '',
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        })),
+        items: Array.isArray(order.items)
+          ? order.items.map((item) => ({
+              name: item.name,
+              slug: item.slug,
+              color: item.color || '',
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+            }))
+          : [],
         createdAt: order.createdAt,
       },
     });
   } catch (error) {
-    console.error('ORDER_CONFIRMATION_FETCH_ERROR', error);
+    console.error('ORDER_CONFIRMATION_FETCH_ERROR', {
+      orderId: id,
+      sessionId: sessionId || null,
+      sessionUserId: session?.userId || null,
+      message: error?.message || null,
+      stack: error?.stack || null,
+      raw: error,
+    });
 
     return res.status(500).json({
       ok: false,
