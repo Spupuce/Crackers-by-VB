@@ -6,22 +6,28 @@ import { getSessionFromRequest } from '../../../lib/session';
 import Order from '../../../models/Order';
 import User from '../../../models/User';
 
-function formatOrderStatus(status) {
-  switch (status) {
-    case 'delivered':
-      return 'Livrée';
-    case 'preparing':
-      return 'En préparation';
-    case 'paid':
-      return 'Payée';
-    case 'shipped':
-      return 'Expédiée';
-    case 'cancelled':
-      return 'Annulée';
-    case 'pending':
-    default:
-      return 'En attente';
+function formatOrderStatus(status, paymentStatus) {
+  if (status === 'cancelled') {
+    return 'Annulée';
   }
+
+  if (status === 'delivered') {
+    return 'Livrée';
+  }
+
+  if (status === 'shipped') {
+    return 'Expédiée';
+  }
+
+  if (status === 'preparing') {
+    return 'En préparation';
+  }
+
+  if (status === 'pending' && paymentStatus === 'paid') {
+    return 'Payée';
+  }
+
+  return 'En attente';
 }
 
 function serializeOrder(order) {
@@ -46,10 +52,14 @@ function serializeOrder(order) {
     id: String(order._id),
     orderNumber: order.orderNumber || '',
     createdAt: order.createdAt,
-    status: formatOrderStatus(order.status),
+    status: formatOrderStatus(order.status, order.paymentStatus),
     total: Number(order.totalAmount) || 0,
     itemCount,
     items,
+    shippingMethod: order.shipping?.method || '',
+    carrier: order.shipping?.carrier || '',
+    trackingNumber: order.shipping?.trackingNumber || '',
+    trackingUrl: order.shipping?.trackingUrl || '',
   };
 }
 
