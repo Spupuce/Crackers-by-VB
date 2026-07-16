@@ -105,7 +105,7 @@ export default async function handler(req, res) {
         ok: false,
         code: 'ORDER_NOT_PAID',
         message:
-          "Cette commande n'est pas encore validée. Si vous avez déjà procédé au paiement, merci de contacter la créatrice.",
+          "Cette commande n'est pas encore confirmée. Si vous revenez de Stripe, la validation peut prendre quelques instants avant d'apparaître.",
       });
     }
 
