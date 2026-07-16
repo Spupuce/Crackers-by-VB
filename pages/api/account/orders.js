@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { connectMongo } from '../../../lib/mongodb';
 import { getSessionFromRequest } from '../../../lib/session';
 import Order from '../../../models/Order';
+import User from '../../../models/User';
 
 function formatOrderStatus(status) {
   switch (status) {
@@ -71,41 +72,45 @@ export default async function handler(req, res) {
       });
     }
 
-    // On récupère d’abord les commandes liées au userId.
-    const userId = session.userId;
+    const user = await User.findById(session.userId).lean();
 
-    const primaryOrdersQuery = {
-      userId,
-    };
-
-    let orders = await Order.find(primaryOrdersQuery)
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // Si aucune commande n’est liée par userId, on tente un fallback par email.
-    // On ne casse pas la logique existante, on ajoute seulement un cas de rattrapage
-    // pour les commandes passées en invité mais avec la même adresse email.
-    if (!orders.length && typeof session.email === 'string' && session.email.trim()) {
-      const normalizedEmail = session.email.trim().toLowerCase();
-
-      const fallbackOrders = await Order.find({
-        $or: [
-          { userId },
-          { userId: null, 'customer.email': normalizedEmail },
-        ],
-      })
-        .sort({ createdAt: -1 })
-        .lean();
-
-      orders = fallbackOrders;
+    if (!user) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Utilisateur introuvable.',
+      });
     }
+
+    const normalizedEmail =
+      typeof user.email === 'string' ? user.email.trim().toLowerCase() : '';
+
+    const ordersQuery = normalizedEmail
+      ? {
+          $or: [
+            { userId: session.userId },
+            { userId: null, 'customer.email': normalizedEmail },
+          ],
+        }
+      : {
+          userId: session.userId,
+        };
+
+    const orders = await Order.find(ordersQuery).sort({ createdAt: -1 }).lean();
+
+    const uniqueOrders = Array.from(
+      new Map(orders.map((order) => [String(order._id), order])).values()
+    );
 
     return res.status(200).json({
       ok: true,
-      orders: orders.map(serializeOrder),
+      orders: uniqueOrders.map(serializeOrder),
     });
   } catch (error) {
-    console.error('ACCOUNT_ORDERS_GET_ERROR', error);
+    console.error('ACCOUNT_ORDERS_GET_ERROR', {
+      message: error?.message || null,
+      stack: error?.stack || null,
+      raw: error,
+    });
 
     return res.status(500).json({
       ok: false,
