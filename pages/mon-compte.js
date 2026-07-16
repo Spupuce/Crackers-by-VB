@@ -55,6 +55,23 @@ function getStatusClassName(status, stylesObject) {
   }
 }
 
+function getOrderDisplayLabel(order) {
+  if (typeof order?.orderNumber === 'string' && order.orderNumber.trim()) {
+    return order.orderNumber.trim();
+  }
+
+  if (typeof order?.id === 'string' && order.id.trim()) {
+    return order.id.trim();
+  }
+
+  return 'Commande';
+}
+
+function getSafeAmount(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
 export default function MonComptePage() {
   const router = useRouter();
   const { user, isAuthenticated, isAuthReady, logout, updateUser } = useAuth();
@@ -521,17 +538,9 @@ export default function MonComptePage() {
     }
   };
 
-  const handleReorder = (order) => {
-    if (!order) return;
+  const handleReorder = () => {};
 
-    console.log('Commander à nouveau :', order.id);
-  };
-
-  const handleDownloadInvoice = (order) => {
-    if (!order) return;
-
-    console.log('Télécharger la facture :', order.id);
-  };
+  const handleDownloadInvoice = () => {};
 
   if (!isAuthReady || !isAuthenticated) {
     return null;
@@ -955,7 +964,9 @@ export default function MonComptePage() {
                   >
                     <div className={styles.orderTopRow}>
                       <div className={styles.orderIdentity}>
-                        <p className={styles.orderNumber}>{order.id}</p>
+                        <p className={styles.orderNumber}>
+                          {getOrderDisplayLabel(order)}
+                        </p>
                         <p className={styles.orderDate}>
                           Commande du {formatOrderDate(order.createdAt)}
                         </p>
@@ -976,7 +987,7 @@ export default function MonComptePage() {
                         {order.itemCount} article{order.itemCount > 1 ? 's' : ''}
                       </span>
                       <span className={styles.orderTotalValue}>
-                        {order.total.toFixed(2)} €
+                        {getSafeAmount(order.total).toFixed(2)} €
                       </span>
                     </div>
                   </button>
@@ -1083,7 +1094,7 @@ export default function MonComptePage() {
               <div className={styles.orderModalHeader}>
                 <div>
                   <h2 id="order-modal-title" className={styles.orderModalTitle}>
-                    {selectedOrder.id}
+                    {getOrderDisplayLabel(selectedOrder)}
                   </h2>
                   <p className={styles.orderModalSubtitle}>
                     Commande du {formatOrderDate(selectedOrder.createdAt)}
@@ -1128,13 +1139,18 @@ export default function MonComptePage() {
 
                     <div className={styles.orderModalItemContent}>
                       <p className={styles.orderModalItemName}>{item.name}</p>
+                      {item.color ? (
+                        <p className={styles.orderModalItemMeta}>
+                          Couleur : {item.color}
+                        </p>
+                      ) : null}
                       <p className={styles.orderModalItemMeta}>
                         Quantité : {item.quantity}
                       </p>
                     </div>
 
                     <p className={styles.orderModalItemPrice}>
-                      {(item.price * item.quantity).toFixed(2)} €
+                      {(getSafeAmount(item.price) * getSafeAmount(item.quantity)).toFixed(2)} €
                     </p>
                   </div>
                 ))}
@@ -1144,7 +1160,7 @@ export default function MonComptePage() {
                 <div className={styles.orderModalFooterSummary}>
                   <span className={styles.orderTotalLabel}>Total</span>
                   <span className={styles.orderModalTotal}>
-                    {selectedOrder.total.toFixed(2)} €
+                    {getSafeAmount(selectedOrder.total).toFixed(2)} €
                   </span>
                 </div>
 
@@ -1153,16 +1169,22 @@ export default function MonComptePage() {
                     type="button"
                     className={styles.secondaryButton}
                     onClick={() => handleDownloadInvoice(selectedOrder)}
+                    disabled
+                    aria-disabled="true"
+                    title="Fonctionnalité bientôt disponible"
                   >
-                    Télécharger la facture
+                    Facture bientôt disponible
                   </button>
 
                   <button
                     type="button"
                     className={styles.primaryButton}
                     onClick={() => handleReorder(selectedOrder)}
+                    disabled
+                    aria-disabled="true"
+                    title="Fonctionnalité bientôt disponible"
                   >
-                    Commander à nouveau
+                    Commander à nouveau bientôt
                   </button>
                 </div>
               </div>
