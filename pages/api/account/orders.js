@@ -36,6 +36,7 @@ function serializeOrder(order) {
         price: Number(item.unitPrice) || 0,
         image: item.imageUrl || '/images/placeholder-product.jpg',
         slug: item.slug || '',
+        color: item.color || '',
       }))
     : [];
 
@@ -43,6 +44,7 @@ function serializeOrder(order) {
 
   return {
     id: String(order._id),
+    orderNumber: order.orderNumber || '',
     createdAt: order.createdAt,
     status: formatOrderStatus(order.status),
     total: Number(order.totalAmount) || 0,
