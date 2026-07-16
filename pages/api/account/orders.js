@@ -96,14 +96,20 @@ export default async function handler(req, res) {
     const normalizedEmail =
       typeof user.email === 'string' ? user.email.trim().toLowerCase() : '';
 
+    // On ne récupère que les commandes effectivement payées,
+    // soit liées au userId, soit invitées rattachables par email.
+    const baseFilter = { paymentStatus: 'paid' };
+
     const ordersQuery = normalizedEmail
       ? {
+          ...baseFilter,
           $or: [
             { userId: session.userId },
             { userId: null, 'customer.email': normalizedEmail },
           ],
         }
       : {
+          ...baseFilter,
           userId: session.userId,
         };
 
