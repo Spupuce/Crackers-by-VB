@@ -138,6 +138,62 @@ function getConfirmationErrorMessage(data, responseStatus) {
   return "Cette commande n'est pas confirmée pour le moment.";
 }
 
+function classifyConfirmationError(message) {
+  const trimmed = (message || '').trim();
+
+  if (!trimmed) {
+    return { type: 'unknown', message: "Cette commande n'est pas confirmée pour le moment." };
+  }
+
+  // Erreur technique / indisponibilité
+  if (
+    trimmed.includes('temporairement indisponible') ||
+    trimmed.toLowerCase().includes('indisponible') ||
+    trimmed.toLowerCase().includes('serveur') ||
+    trimmed.toLowerCase().includes('erreur technique')
+  ) {
+    return {
+      type: 'technical',
+      message:
+        'La confirmation de votre paiement est temporairement indisponible. Aucun nouvel essai ne sera lancé automatiquement.',
+    };
+  }
+
+  // Commande non retrouvée / lien incorrect
+  if (
+    trimmed.includes("Impossible de retrouver cette commande") ||
+    trimmed.toLowerCase().includes('commande introuvable') ||
+    trimmed.toLowerCase().includes('n’existe pas') ||
+    trimmed.toLowerCase().includes('nexiste pas') ||
+    trimmed.toLowerCase().includes('order_not_found')
+  ) {
+    return {
+      type: 'not-found',
+      message:
+        "Impossible de retrouver cette commande sur le site. Merci de vérifier le lien de confirmation ou de contacter la créatrice si vous pensez que le paiement a bien été effectué.",
+    };
+  }
+
+  // Paiement non confirmé / pas encore payé
+  if (
+    trimmed.toLowerCase().includes("n'est pas encore validée") ||
+    trimmed.toLowerCase().includes("n'est pas confirmée") ||
+    trimmed.toLowerCase().includes('order_not_paid')
+  ) {
+    return {
+      type: 'not-paid',
+      message:
+        "Cette commande n'est pas confirmée pour le moment. Si vous pensez que le paiement a bien été débité, contactez la créatrice pour vérifier la situation.",
+    };
+  }
+
+  // Par défaut, on reste prudent
+  return {
+    type: 'generic',
+    message: trimmed,
+  };
+}
+
 export default function ConfirmationCommandePage() {
   const router = useRouter();
   const { clearCart } = useCart();
@@ -226,23 +282,23 @@ export default function ConfirmationCommandePage() {
             throw new Error(getConfirmationErrorMessage(data, response.status));
           }
         } catch (error) {
-          const errorMessage =
+          const rawMessage =
             error?.message ||
             'Une erreur est survenue lors de la vérification de votre commande.';
 
           const canRetry =
             attempt < MAX_CONFIRMATION_ATTEMPTS &&
-            (errorMessage.includes("n'est pas encore validée") ||
-              errorMessage.includes("n'est pas confirmée") ||
-              errorMessage.includes("n'existe pas") ||
-              errorMessage.includes('temporairement indisponible'));
+            (rawMessage.includes("n'est pas encore validée") ||
+              rawMessage.includes("n'est pas confirmée") ||
+              rawMessage.includes("n'existe pas") ||
+              rawMessage.includes('temporairement indisponible'));
 
           if (!canRetry) {
             if (!isMounted) {
               return;
             }
 
-            setConfirmationError(errorMessage);
+            setConfirmationError(rawMessage);
             setIsLoading(false);
             return;
           }
@@ -287,6 +343,11 @@ export default function ConfirmationCommandePage() {
 
   const shouldShowGuestAccountPrompt =
     isConfirmed && Boolean(customerEmail) && !isAuthenticated;
+
+  const classifiedError = useMemo(
+    () => classifyConfirmationError(confirmationError),
+    [confirmationError]
+  );
 
   return (
     <>
@@ -353,16 +414,46 @@ export default function ConfirmationCommandePage() {
               <h2 className={internalStyles.sectionTitle}>
                 Confirmation indisponible
               </h2>
-              <p className={internalStyles.text}>{confirmationError}</p>
-              <p className={internalStyles.text}>
-                Si vous pensez que le paiement a bien été effectué, contactez la
-                créatrice depuis la page Contact afin de vérifier votre commande.
-              </p>
+
+              <p className={internalStyles.text}>{classifiedError.message}</p>
+
+              {classifiedError.type === 'technical' && (
+                <p className={internalStyles.text}>
+                  Si vous pensez que le paiement a bien été effectué, contactez la
+                  créatrice depuis la page Contact afin de vérifier votre
+                  commande. Aucun nouveau débit ne sera réalisé automatiquement.
+                </p>
+              )}
+
+              {classifiedError.type === 'not-found' && (
+                <p className={internalStyles.text}>
+                  Si vous avez payé cette commande, il est possible que la
+                  synchronisation prenne un peu de retard. Contactez la créatrice
+                  en indiquant l&apos;heure et le montant du paiement afin qu&apos;elle
+                  puisse vérifier manuellement.
+                </p>
+              )}
+
+              {classifiedError.type === 'not-paid' && (
+                <p className={internalStyles.text}>
+                  Si le paiement a été refusé par votre banque, aucune commande
+                  confirmée ne sera enregistrée. Vous pouvez retourner à la
+                  boutique pour réessayer ultérieurement.
+                </p>
+              )}
+
+              {classifiedError.type === 'generic' && (
+                <p className={internalStyles.text}>
+                  Si vous pensez que le paiement a bien été effectué, contactez la
+                  créatrice pour vérifier votre commande et le suivi du paiement.
+                </p>
+              )}
 
               <div className={internalStyles.divider}>
                 <p className={internalStyles.metaText}>
                   Vous pouvez également retourner à la boutique ou revenir à
-                  l&apos;accueil.
+                  l&apos;accueil. Aucun nouvel essai automatique ne sera effectué
+                  depuis cette page.
                 </p>
               </div>
 
@@ -373,6 +464,11 @@ export default function ConfirmationCommandePage() {
                 <Link href="/boutique" legacyBehavior>
                   <a className={internalStyles.primaryButton}>
                     Retourner à la boutique
+                  </a>
+                </Link>
+                <Link href="/" legacyBehavior>
+                  <a className={internalStyles.primaryButton}>
+                    Revenir à l&apos;accueil
                   </a>
                 </Link>
               </div>
