@@ -2,8 +2,8 @@
 .hero {
   background: linear-gradient(
     to bottom,
-    #fcf3ea 0%,
-    #fbf1e8 100%
+    var(--color-bg) 0%,
+    var(--color-section) 100%
   );
   padding: 68px 24px 82px;
   display: flex;
@@ -59,7 +59,7 @@
   background-color: var(--color-primary);
   border: 1px solid var(--color-primary);
   color: var(--color-white);
-  box-shadow: 0 6px 18px rgba(248, 184, 131, 0.35);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .primaryButton:hover {
