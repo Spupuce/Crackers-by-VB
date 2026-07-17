@@ -2,7 +2,7 @@
 
 .page {
   min-height: calc(100vh - 80px);
-  background: linear-gradient(90deg, #fcf8f3 0%, #fffdfb 50%, #fcf8f3 100%);
+  background: linear-gradient(90deg, var(--color-bg) 0%, var(--color-white) 50%, var(--color-bg) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,9 +13,9 @@
   width: 100%;
   max-width: 420px;
   background-color: var(--color-white);
-  border: 1px solid #f2dfd2;
+  border: 1px solid var(--color-border);
   border-radius: 18px;
-  box-shadow: 0 10px 24px rgba(66, 37, 13, 0.10);
+  box-shadow: var(--shadow-warm-medium);
   padding: 28px 24px 24px;
 }
 
@@ -24,7 +24,7 @@
   height: 64px;
   margin: 0 auto 18px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #f6b29e 0%, #f48aac 100%);
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,7 +76,7 @@
 .input {
   width: 100%;
   height: 48px;
-  border: 1px solid #dddddf;
+  border: 1px solid var(--color-gray-300);
   border-radius: 8px;
   background-color: var(--color-white);
   padding: 0 52px 0 14px;
@@ -86,12 +86,12 @@
 }
 
 .input::placeholder {
-  color: #adb3bb;
+  color: var(--color-gray-400);
 }
 
 .input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(248, 184, 131, 0.18);
+  box-shadow: 0 0 0 3px var(--color-status-primary-bg);
 }
 
 .passwordToggle {
@@ -116,14 +116,14 @@
 .errorMessage {
   margin: -6px 0 0;
   font-size: 0.9rem;
-  color: #b42318;
+  color: var(--color-error);
   line-height: 1.5;
 }
 
 .successMessage {
   margin: -6px 0 0;
   font-size: 0.9rem;
-  color: #1f7a3d;
+  color: var(--color-success);
   line-height: 1.5;
 }
 
@@ -138,18 +138,25 @@
   font-weight: 500;
   cursor: pointer;
   margin-top: 4px;
-  box-shadow: 0 8px 18px rgba(230, 159, 106, 0.28);
+  box-shadow: var(--shadow-warm-medium);
+  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.submitButton:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-warm-strong);
 }
 
 .secondaryAction {
   text-align: center;
   font-size: 0.95rem;
-  color: #e8c7a5;
+  color: var(--color-primary-dark);
   margin-top: 18px;
 }
 
 .secondaryLink {
-  color: #e8c7a5;
+  color: var(--color-primary-dark);
   text-decoration: none;
   font-weight: 500;
 }
