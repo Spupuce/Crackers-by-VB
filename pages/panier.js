@@ -53,7 +53,10 @@ export default function PanierPage() {
   const [fieldErrors, setFieldErrors] = useState(buildInitialErrors());
   const [touchedFields, setTouchedFields] = useState(buildInitialTouched());
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // submitError = message visible côté cliente (formulaire, serveur, paiement annulé, etc.)
   const [submitError, setSubmitError] = useState('');
+  // submitInfo = message d’information (préparation commande, info non bloquante)
   const [submitInfo, setSubmitInfo] = useState('');
 
   useEffect(() => {
@@ -82,8 +85,9 @@ export default function PanierPage() {
     const checkoutStatus = router.query.checkout;
 
     if (checkoutStatus === 'cancel') {
+      // Cas d’annulation du paiement côté Stripe → message clair pour la cliente
       setSubmitError(
-        'Le paiement a été interrompu avant validation. Vous pouvez réessayer à tout moment.'
+        'Vous avez annulé le paiement. Votre panier est toujours disponible si vous souhaitez finaliser votre commande plus tard.'
       );
       setSubmitInfo('');
 
@@ -377,6 +381,7 @@ export default function PanierPage() {
   async function handleCheckout() {
     if (!canAttemptCheckout) return;
 
+    // On repart sur une base propre à chaque tentative
     setSubmitError('');
     setSubmitInfo('');
 
@@ -384,6 +389,7 @@ export default function PanierPage() {
       validateForm();
 
     if (!isValid) {
+      // Cas 1 : erreur de formulaire côté cliente
       setSubmitError(
         'Merci de corriger les champs obligatoires avant de continuer.'
       );
@@ -392,7 +398,8 @@ export default function PanierPage() {
     }
 
     setIsSubmitting(true);
-    setSubmitInfo('Préparation de votre commande...');
+    // Cas 2 : information de préparation de commande avant Stripe
+    setSubmitInfo('Préparation de votre commande et du paiement sécurisé...');
 
     try {
       await syncProfileIfNeeded(trimmedContact, trimmedShipping);
@@ -431,6 +438,7 @@ export default function PanierPage() {
       const data = await parseJsonSafely(response);
 
       if (!response.ok) {
+        // Cas 3 : erreur technique avant la redirection Stripe / incohérence panier
         setSubmitInfo('');
         setSubmitError(getCheckoutErrorMessage(data, response.status));
         return;
@@ -441,12 +449,14 @@ export default function PanierPage() {
         return;
       }
 
+      // Cas 4 : réponse inattendue de l’API de paiement
       setSubmitInfo('');
       setSubmitError(
         data?.message ||
           'Une erreur inattendue est survenue lors de la préparation du paiement.'
       );
     } catch (error) {
+      // Cas 5 : impossibilité de contacter le serveur de paiement
       setSubmitInfo('');
       setSubmitError(
         error?.message ||
@@ -594,7 +604,8 @@ export default function PanierPage() {
                           </span>
                         </span>
                         <span className={styles.deliveryOptionText}>
-                          Retrait en point relais, pratique pour les petits envois.
+                          Retrait en point relais, pratique pour les petits
+                          envois.
                         </span>
                       </button>
 
@@ -679,7 +690,8 @@ export default function PanierPage() {
                       </p>
                       <p className={styles.paymentText}>
                         Après validation, vous serez redirigée vers la page de
-                        paiement sécurisée de Stripe pour régler votre commande.
+                        paiement sécurisée de Stripe pour régler votre
+                        commande.
                       </p>
                     </div>
                   </section>
@@ -696,8 +708,8 @@ export default function PanierPage() {
                         : `Confirmer la commande · ${estimatedTotal.toFixed(2)} €`}
                     </button>
                     <p className={styles.submitHint}>
-                      Le montant final inclut les frais de port sélectionnés avant
-                      redirection vers Stripe.
+                      Le montant final inclut les frais de port sélectionnés
+                      avant redirection vers Stripe.
                     </p>
                   </div>
                 </div>

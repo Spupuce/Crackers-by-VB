@@ -55,9 +55,72 @@
                     - les quantités des produits concernés n’ont pas été décrémentées une deuxième fois.
             5. Vérifier l’email de confirmation
                 - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).
-- 🟡 Vérifier la cohérence des frais de port entre front, session Stripe, webhook et MongoDB.
-- 🟡 Vérifier la cohérence des données entre panier, commande MongoDB, compte client et administration.
-- 🔴 Définir clairement les cas d’erreur visibles côté cliente pendant le paiement.
+- 🟡 Vérifier la cohérence des frais de port entre front, session Stripe, webhook et MongoDB :
+            1. Front – Panier et récapitulatif avant paiement
+                - Vérifier que le montant des frais de port affiché sur la page panier correspond au mode de livraison choisi (domicile / relais / autre).
+                - Vérifier que le total TTC affiché (produits + frais de port) est calculé correctement et cohérent avec la décomposition.
+                - Vérifier que le mode de livraison sélectionné est clairement indiqué (libellé lisible, pas de code technique).
+            2. Session Stripe – Création de la session de paiement
+                - Vérifier que le montant des frais de port transmis à Stripe correspond exactement à celui affiché sur le front au moment de créer la session.
+                - Vérifier que la currency utilisée pour les frais de port dans la session Stripe est bien la même que celle du site (EUR).
+                - Vérifier que le total Stripe (ligne produits + shipping) correspond au total calculé côté front.
+            3. Webhook Stripe – Traitement en backend
+                - Vérifier que le webhook lit bien le montant total payé et le montant de shipping (si remonté) depuis Stripe.
+                - Vérifier que le backend ne recalcule pas des frais de port différents de ceux utilisés dans la session Stripe.
+                - Vérifier que les cas de réessai de webhook ne modifient pas les frais de port déjà enregistrés pour une commande payée.
+            4. MongoDB – Enregistrement de la commande
+                - Vérifier que le champ shippingAmount dans le document Order correspond au montant des frais de port affiché sur le panier et transmis à Stripe.
+                - Vérifier que le totalAmount dans Order = subtotalAmount + shippingAmount avec les mêmes valeurs que celles vues sur le front.
+                - Vérifier que le mode de livraison (domicile / relais /…) est stocké correctement (champ shipping.method cohérent avec la logique front).
+            5. Cohérence globale et cas limites
+                - Tester un scénario domicile et un scénario point relais et comparer frais de port front / Stripe / Mongo / admin.
+                -  Tester un changement de mode de livraison juste avant le passage au paiement et vérifier que les frais de port suivent bien ce changement partout.
+                - Vérifier le comportement en cas d’annulation ou de paiement échoué : aucune commande payée ne doit être créée avec des frais de port incohérents ou manquants.
+- 🟡 Vérifier la cohérence des données entre panier, commande MongoDB, compte client et administration :
+            1. Panier – Front
+                - Vérifier que chaque article affiche bien : nom, couleur choisie, quantité, prix unitaire, total ligne.
+                - Vérifier que le total panier (sous-total + frais de port) est exact.
+                - Vérifier que la sélection de couleur est obligatoire pour les produits à variantes et qu’elle est bien reflétée dans le panier.
+            2. Commande en MongoDB – Modèle Order
+                - Vérifier que la commande enregistrée contient bien :
+                - La liste des items avec productId, name, slug, color, quantity, unitPrice, imageUrl.
+                - Les champs subtotalAmount, shippingAmount, totalAmount, paymentStatus, status, shipping.method, shipping.carrier, shipping.trackingNumber.
+                - Vérifier que les quantités et couleurs des items correspondent exactement à ce qui était dans le panier.
+                - Vérifier que le client (invité ou connecté) est bien rattaché via userId quand connecté, ou via customer.email pour un invité.
+            3. Compte client – API /api/account/orders + page mon-compte
+                - Vérifier que l’API ne renvoie que des commandes avec paymentStatus: 'paid' pour le compte client.
+                - Vérifier que pour une commande test :
+                - L’ID / numéro de commande affiché côté compte client correspond à celui enregistré en Mongo.
+                - Le nombre d’articles et les totaux (ligne, total commande) sont identiques à ceux de la commande Mongo.
+                - La couleur des produits est bien affichée dans la modale de détail (OrderDetailsModal).
+                - Vérifier qu’un invité qui crée un compte ensuite retrouve bien ses commandes payées via l’email (logique userId / customer.email).
+            4. Administration – API /api/admin/orders + page administration/commandes
+                - Vérifier qu’une commande payée apparaît bien dans la liste admin avec :
+                    - Le bon statut de paiement (paid / pending / autre).
+                    - Le bon statut de commande (pending / preparing / shipped / delivered).
+                    - Le bon total et le bon mode de paiement.
+                - Vérifier que la fiche détaillée admin affiche :
+                    - Les mêmes articles que le panier (quantité, couleur, prix unitaire, total ligne).
+                    - Les mêmes frais de port que dans Mongo.
+                    - La même adresse de livraison que celle saisie côté front.
+                - Vérifier qu’un changement de statut ou de suivi transporteur en admin ne casse pas la cohérence avec les données Mongo (le document Order est mis à jour correctement).
+            5. Comparaison transversale – Panier ↔ Mongo ↔ Compte ↔ Admin
+            - Pour une commande test (utilisateur connecté puis une commande invité rattachable par email) :
+                - Comparer article par article :
+                    - Nom du produit.
+                    - Couleur.
+                    - Quantité.
+                    - Prix unitaire.
+                    - Total ligne.
+                - Comparer les totaux :
+                    - Sous-total.
+                    - Frais de port.
+                    - Total TTC.
+                - Vérifier que :
+                    - Ce qui est vu dans le panier avant paiement = ce qui est enregistré dans Mongo.
+                    - Ce qui est vu dans le compte client = ce qui est enregistré dans Mongo pour les commandes payées.
+                    - Ce qui est vu dans l’admin = ce qui est enregistré dans Mongo, pour les mêmes commandes.
+- 🟡 Définir clairement les cas d’erreur visibles côté cliente pendant le paiement.
 
 ## 2. Administration et suivi transporteur
 - 🔴 Vérifier la compatibilité entre commandes seedées et commandes MongoDB réelles.
