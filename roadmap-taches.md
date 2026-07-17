@@ -15,9 +15,47 @@
                 - passage de la commande à paymentStatus: paid via webhook ;
                 - affichage correct des données cliente, des lignes de commande et du total ;
                 - vidage du panier après confirmation.
-- 🔴 Vérifier que les commandes payées apparaissent bien côté compte client.
-- 🔴 Tester un rejeu webhook Stripe pour valider l’anti-doublon.
-- 🔴 Vérifier la cohérence des frais de port entre front, session Stripe, webhook et MongoDB.
+- 🟡 Vérifier que les commandes payées apparaissent bien côté compte client :
+            1.Préparer un compte de test
+                - Créer ou utiliser un compte client de test avec une adresse email dédiée.
+                - Vérifier que tu es bien connectée avec ce compte sur le site.
+            2. Passer une commande complète
+                - Ajouter au panier au moins un produit en stock.
+                - Aller sur /panier, renseigner des coordonnées cohérentes.
+                - Lancer le paiement Stripe (mode test) avec une carte de test.
+                - Laisser Stripe te rediriger vers /commande/confirmation après succès.
+            3. Vérifier la commande en base (si tu as un outil ou Mongo à portée)
+                - Vérifier que la commande possède bien :
+                    - userId = l’id de l’utilisateur connecté,
+                    - paymentStatus = 'paid',
+                    - status au moins preparing.
+            4. Vérifier l’API compte
+                - Depuis le navigateur (ou un outil type devtools / REST client), appeler /api/account/orders en étant toujours connectée.
+                - Vérifier que la commande que tu viens de passer apparaît bien dans la liste JSON renvoyée.
+            5. Vérifier l’affichage dans Mon compte
+                - Aller sur /mon-compte.
+                - Vérifier que dans “Historique de commandes” :
+                    - la commande est présente,
+                    - le statut affiché est cohérent (“Payée”, “En préparation”, etc.),
+                    - le total et le nombre d’articles sont corrects,
+                    - le clic sur la commande ouvre bien le détail dans OrderDetailsModal.
+- 🔴 Tester un rejeu webhook Stripe pour valider l’anti-doublon: 
+            1. Identifier une commande déjà payée
+                - Prendre une commande test déjà marquée paymentStatus = 'paid' et avec un stock bien décrémenté.
+            2. Rejouer le webhook dans Stripe
+                - Depuis le dashboard Stripe, aller dans la section Webhooks.
+                - Rejouer l’événement checkout.session.completed lié à cette commande sur l’URL de webhook de ton site.
+            3. Observer les logs côté serveur
+                - Vérifier que STRIPE_CHECKOUT_SESSION_COMPLETED_PROCESSED apparaît bien.
+                - Vérifier que les logs éventuels de décrémentation de stock ne montrent pas de décrément une seconde fois.
+            4. Vérifier la commande en base après rejeu
+                - Contrôler que :
+                    - paymentStatus reste paid,
+                    - status reste preparing ou évolue normalement,
+                    - les quantités des produits concernés n’ont pas été décrémentées une deuxième fois.
+            5. Vérifier l’email de confirmation
+                - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).
+- 🟡 Vérifier la cohérence des frais de port entre front, session Stripe, webhook et MongoDB.
 - 🔴 Vérifier la cohérence des données entre panier, commande MongoDB, compte client et administration.
 - 🔴 Définir clairement les cas d’erreur visibles côté cliente pendant le paiement.
 
@@ -66,3 +104,20 @@
 - 🔴 Faire un audit UX, un audit logique métier et un audit accessibilité de base.
 - 🟡 Finaliser la configuration email de domaine (`SPF`, `DKIM`, `DMARC`) avec une politique propre.
 - 🔴 Préparer la production sur o2switch, reporter les variables d’environnement et refaire un test complet post-déploiement.
+
+
+                1. Identifier une commande déjà payée
+                - Prendre une commande test déjà marquée paymentStatus = 'paid' et avec un stock bien décrémenté.
+                2. Rejouer le webhook dans Stripe
+                - Depuis le dashboard Stripe, aller dans la section Webhooks.
+                - Rejouer l’événement checkout.session.completed lié à cette commande sur l’URL de webhook de ton site.
+                3. Observer les logs côté serveur
+                - Vérifier que STRIPE_CHECKOUT_SESSION_COMPLETED_PROCESSED apparaît bien.
+                - Vérifier que les logs éventuels de décrémentation de stock ne montrent pas de décrément une seconde fois.
+                4. Vérifier la commande en base après rejeu
+                - Contrôler que :
+                    - paymentStatus reste paid,
+                    - status reste preparing ou évolue normalement,
+                    - les quantités des produits concernés n’ont pas été décrémentées une deuxième fois.
+                5. Vérifier l’email de confirmation
+                - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).

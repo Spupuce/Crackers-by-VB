@@ -178,7 +178,9 @@ async function decrementStockForOrder(order, mongoSession) {
 
       if (currentQty < orderedQty) {
         throw new Error(
-          `Stock insuffisant pour "${item?.name || 'Produit'}"${item.color ? ` (couleur "${item.color}")` : ''}.`
+          `Stock insuffisant pour "${item?.name || 'Produit'}"${
+            item.color ? ` (couleur "${item.color}")` : ''
+          }.`
         );
       }
 
@@ -223,6 +225,60 @@ async function findOrderFromSessionData(session, mongoSession) {
   return null;
 }
 
+// Contrôle de cohérence entre total Stripe et total Mongo (log uniquement)
+function logAmountConsistency(session, order) {
+  if (!session || !order) {
+    return;
+  }
+
+  const stripeAmountTotal = typeof session.amount_total === 'number'
+    ? session.amount_total
+    : null;
+
+  const stripeCurrency = normalizeCurrency(session.currency);
+  const orderSubtotal = Number(order.subtotalAmount) || 0;
+  const orderShipping = Number(order.shippingAmount) || 0;
+  const orderTotal = Number(order.totalAmount) || orderSubtotal + orderShipping;
+  const expectedStripeAmount = Math.round(orderTotal * 100);
+
+  if (stripeAmountTotal === null) {
+    console.warn('STRIPE_AMOUNT_TOTAL_MISSING', {
+      stripeSessionId: session.id || null,
+      orderId: order?._id ? String(order._id) : null,
+      currency: stripeCurrency,
+      orderSubtotal,
+      orderShipping,
+      orderTotal,
+      expectedStripeAmount,
+    });
+    return;
+  }
+
+  if (stripeAmountTotal !== expectedStripeAmount) {
+    console.error('STRIPE_AMOUNT_MISMATCH', {
+      stripeSessionId: session.id || null,
+      orderId: order?._id ? String(order._id) : null,
+      currency: stripeCurrency,
+      stripeAmountTotal,
+      orderSubtotal,
+      orderShipping,
+      orderTotal,
+      expectedStripeAmount,
+    });
+  } else {
+    console.log('STRIPE_AMOUNT_CONSISTENT', {
+      stripeSessionId: session.id || null,
+      orderId: order?._id ? String(order._id) : null,
+      currency: stripeCurrency,
+      stripeAmountTotal,
+      orderSubtotal,
+      orderShipping,
+      orderTotal,
+      expectedStripeAmount,
+    });
+  }
+}
+
 async function markOrderAsPaid(session) {
   if (session.payment_status && session.payment_status !== 'paid') {
     return {
@@ -251,6 +307,9 @@ async function markOrderAsPaid(session) {
       if (!order) {
         throw new Error('Commande introuvable pour cette session Stripe.');
       }
+
+      // Contrôle de cohérence des montants (log uniquement)
+      logAmountConsistency(session, order);
 
       if (order.status === 'cancelled') {
         throw new Error("Impossible de marquer comme payée une commande annulée.");
