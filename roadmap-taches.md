@@ -56,7 +56,7 @@
             5. Vérifier l’email de confirmation
                 - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).
 - 🟡 Vérifier la cohérence des frais de port entre front, session Stripe, webhook et MongoDB.
-- 🔴 Vérifier la cohérence des données entre panier, commande MongoDB, compte client et administration.
+- 🟡 Vérifier la cohérence des données entre panier, commande MongoDB, compte client et administration.
 - 🔴 Définir clairement les cas d’erreur visibles côté cliente pendant le paiement.
 
 ## 2. Administration et suivi transporteur

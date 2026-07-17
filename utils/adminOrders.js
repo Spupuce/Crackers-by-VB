@@ -148,6 +148,24 @@ export function getPaymentMethodLabel(order) {
   return 'Paiement';
 }
 
+export function getDeliveryMethodLabel(method) {
+  const normalized = (method || '').trim().toLowerCase();
+
+  if (normalized === 'home') {
+    return 'Livraison à domicile';
+  }
+
+  if (normalized === 'relay') {
+    return 'Point relais';
+  }
+
+  if (!normalized) {
+    return 'Livraison';
+  }
+
+  return method;
+}
+
 export function isAutoTrackingCarrier(carrier) {
   return AUTO_TRACKING_CARRIERS.includes((carrier || '').trim().toLowerCase());
 }
@@ -193,7 +211,14 @@ export function normalizeAdminOrder(apiOrder) {
       }))
     : [];
 
-  const shippingCarrier = (apiOrder.shipping?.carrier || '').trim().toLowerCase();
+  const rawShippingCarrier = (apiOrder.shipping?.carrier || '').trim().toLowerCase();
+  const shippingCarrier = rawShippingCarrier;
+  const shippingCarrierLabel = getCarrierLabel(shippingCarrier);
+  const rawShippingMethod = apiOrder.shipping?.method || shippingCarrier || '';
+  const shippingMethod = getDeliveryMethodLabel(rawShippingMethod);
+
+  const paymentStatus = apiOrder.paymentStatus || 'pending';
+  const paymentMethodLabel = getPaymentMethodLabel(apiOrder);
 
   return {
     id: apiOrder.orderNumber || apiOrder._id || '',
@@ -217,14 +242,14 @@ export function normalizeAdminOrder(apiOrder) {
     subtotal: Number(apiOrder.subtotalAmount || 0),
     shippingAmount: Number(apiOrder.shippingAmount || 0),
     total: Number(apiOrder.totalAmount || 0),
-    paymentMethod: getPaymentMethodLabel(apiOrder),
-    paymentStatus: apiOrder.paymentStatus || 'pending',
+    paymentMethod: paymentMethodLabel,
+    paymentStatus,
     status: apiOrder.status || 'pending',
     trackingNumber: apiOrder.shipping?.trackingNumber || '',
     trackingUrl: apiOrder.shipping?.trackingUrl || '',
     shippingCarrier,
-    shippingCarrierLabel: getCarrierLabel(shippingCarrier),
-    shippingMethod: apiOrder.shipping?.method || shippingCarrier || 'Livraison',
+    shippingCarrierLabel,
+    shippingMethod,
     notes: apiOrder.notes || '',
     statusEmail: {
       sent: Boolean(apiOrder.statusEmail?.sent),
