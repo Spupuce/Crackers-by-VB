@@ -120,7 +120,34 @@
                     - Ce qui est vu dans le panier avant paiement = ce qui est enregistré dans Mongo.
                     - Ce qui est vu dans le compte client = ce qui est enregistré dans Mongo pour les commandes payées.
                     - Ce qui est vu dans l’admin = ce qui est enregistré dans Mongo, pour les mêmes commandes.
-- 🟡 Définir clairement les cas d’erreur visibles côté cliente pendant le paiement.
+- 🟡 Définir clairement les cas d’erreur visibles côté cliente pendant le paiement :
+### Cas d’erreur visibles côté cliente pendant le paiement
+1. Erreurs de formulaire (page `/panier`)
+   - Message : « Merci de corriger les champs obligatoires… »
+   - Localisation : bloc d’erreur en haut du panier.
+2. Erreur technique `create-session` ou incohérence panier (page `/panier`)
+   - Message provenant de `getCheckoutErrorMessage(...)`.
+   - Localisation : bloc d’erreur en haut du panier.
+   - Action : aucun débit, cliente reste sur le panier.
+3. Annulation Stripe (retour `?checkout=cancel` vers `/panier`)
+   - Message : « Vous avez annulé le paiement. Votre panier est toujours disponible… »
+   - Localisation : bloc d’erreur en haut du panier.
+   - Action : panier intact, possibilité de réessayer plus tard.
+4. Vérification de commande en cours (page `/commande/confirmation`)
+   - Message : « Vérification de votre paiement en cours… »
+   - Localisation : page de confirmation pendant les tentatives de lecture d’`Order`.
+5. Confirmation indisponible / erreur technique (page `/commande/confirmation`)
+   - Message technique : « La confirmation de votre paiement est temporairement indisponible… »
+   - Localisation : section “Confirmation indisponible”.
+   - Action : cliente peut contacter via page Contact, aucun nouvel débit.
+6. Commande introuvable sur le site (page `/commande/confirmation`)
+   - Message : « Impossible de retrouver cette commande sur le site… »
+   - Localisation : section “Confirmation indisponible”.
+   - Action : cliente invitée à contacter la créatrice avec heure / montant du paiement.
+7. Commande non confirmée / paiement non validé (page `/commande/confirmation`)
+   - Message : « Cette commande n’est pas confirmée pour le moment… »
+   - Localisation : section “Confirmation indisponible”.
+   - Action : cliente peut revenir à la boutique ou réessayer ultérieurement.
 
 ## 2. Administration et suivi transporteur
 - 🔴 Vérifier la compatibilité entre commandes seedées et commandes MongoDB réelles.
