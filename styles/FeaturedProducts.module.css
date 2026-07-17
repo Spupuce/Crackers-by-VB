@@ -1,3 +1,4 @@
+/* styles/FeaturedProducts.module.css */
 .section {
   padding: 12px 24px 110px;
   background-color: var(--color-white);
@@ -58,7 +59,7 @@
   position: absolute;
   right: 12px;
   top: 12px;
-  background-color: #ff4d4f;
+  background-color: var(--color-danger-button);
   color: var(--color-white);
   font-size: 0.72rem;
   font-weight: 600;
