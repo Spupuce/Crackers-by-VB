@@ -18,7 +18,7 @@
   border-radius: 16px;
   padding: 18px;
   margin-bottom: 22px;
-  box-shadow: 0 10px 24px rgba(31, 41, 55, 0.05);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .form {
@@ -99,7 +99,7 @@
 select.input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(248, 184, 131, 0.18);
+  box-shadow: 0 0 0 3px var(--color-status-primary-bg);
 }
 
 .separator {
@@ -109,13 +109,13 @@ select.input:focus {
 }
 
 .stockHint {
-  color: #d27aa0;
+  color: var(--color-secondary-dark);
   font-size: 0.78rem;
   font-weight: 500;
 }
 
 .errorText {
-  color: #c2577f;
+  color: var(--color-error);
   font-size: 0.8rem;
   font-weight: 500;
 }
@@ -185,14 +185,14 @@ select.input:focus {
     background-color 0.2s ease,
     transform 0.15s ease,
     box-shadow 0.2s ease;
-  box-shadow: 0 8px 18px rgba(31, 41, 55, 0.08);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .primaryButton:hover,
 .secondaryButton:hover {
   background-color: var(--color-primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(31, 41, 55, 0.12);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .secondarySubmitButton {
@@ -257,9 +257,9 @@ select.input:focus {
   max-width: 260px;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(234, 223, 214, 0.95);
+  border: 1px solid var(--color-border);
   background-color: var(--color-gray-100);
-  box-shadow: 0 8px 18px rgba(31, 41, 55, 0.06);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .mainImagePreview {
@@ -284,11 +284,11 @@ select.input:focus {
   border-radius: 14px;
   background: linear-gradient(
     180deg,
-    rgba(248, 184, 131, 0.16) 0%,
+    var(--color-status-primary-bg) 0%,
     rgba(248, 184, 131, 0.1) 100%
   );
-  border: 1px solid rgba(244, 201, 162, 0.95);
-  box-shadow: 0 8px 18px rgba(31, 41, 55, 0.05);
+  border: 1px solid var(--color-primary-light);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .colorPreviewItemArchived {
@@ -302,8 +302,8 @@ select.input:focus {
     rgba(248, 184, 131, 0.08) 0%,
     rgba(248, 184, 131, 0.03) 100%
   );
-  border: 1px solid rgba(234, 223, 214, 0.95);
-  box-shadow: 0 8px 18px rgba(31, 41, 55, 0.04);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .colorPreviewImageWrapper {
@@ -313,7 +313,7 @@ select.input:focus {
   overflow: hidden;
   background-color: var(--color-gray-100);
   flex-shrink: 0;
-  border: 1px solid rgba(234, 223, 214, 0.95);
+  border: 1px solid var(--color-border);
 }
 
 .colorPreviewImage {
@@ -371,35 +371,35 @@ select.input:focus {
 
 .colorPreviewEdit {
   background-color: var(--color-primary);
-  box-shadow: 0 8px 18px rgba(31, 41, 55, 0.1);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .colorPreviewEdit:hover {
   background-color: var(--color-primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(31, 41, 55, 0.14);
+  box-shadow: var(--shadow-warm-strong);
 }
 
 .colorPreviewArchive {
   background-color: var(--color-gray-700);
-  box-shadow: 0 8px 18px rgba(31, 41, 55, 0.1);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .colorPreviewArchive:hover {
   background-color: var(--color-gray-900);
   transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(31, 41, 55, 0.14);
+  box-shadow: var(--shadow-warm-strong);
 }
 
 .colorPreviewDelete {
   background-color: var(--color-gray-700);
-  box-shadow: 0 8px 18px rgba(31, 41, 55, 0.1);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .colorPreviewDelete:hover {
   background-color: var(--color-gray-900);
   transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(31, 41, 55, 0.14);
+  box-shadow: var(--shadow-warm-strong);
 }
 
 .colorPreviewEdit svg,
@@ -426,13 +426,13 @@ select.input:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 18px rgba(31, 41, 55, 0.1);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .colorPreviewRestore:hover {
   background-color: var(--color-primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(31, 41, 55, 0.14);
+  box-shadow: var(--shadow-warm-strong);
 }
 
 .archivedColorsSection {
@@ -440,8 +440,8 @@ select.input:focus {
   padding: 18px;
   border-radius: 20px;
   background: var(--color-white);
-  border: 1px solid rgba(234, 223, 214, 0.95);
-  box-shadow: 0 14px 30px rgba(31, 41, 55, 0.1);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .archivedColorsTitle {
