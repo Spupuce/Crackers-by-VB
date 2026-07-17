@@ -42,7 +42,7 @@
   background-color: var(--color-white);
   border-radius: 14px;
   padding: 18px 32px 24px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .card + .card {
@@ -159,6 +159,7 @@
 .input:focus,
 .textarea:focus {
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-status-primary-bg);
 }
 
 .textarea {
