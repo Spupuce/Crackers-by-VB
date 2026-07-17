@@ -8,6 +8,8 @@ import {
   getStatusClassName,
 } from '../../utils/accountOrders';
 
+const PRODUCT_IMAGE_FALLBACK = '/images/placeholder-product.jpg';
+
 export default function OrderDetailsModal({
   selectedOrder,
   setSelectedOrder,
@@ -20,6 +22,7 @@ export default function OrderDetailsModal({
   }
 
   const items = Array.isArray(selectedOrder.items) ? selectedOrder.items : [];
+  const itemCount = Number(selectedOrder.itemCount) || 0;
 
   return (
     <div
@@ -64,44 +67,61 @@ export default function OrderDetailsModal({
             {selectedOrder.status}
           </span>
           <span className={styles.orderSummaryText}>
-            {selectedOrder.itemCount} article
-            {selectedOrder.itemCount > 1 ? 's' : ''}
+            {itemCount} article{itemCount > 1 ? 's' : ''}
           </span>
         </div>
 
         <div className={styles.orderModalItems}>
-          {items.map((item) => (
-            <div key={item.id} className={styles.orderModalItem}>
-              <div className={styles.orderModalImageWrapper}>
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className={styles.orderModalImage}
-                />
-              </div>
+          {items.map((item, index) => {
+            const quantity = getSafeAmount(item.quantity);
+            const unitPrice = getSafeAmount(item.price);
+            const lineTotal = unitPrice * quantity;
+            const imageSrc =
+              typeof item.image === 'string' && item.image.trim()
+                ? item.image
+                : PRODUCT_IMAGE_FALLBACK;
 
-              <div className={styles.orderModalItemContent}>
-                <p className={styles.orderModalItemName}>{item.name}</p>
+            return (
+              <div
+                key={`${item.id || 'item'}-${item.color || 'no-color'}-${index}`}
+                className={styles.orderModalItem}
+              >
+                <div className={styles.orderModalImageWrapper}>
+                  <img
+                    src={imageSrc}
+                    alt={item.name}
+                    className={styles.orderModalImage}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = PRODUCT_IMAGE_FALLBACK;
+                    }}
+                  />
+                </div>
 
-                {item.color ? (
+                <div className={styles.orderModalItemContent}>
+                  <p className={styles.orderModalItemName}>{item.name}</p>
+
+                  {item.color ? (
+                    <p className={styles.orderModalItemMeta}>
+                      Couleur : {item.color}
+                    </p>
+                  ) : null}
+
                   <p className={styles.orderModalItemMeta}>
-                    Couleur : {item.color}
+                    Quantité : {quantity}
                   </p>
-                ) : null}
 
-                <p className={styles.orderModalItemMeta}>
-                  Quantité : {item.quantity}
+                  <p className={styles.orderModalItemMeta}>
+                    Prix unitaire : {unitPrice.toFixed(2)} €
+                  </p>
+                </div>
+
+                <p className={styles.orderModalItemPrice}>
+                  {lineTotal.toFixed(2)} €
                 </p>
               </div>
-
-              <p className={styles.orderModalItemPrice}>
-                {(
-                  getSafeAmount(item.price) * getSafeAmount(item.quantity)
-                ).toFixed(2)}{' '}
-                €
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className={styles.orderModalFooter}>
