@@ -150,7 +150,24 @@
    - Action : cliente peut revenir à la boutique ou réessayer ultérieurement.
 
 ## 2. Administration et suivi transporteur
-- 🟡 Vérifier la compatibilité entre commandes seedées et commandes MongoDB réelles.
+- 🟡 Vérifier la compatibilité entre commandes seedées et commandes MongoDB réelles :
+1. Générer des commandes seedées
+    - Se connecter en admin.
+    - Appeler ton endpoint de seed (via Postman/Thunder Client ou un bouton si tu en as un) pour un utilisateur donné.
+    - Vérifier qu’elles apparaissent dans /administration/commandes.
+2. Vérifier les statuts
+    - Sur la liste :
+        - Vérifier que la commande livrée a bien un badge “Livrée” (couleur verte).
+        - Vérifier que tu peux passer une commande en “Annulée” et que le badge devient rouge et lisible.
+    - Dans le détail :
+        - Vérifier les onglets de statuts (y compris “Annulée”) et les messages d’alerte.
+3. Tester les transporteurs
+    - Sur une commande seedée, en détail :
+        - Choisir “Mondial Relay” + numéro de suivi → vérifier que le lien auto est généré.
+        - Choisir “Lettre Suivie” ou “Colis Privé” + lien manuel → vérifier que l’API accepte et que le lien est conservé.
+4. Comparer avec une commande réelle
+    - Passer une vraie commande (ou utiliser une déjà existante).
+    - Vérifier que la fiche se comporte exactement comme la seed (mêmes boutons, mêmes statuts, mêmes champs).
 - 🔴 Harmoniser les statuts réels de commande / paiement avec les filtres et libellés admin.
 - 🔴 Étendre le suivi transporteur à Colissimo et Chronopost.
 - 🔴 Ajouter un bouton admin `Actualiser le suivi` sur les commandes expédiées.

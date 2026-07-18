@@ -131,24 +131,28 @@ export function formatEmailSentAt(value) {
   });
 }
 
-export function getPaymentMethodLabel(order) {
-  if (order.paymentStatus === 'paid') {
-    return 'Carte bancaire';
+export function getPaymentMethodLabel() {
+  return 'Carte bancaire';
+}
+
+export function getPaymentStatusLabel(paymentStatus) {
+  if (paymentStatus === 'paid') {
+    return 'Payé';
   }
 
-  if (order.paymentStatus === 'pending') {
-    return 'Paiement en attente';
+  if (paymentStatus === 'pending') {
+    return 'En attente';
   }
 
-  if (order.paymentStatus === 'failed') {
-    return 'Paiement échoué';
+  if (paymentStatus === 'failed') {
+    return 'Échoué';
   }
 
-  if (order.paymentStatus === 'refunded') {
-    return 'Paiement remboursé';
+  if (paymentStatus === 'refunded') {
+    return 'Remboursé';
   }
 
-  return 'Paiement';
+  return 'Inconnu';
 }
 
 export function getDeliveryMethodLabel(method) {
@@ -221,7 +225,8 @@ export function normalizeAdminOrder(apiOrder) {
   const shippingMethod = getDeliveryMethodLabel(rawShippingMethod);
 
   const paymentStatus = apiOrder.paymentStatus || 'pending';
-  const paymentMethodLabel = getPaymentMethodLabel(apiOrder);
+  const paymentMethodLabel = getPaymentMethodLabel();
+  const paymentStatusLabel = getPaymentStatusLabel(paymentStatus);
 
   return {
     id: apiOrder.orderNumber || apiOrder._id || '',
@@ -246,7 +251,9 @@ export function normalizeAdminOrder(apiOrder) {
     shippingAmount: Number(apiOrder.shippingAmount || 0),
     total: Number(apiOrder.totalAmount || 0),
     paymentMethod: paymentMethodLabel,
+    paymentMethodLabel,
     paymentStatus,
+    paymentStatusLabel,
     status: apiOrder.status || 'pending',
     trackingNumber: apiOrder.shipping?.trackingNumber || '',
     trackingUrl: apiOrder.shipping?.trackingUrl || '',
