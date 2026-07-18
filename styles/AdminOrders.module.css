@@ -144,6 +144,11 @@
   color: var(--color-status-success-text);
 }
 
+.status-cancelled {
+  background: var(--color-error-highlight, rgba(239, 68, 68, 0.12));
+  color: var(--color-error);
+}
+
 .orderMeta p {
   margin: 0 0 4px;
   color: var(--color-gray-600);
