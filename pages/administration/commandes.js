@@ -205,6 +205,7 @@ export default function AdminOrdersPage() {
       preparing: orders.filter((order) => order.status === 'preparing').length,
       shipped: orders.filter((order) => order.status === 'shipped').length,
       delivered: orders.filter((order) => order.status === 'delivered').length,
+      cancelled: orders.filter((order) => order.status === 'cancelled').length,
     };
   }, [orders]);
 
@@ -661,7 +662,15 @@ export default function AdminOrdersPage() {
                     </div>
                     <div className={styles.paymentRow}>
                       <strong>Mode de paiement</strong>
-                      <span>{selectedOrder.paymentMethod}</span>
+                      <span>
+                        {selectedOrder.paymentMethodLabel ||
+                          selectedOrder.paymentMethod ||
+                          'Carte bancaire'}
+                      </span>
+                    </div>
+                    <div className={styles.paymentRow}>
+                      <strong>Statut du paiement</strong>
+                      <span>{selectedOrder.paymentStatusLabel || 'Inconnu'}</span>
                     </div>
                     <div className={`${styles.paymentRow} ${styles.paymentTotalRow}`}>
                       <strong>Total</strong>
