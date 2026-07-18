@@ -150,7 +150,7 @@
    - Action : cliente peut revenir à la boutique ou réessayer ultérieurement.
 
 ## 2. Administration et suivi transporteur
-- 🔴 Vérifier la compatibilité entre commandes seedées et commandes MongoDB réelles.
+- 🟡 Vérifier la compatibilité entre commandes seedées et commandes MongoDB réelles.
 - 🔴 Harmoniser les statuts réels de commande / paiement avec les filtres et libellés admin.
 - 🔴 Étendre le suivi transporteur à Colissimo et Chronopost.
 - 🔴 Ajouter un bouton admin `Actualiser le suivi` sur les commandes expédiées.

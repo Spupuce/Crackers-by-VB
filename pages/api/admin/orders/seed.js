@@ -1,25 +1,31 @@
 // pages/api/admin/orders/seed.js
 
-import dbConnect from '../../../../lib/mongodb';
+
+import { connectMongo } from '../../../../lib/mongodb';
 import Order from '../../../../models/Order';
 import Product from '../../../../models/Product';
+
 
 function getSafeNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+
 function getProductImage(product) {
   if (typeof product?.imageUrl === 'string' && product.imageUrl.trim()) {
     return product.imageUrl.trim();
   }
 
+
   if (Array.isArray(product?.imageUrls) && typeof product.imageUrls[0] === 'string') {
     return product.imageUrls[0].trim();
   }
 
+
   return '';
 }
+
 
 function buildCustomer(index) {
   const customers = [
@@ -43,8 +49,10 @@ function buildCustomer(index) {
     },
   ];
 
+
   return customers[index] || customers[0];
 }
+
 
 function buildItems(products, quantitiesByIndex) {
   return products.map((product, index) => ({
@@ -58,12 +66,14 @@ function buildItems(products, quantitiesByIndex) {
   }));
 }
 
+
 function computeSubtotal(items) {
   return items.reduce(
     (sum, item) => sum + getSafeNumber(item.unitPrice) * getSafeNumber(item.quantity),
     0
   );
 }
+
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -73,10 +83,13 @@ export default async function handler(req, res) {
     });
   }
 
+
   try {
-    await dbConnect();
+    await connectMongo();
+
 
     const { userId } = req.body || {};
+
 
     if (!userId) {
       return res.status(400).json({
@@ -85,7 +98,9 @@ export default async function handler(req, res) {
       });
     }
 
+
     const products = await Product.find({}).limit(3).lean();
+
 
     if (!products || products.length === 0) {
       return res.status(400).json({
@@ -95,19 +110,24 @@ export default async function handler(req, res) {
       });
     }
 
+
     const now = new Date();
+
 
     const deliveredItems = buildItems(products, [1, 2, 2]);
     const deliveredSubtotal = computeSubtotal(deliveredItems);
     const deliveredShippingAmount = 0;
 
+
     const preparingItems = buildItems(products.slice(0, 2), [1, 1]);
     const preparingSubtotal = computeSubtotal(preparingItems);
     const preparingShippingAmount = 4.9;
 
-    const pendingItems = buildItems(products.slice(0, 1), [1]);
-    const pendingSubtotal = computeSubtotal(pendingItems);
-    const pendingShippingAmount = 7.9;
+
+    const secondPreparingItems = buildItems(products.slice(0, 1), [1]);
+    const secondPreparingSubtotal = computeSubtotal(secondPreparingItems);
+    const secondPreparingShippingAmount = 7.9;
+
 
     const fakeOrders = [
       {
@@ -124,8 +144,8 @@ export default async function handler(req, res) {
         currency: 'EUR',
         items: deliveredItems,
         notes: 'Première commande de test pour le compte.',
-        stripeSessionId: '',
-        stripePaymentIntentId: '',
+        stripeSessionId: 'SIMULATED_SESSION',
+        stripePaymentIntentId: 'SIMULATED_PAYMENT',
         shippingAddress: {
           addressLine1: '12 rue des Lilas',
           addressLine2: '',
@@ -136,9 +156,9 @@ export default async function handler(req, res) {
         shipping: {
           method: 'relay',
           parcelSize: 'medium',
-          carrier: '',
+          carrier: 'colissimo',
           trackingNumber: 'XR123456789FR',
-          trackingUrl: '',
+          trackingUrl: 'https://www.laposte.fr/outils/suivre-vos-envois?code=XR123456789FR',
           shippedAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 5),
           deliveredAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3),
         },
@@ -159,8 +179,8 @@ export default async function handler(req, res) {
         currency: 'EUR',
         items: preparingItems,
         notes: 'Commande de test en préparation.',
-        stripeSessionId: '',
-        stripePaymentIntentId: '',
+        stripeSessionId: 'SIMULATED_SESSION',
+        stripePaymentIntentId: 'SIMULATED_PAYMENT',
         shippingAddress: {
           addressLine1: '4 impasse des Ateliers',
           addressLine2: 'Bâtiment B',
@@ -185,17 +205,17 @@ export default async function handler(req, res) {
         isUserDeleted: false,
         anonymizedAt: null,
         orderNumber: '',
-        status: 'pending',
+        status: 'preparing',
         paymentStatus: 'paid',
         customer: buildCustomer(2),
-        subtotalAmount: pendingSubtotal,
-        shippingAmount: pendingShippingAmount,
-        totalAmount: pendingSubtotal + pendingShippingAmount,
+        subtotalAmount: secondPreparingSubtotal,
+        shippingAmount: secondPreparingShippingAmount,
+        totalAmount: secondPreparingSubtotal + secondPreparingShippingAmount,
         currency: 'EUR',
-        items: pendingItems,
-        notes: 'Commande de test payée, en attente de préparation.',
-        stripeSessionId: '',
-        stripePaymentIntentId: '',
+        items: secondPreparingItems,
+        notes: 'Commande de test payée, en préparation.',
+        stripeSessionId: 'SIMULATED_SESSION',
+        stripePaymentIntentId: 'SIMULATED_PAYMENT',
         shippingAddress: {
           addressLine1: '8 avenue des Fleurs',
           addressLine2: '',
@@ -217,7 +237,9 @@ export default async function handler(req, res) {
       },
     ];
 
+
     await Order.insertMany(fakeOrders);
+
 
     return res.status(201).json({
       ok: true,

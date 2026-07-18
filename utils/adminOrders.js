@@ -5,6 +5,7 @@ import {
   FiClock,
   FiPackage,
   FiTruck,
+  FiXCircle,
 } from 'react-icons/fi';
 
 export const ORDER_STATUSES = [
@@ -13,6 +14,7 @@ export const ORDER_STATUSES = [
   { value: 'preparing', label: 'En préparation', icon: FiPackage },
   { value: 'shipped', label: 'Expédiée', icon: FiTruck },
   { value: 'delivered', label: 'Livrée', icon: FiCheckCircle },
+  { value: 'cancelled', label: 'Annulée', icon: FiXCircle },
 ];
 
 export const STATUS_OPTIONS = [
@@ -20,6 +22,7 @@ export const STATUS_OPTIONS = [
   { value: 'preparing', label: 'En préparation', icon: FiPackage },
   { value: 'shipped', label: 'Expédiée', icon: FiTruck },
   { value: 'delivered', label: 'Livrée', icon: FiCheckCircle },
+  { value: 'cancelled', label: 'Annulée', icon: FiXCircle },
 ];
 
 export const CARRIER_OPTIONS = [
