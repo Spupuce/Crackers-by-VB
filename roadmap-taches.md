@@ -205,7 +205,18 @@
     - le statut passe bien en shipped quand il faut,
     - le lien s’ouvre correctement,
     - la commande rechargée conserve bien carrier, trackingNumber et trackingUrl.
-- 🔴 Ajouter un bouton admin `Actualiser le suivi` sur les commandes expédiées.
+- 🟡 Ajouter un bouton admin `Actualiser le suivi` sur les commandes expédiées : 
+1. que tu testes côté admin :
+    - une commande shipped avec Mondial Relay + numéro,
+    - une commande shipped avec Colissimo + numéro,
+    - une commande shipped avec Chronopost + numéro,
+    - en cliquant sur “Actualiser le suivi” et en observant :
+        - le message retour,
+        - un éventuel changement de statut,
+        - la cohérence de deliveredAt si tu forces un cas “livré”.
+2. ensuite, selon ce que tu constates :
+    - soit on corrige la logique (par exemple si le message “Interrogation API non implémentée” est trop brut),
+    - soit on consolide ce point comme ✅ 
 - 🔴 Interroger l’API transporteur au clic, mettre à jour automatiquement `delivered` et renseigner `shipping.deliveredAt`.
 - 🔴 Vérifier la cohérence entre `status`, `shippedAt`, `deliveredAt`, `trackingNumber`, `trackingUrl` et le retour transporteur.
 - 🟡 Définir le comportement si le transporteur ne renvoie rien, renvoie une erreur, ou remonte un statut ambigu.

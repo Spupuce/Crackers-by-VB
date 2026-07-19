@@ -3,7 +3,12 @@
 import { connectMongo } from '../../../../../lib/mongodb';
 import { requireAdminSession } from '../../../../../lib/session';
 import Order from '../../../../../models/Order';
-import { refreshOrderTracking } from '../../../../../lib/services/trackingService';
+import {
+  normalizeCarrier,
+  normalizeText,
+  refreshOrderTracking,
+  resolveOrderShippingConsistency,
+} from '../../../../../lib/services/trackingService';
 
 function ensureShippingObject(order) {
   if (!order.shipping) {
@@ -72,15 +77,28 @@ export default async function handler(req, res) {
     if (trackingResult.shouldUpdateOrder) {
       ensureShippingObject(order);
 
-      if (trackingResult.nextOrderStatus) {
-        order.status = trackingResult.nextOrderStatus;
-      }
+      const consistency = resolveOrderShippingConsistency({
+        status: trackingResult.nextOrderStatus || order.status,
+        shippedAt: trackingResult.nextShippedAt || order.shipping?.shippedAt || null,
+        deliveredAt: trackingResult.nextDeliveredAt || order.shipping?.deliveredAt || null,
+        trackingNumber:
+          normalizeText(trackingResult.trackingNumber) ||
+          normalizeText(order.shipping?.trackingNumber),
+        trackingUrl:
+          normalizeText(trackingResult.trackingUrl) ||
+          normalizeText(order.shipping?.trackingUrl),
+        carrier:
+          normalizeCarrier(trackingResult.carrier) ||
+          normalizeCarrier(order.shipping?.carrier),
+        now: new Date(),
+      });
 
-      if (trackingResult.shouldClearDeliveredAt) {
-        order.shipping.deliveredAt = null;
-      } else if (trackingResult.nextDeliveredAt) {
-        order.shipping.deliveredAt = trackingResult.nextDeliveredAt;
-      }
+      order.status = consistency.status;
+      order.shipping.carrier = consistency.carrier;
+      order.shipping.trackingNumber = consistency.trackingNumber;
+      order.shipping.trackingUrl = consistency.trackingUrl;
+      order.shipping.shippedAt = consistency.shippedAt;
+      order.shipping.deliveredAt = consistency.deliveredAt;
 
       await order.save();
       updated = true;
