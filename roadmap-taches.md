@@ -188,7 +188,23 @@
         - que le badge de statut commande est bien “Annulée”,
         - que le filtre “Annulée” et son compteur fonctionnent,
         - que le bloc paiement affiche un statut de paiement compatible (En attente, Échoué ou Remboursé selon le cas).
-- 🔴 Étendre le suivi transporteur à Colissimo et Chronopost.
+- 🟡 Étendre le suivi transporteur à Colissimo et Chronopost : 
+1. Colissimo
+    - choisir Colissimo,
+    - renseigner un numéro de suivi,
+    - enregistrer,
+    - vérifier que le lien généré ressemble bien à :
+    https://www.laposte.fr/outils/suivre-vos-envois?code=...
+2. Chronopost
+    - choisir Chronopost,
+    - renseigner un numéro de suivi,
+    - enregistrer,
+    - vérifier que le lien généré ressemble bien à :
+    https://www.chronopost.fr/tracking-no-cms/suivi-page?listeNumerosLT=...
+3. Vérifier que :
+    - le statut passe bien en shipped quand il faut,
+    - le lien s’ouvre correctement,
+    - la commande rechargée conserve bien carrier, trackingNumber et trackingUrl.
 - 🔴 Ajouter un bouton admin `Actualiser le suivi` sur les commandes expédiées.
 - 🔴 Interroger l’API transporteur au clic, mettre à jour automatiquement `delivered` et renseigner `shipping.deliveredAt`.
 - 🔴 Vérifier la cohérence entre `status`, `shippedAt`, `deliveredAt`, `trackingNumber`, `trackingUrl` et le retour transporteur.

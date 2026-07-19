@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
-import { FiArrowLeft, FiMail, FiTruck } from 'react-icons/fi';
+import { FiArrowLeft, FiMail, FiRefreshCw, FiTruck } from 'react-icons/fi';
 import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -48,6 +48,7 @@ export default function AdminOrdersPage() {
     trackingUrl: '',
   });
   const [shippingSavingFor, setShippingSavingFor] = useState('');
+  const [shippingRefreshFor, setShippingRefreshFor] = useState('');
   const [shippingFeedback, setShippingFeedback] = useState({
     type: '',
     message: '',
@@ -55,6 +56,13 @@ export default function AdminOrdersPage() {
 
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
   const selectedCarrierUsesAutoTracking = isAutoTrackingCarrier(shippingForm.carrier);
+  const canRefreshSelectedOrderTracking = Boolean(
+    selectedOrder &&
+      selectedOrder.sourceId &&
+      selectedOrder.status === 'shipped' &&
+      (selectedOrder.shippingCarrier || '').trim() &&
+      (selectedOrder.trackingNumber || '').trim()
+  );
 
   const patchOrderInState = useCallback((orderId, patch) => {
     setOrders((currentOrders) =>
@@ -356,6 +364,64 @@ export default function AdminOrdersPage() {
       });
     } finally {
       setShippingSavingFor('');
+    }
+  }
+
+  async function handleRefreshTracking() {
+    if (!selectedOrder || !selectedOrder.sourceId) {
+      setShippingFeedback({
+        type: 'error',
+        message: 'Commande introuvable pour l’actualisation du suivi.',
+      });
+      return;
+    }
+
+    setShippingRefreshFor(selectedOrder.id);
+    setShippingFeedback({ type: '', message: '' });
+
+    try {
+      const response = await fetch(
+        `/api/admin/orders/${selectedOrder.sourceId}/refresh-tracking`,
+        {
+          method: 'POST',
+        }
+      );
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.message || 'Impossible d’actualiser le suivi.');
+      }
+
+      const refreshedOrders = await loadOrders({ keepLoadingState: false });
+      const refreshedOrder = refreshedOrders.find(
+        (order) => order.id === selectedOrder.id
+      );
+
+      if (refreshedOrder) {
+        setShippingForm({
+          carrier: refreshedOrder.shippingCarrier || '',
+          trackingNumber: refreshedOrder.trackingNumber || '',
+          trackingUrl: refreshedOrder.trackingUrl || '',
+        });
+        setDetailEmailMessage(getDefaultEmailMessage(refreshedOrder));
+      }
+
+      setShippingFeedback({
+        type: data?.ok ? 'success' : 'error',
+        message:
+          data?.message ||
+          (data?.updated
+            ? 'Suivi actualisé avec succès.'
+            : 'Aucune mise à jour détectée sur le suivi.'),
+      });
+    } catch (error) {
+      setShippingFeedback({
+        type: 'error',
+        message: error?.message || 'Impossible d’actualiser le suivi.',
+      });
+    } finally {
+      setShippingRefreshFor('');
     }
   }
 
@@ -698,7 +764,10 @@ export default function AdminOrdersPage() {
                           carrier: event.target.value,
                         }))
                       }
-                      disabled={shippingSavingFor === selectedOrder.id}
+                      disabled={
+                        shippingSavingFor === selectedOrder.id ||
+                        shippingRefreshFor === selectedOrder.id
+                      }
                     >
                       {CARRIER_OPTIONS.map((option) => (
                         <option key={option.value || 'empty'} value={option.value}>
@@ -725,7 +794,10 @@ export default function AdminOrdersPage() {
                         }))
                       }
                       placeholder="Ex. : 12345678"
-                      disabled={shippingSavingFor === selectedOrder.id}
+                      disabled={
+                        shippingSavingFor === selectedOrder.id ||
+                        shippingRefreshFor === selectedOrder.id
+                      }
                     />
 
                     <label className={styles.emailLabel} htmlFor="order-shipping-tracking-url">
@@ -763,7 +835,10 @@ export default function AdminOrdersPage() {
                           }))
                         }
                         placeholder="Ex. : https://www.transporteur.fr/suivi"
-                        disabled={shippingSavingFor === selectedOrder.id}
+                        disabled={
+                          shippingSavingFor === selectedOrder.id ||
+                          shippingRefreshFor === selectedOrder.id
+                        }
                       />
                     )}
 
@@ -797,7 +872,10 @@ export default function AdminOrdersPage() {
                         type="button"
                         className={styles.emailButton}
                         onClick={handleSaveShipping}
-                        disabled={shippingSavingFor === selectedOrder.id}
+                        disabled={
+                          shippingSavingFor === selectedOrder.id ||
+                          shippingRefreshFor === selectedOrder.id
+                        }
                       >
                         <FiTruck aria-hidden="true" />
                         <span>
@@ -806,6 +884,25 @@ export default function AdminOrdersPage() {
                             : 'Enregistrer le suivi'}
                         </span>
                       </button>
+
+                      {canRefreshSelectedOrderTracking ? (
+                        <button
+                          type="button"
+                          className={styles.emailButton}
+                          onClick={handleRefreshTracking}
+                          disabled={
+                            shippingSavingFor === selectedOrder.id ||
+                            shippingRefreshFor === selectedOrder.id
+                          }
+                        >
+                          <FiRefreshCw aria-hidden="true" />
+                          <span>
+                            {shippingRefreshFor === selectedOrder.id
+                              ? 'Actualisation...'
+                              : 'Actualiser le suivi'}
+                          </span>
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 </div>
