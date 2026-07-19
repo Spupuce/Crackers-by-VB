@@ -168,7 +168,26 @@
 4. Comparer avec une commande réelle
     - Passer une vraie commande (ou utiliser une déjà existante).
     - Vérifier que la fiche se comporte exactement comme la seed (mêmes boutons, mêmes statuts, mêmes champs).
-- 🔴 Harmoniser les statuts réels de commande / paiement avec les filtres et libellés admin.
+- 🟡 Harmoniser les statuts réels de commande / paiement avec les filtres et libellés admin :
+1. Commande payée réelle (Stripe OK)
+    - Vérifier que le statut de commande est correct (pending, preparing, puis shipped/delivered selon ton flux).
+    - Vérifier que la liste affiche bien :
+        - Total,
+        - Mode de paiement : “Carte bancaire” (ou libellé choisi),
+        - Statut du paiement : “Payé”.
+2. Commande en attente de paiement (session Stripe créée mais non payée)
+    - Vérifier paymentStatus dans la base (ou via API) et la valeur affichée :
+        - Mode : “Carte bancaire”,
+        - Statut : “En attente”.
+3. Commande remboursée
+    - Simuler ou utiliser une commande avec paymentStatus = 'refunded'.
+    - Vérifier que l’admin affiche bien “Remboursé” en statut de paiement, et que le statut de commande reste cohérent (souvent cancelled ou delivered selon ta logique produit).
+4. Commande annulée
+    - Passer une commande en cancelled via l’admin.
+    - Vérifier :
+        - que le badge de statut commande est bien “Annulée”,
+        - que le filtre “Annulée” et son compteur fonctionnent,
+        - que le bloc paiement affiche un statut de paiement compatible (En attente, Échoué ou Remboursé selon le cas).
 - 🔴 Étendre le suivi transporteur à Colissimo et Chronopost.
 - 🔴 Ajouter un bouton admin `Actualiser le suivi` sur les commandes expédiées.
 - 🔴 Interroger l’API transporteur au clic, mettre à jour automatiquement `delivered` et renseigner `shipping.deliveredAt`.

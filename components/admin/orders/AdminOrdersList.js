@@ -44,7 +44,7 @@ export default function AdminOrdersList({
             >
               {Icon ? <Icon aria-hidden="true" /> : null}
               <span>
-                {status.label} ({count})
+                {status.label} ({count || 0})
               </span>
             </button>
           );
@@ -84,6 +84,10 @@ export default function AdminOrdersList({
             const isSavingShipping = shippingSavingFor === order.id;
             const isBusy = isUpdatingStatus || isSendingEmail || isSavingShipping;
 
+            const paymentMethodLabel =
+              order.paymentMethodLabel || order.paymentMethod || 'Carte bancaire';
+            const paymentStatusLabel = order.paymentStatusLabel || 'Inconnu';
+
             return (
               <article key={order.id} className={styles.orderCard}>
                 <div className={styles.orderTop}>
@@ -119,7 +123,8 @@ export default function AdminOrdersList({
                   <div className={styles.orderAside}>
                     <div className={styles.orderPriceBlock}>
                       <p className={styles.orderTotal}>{formatPrice(order.total)}</p>
-                      <p className={styles.paymentMethod}>{order.paymentMethod}</p>
+                      <p className={styles.paymentMethod}>{paymentMethodLabel}</p>
+                      <p className={styles.paymentStatus}>{paymentStatusLabel}</p>
                     </div>
 
                     <button
