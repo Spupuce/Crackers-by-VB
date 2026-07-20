@@ -217,8 +217,8 @@
 2. ensuite, selon ce que tu constates :
     - soit on corrige la logique (par exemple si le message “Interrogation API non implémentée” est trop brut),
     - soit on consolide ce point comme ✅ 
-- 🔴 Interroger l’API transporteur au clic, mettre à jour automatiquement `delivered` et renseigner `shipping.deliveredAt`.
-- 🔴 Vérifier la cohérence entre `status`, `shippedAt`, `deliveredAt`, `trackingNumber`, `trackingUrl` et le retour transporteur.
+- 🟡 Interroger l’API transporteur au clic, mettre à jour automatiquement `delivered` et renseigner `shipping.deliveredAt`.
+- 🟡 Vérifier la cohérence entre `status`, `shippedAt`, `deliveredAt`, `trackingNumber`, `trackingUrl` et le retour transporteur.
 - 🟡 Définir le comportement si le transporteur ne renvoie rien, renvoie une erreur, ou remonte un statut ambigu.
 - 🟡 Définir si l’email client `Livrée` doit devenir automatique ou rester manuel.
 

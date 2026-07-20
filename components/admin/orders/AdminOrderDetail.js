@@ -23,6 +23,7 @@ export default function AdminOrderDetail({
   selectedCarrierUsesAutoTracking,
   canRefreshSelectedOrderTracking,
   emailSendingFor,
+  statusUpdatingFor,
   statusFeedback,
   setSelectedOrderId,
   setShippingForm,
