@@ -16,198 +16,11 @@ import Footer from '../../components/Footer';
 import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/AdminClients.module.css';
 
-const MOCK_CLIENTS = [
-  {
-    id: 'client-1',
-    initials: 'MD',
-    firstName: 'Marie',
-    lastName: 'Dubois',
-    email: 'marie.dubois@email.com',
-    phone: '06 12 34 56 78',
-    address: '12 rue de la Paix, 75001 Paris',
-    ordersCount: 3,
-    totalSpent: 327.8,
-    orders: [
-      {
-        id: 'CMD-2024-001',
-        date: '05/06/2024',
-        status: 'pending',
-        itemsCount: 2,
-        total: 184.9,
-        paymentMethod: 'Carte bancaire',
-      },
-      {
-        id: 'CMD-2024-008',
-        date: '12/03/2024',
-        status: 'delivered',
-        itemsCount: 1,
-        total: 46.9,
-        paymentMethod: 'PayPal',
-      },
-      {
-        id: 'CMD-2024-015',
-        date: '20/02/2024',
-        status: 'delivered',
-        itemsCount: 1,
-        total: 96,
-        paymentMethod: 'Carte bancaire',
-      },
-    ],
-  },
-  {
-    id: 'client-2',
-    initials: 'SM',
-    firstName: 'Sophie',
-    lastName: 'Martin',
-    email: 'sophie.martin@email.com',
-    phone: '06 23 45 67 89',
-    address: '4 avenue Victor Hugo, 69002 Lyon',
-    ordersCount: 2,
-    totalSpent: 138.8,
-    orders: [
-      {
-        id: 'CMD-2024-004',
-        date: '04/06/2024',
-        status: 'preparing',
-        itemsCount: 1,
-        total: 46.9,
-        paymentMethod: 'Carte bancaire',
-      },
-      {
-        id: 'CMD-2024-010',
-        date: '15/03/2024',
-        status: 'delivered',
-        itemsCount: 1,
-        total: 91.9,
-        paymentMethod: 'Virement bancaire',
-      },
-    ],
-  },
-  {
-    id: 'client-3',
-    initials: 'JP',
-    firstName: 'Julie',
-    lastName: 'Petit',
-    email: 'julie.petit@email.com',
-    phone: '06 34 56 78 90',
-    address: '27 rue des Tilleuls, 33000 Bordeaux',
-    ordersCount: 1,
-    totalSpent: 116,
-    orders: [
-      {
-        id: 'CMD-2024-003',
-        date: '03/06/2024',
-        status: 'shipped',
-        itemsCount: 2,
-        total: 116,
-        paymentMethod: 'Virement bancaire',
-      },
-    ],
-  },
-  {
-    id: 'client-4',
-    initials: 'CR',
-    firstName: 'Claire',
-    lastName: 'Rousseau',
-    email: 'claire.rousseau@email.com',
-    phone: '06 45 67 89 01',
-    address: '8 place du marché, 44000 Nantes',
-    ordersCount: 4,
-    totalSpent: 215.6,
-    orders: [
-      {
-        id: 'CMD-2024-006',
-        date: '10/05/2024',
-        status: 'delivered',
-        itemsCount: 2,
-        total: 68.9,
-        paymentMethod: 'Carte bancaire',
-      },
-      {
-        id: 'CMD-2024-007',
-        date: '30/04/2024',
-        status: 'delivered',
-        itemsCount: 1,
-        total: 42.1,
-        paymentMethod: 'PayPal',
-      },
-      {
-        id: 'CMD-2024-009',
-        date: '18/03/2024',
-        status: 'delivered',
-        itemsCount: 1,
-        total: 52.9,
-        paymentMethod: 'Carte bancaire',
-      },
-      {
-        id: 'CMD-2024-012',
-        date: '05/02/2024',
-        status: 'delivered',
-        itemsCount: 1,
-        total: 51.7,
-        paymentMethod: 'Carte bancaire',
-      },
-    ],
-  },
-  {
-    id: 'client-5',
-    initials: 'LB',
-    firstName: 'Laura',
-    lastName: 'Bernard',
-    email: 'laura.bernard@email.com',
-    phone: '06 56 78 90 12',
-    address: '10 rue des Lilas, 31000 Toulouse',
-    ordersCount: 1,
-    totalSpent: 89,
-    orders: [
-      {
-        id: 'CMD-2024-011',
-        date: '22/04/2024',
-        status: 'delivered',
-        itemsCount: 1,
-        total: 89,
-        paymentMethod: 'Carte bancaire',
-      },
-    ],
-  },
-];
-
-const MOCK_ORDER_DETAILS = {
-  'CMD-2024-001': {
-    id: 'CMD-2024-001',
-    placedAtLabel: 'Passée le 5 juin 2024',
-    status: 'pending',
-    items: [
-      {
-        name: 'Pull tricoté main',
-        quantity: 1,
-        unitPrice: 89,
-        lineTotal: 89,
-        imageUrl:
-          'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=300&q=80',
-      },
-      {
-        name: 'Écharpe tricotée',
-        quantity: 2,
-        unitPrice: 45,
-        lineTotal: 90,
-        imageUrl:
-          'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=300&q=80',
-      },
-    ],
-    subtotal: 179,
-    shippingAmount: 5.9,
-    total: 184.9,
-    paymentMethod: 'Carte bancaire',
-    shippingMethod: 'Point relais',
-  },
-};
-
 const DEFAULT_ORDER_IMAGE =
   'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=300&q=80';
 
 function formatPrice(value) {
-  return `${Number(value).toFixed(2)} €`;
+  return `${Number(value || 0).toFixed(2)} €`;
 }
 
 function getClientFullName(client) {
@@ -219,7 +32,8 @@ function getStatusLabel(status) {
   if (status === 'preparing') return 'En préparation';
   if (status === 'shipped') return 'Expédiée';
   if (status === 'delivered') return 'Livrée';
-  return status;
+  if (status === 'cancelled') return 'Annulée';
+  return status || 'Inconnu';
 }
 
 function getStatusClass(status) {
@@ -227,40 +41,33 @@ function getStatusClass(status) {
   if (status === 'preparing') return styles.statusPreparing;
   if (status === 'shipped') return styles.statusShipped;
   if (status === 'delivered') return styles.statusDelivered;
+  if (status === 'cancelled') return styles.statusCancelled || '';
   return '';
 }
 
 function formatPlacedAtLabel(date) {
-  if (!date || typeof date !== 'string') {
+  if (!date) {
     return 'Commande enregistrée';
   }
 
-  const [day, month, year] = date.split('/');
-  const monthNames = [
-    'janvier',
-    'février',
-    'mars',
-    'avril',
-    'mai',
-    'juin',
-    'juillet',
-    'août',
-    'septembre',
-    'octobre',
-    'novembre',
-    'décembre',
-  ];
+  const parsed = new Date(date);
 
-  const monthIndex = Number(month) - 1;
-  const safeMonth = monthNames[monthIndex] || month;
-  return `Passée le ${Number(day)} ${safeMonth} ${year}`;
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Commande enregistrée';
+  }
+
+  return `Passée le ${parsed.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })}`;
 }
 
 function buildFallbackOrderDetails(order) {
-  const shippingAmount = 0;
-  const subtotal = Number(order?.total) || 0;
+  const subtotal = Number(order?.total || 0);
   const itemCount = Math.max(1, Number(order?.itemsCount) || 1);
   const unitPrice = itemCount > 0 ? subtotal / itemCount : subtotal;
+  const shippingAmount = 0;
 
   return {
     id: order.id,
@@ -277,17 +84,127 @@ function buildFallbackOrderDetails(order) {
     shippingAmount,
     total: subtotal + shippingAmount,
     paymentMethod: order.paymentMethod || 'Mode de paiement à confirmer',
-    shippingMethod: 'Livraison standard',
+    shippingMethod: order.shippingMethod || 'Livraison',
   };
+}
+
+function normalizeAdminOrderForClient(order) {
+  const createdAt = order.createdAt || order.date || order.placedAt || null;
+  const items = Array.isArray(order.items)
+    ? order.items.map((item) => ({
+        name: item.name || item.productName || 'Article',
+        quantity: Number(item.quantity || 0) || 1,
+        unitPrice: Number(item.unitPrice || item.price || 0),
+        lineTotal:
+          Number(item.unitPrice || item.price || 0) *
+            (Number(item.quantity || 0) || 1) || 0,
+        imageUrl: item.imageUrl || item.image || DEFAULT_ORDER_IMAGE,
+      }))
+    : [];
+
+  const itemsCount =
+    items.length > 0
+      ? items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+      : Number(order.itemsCount || 0) || 1;
+
+  const subtotal = Number(order.subtotalAmount || order.subtotal || 0);
+  const shippingAmount = Number(order.shippingAmount || 0);
+  const total =
+    Number(order.totalAmount || order.total || subtotal + shippingAmount);
+
+  const paymentMethod =
+    order.paymentMethodLabel ||
+    order.paymentMethod ||
+    'Carte bancaire';
+
+  const shippingMethodLabel =
+    order.shippingMethod ||
+    order.shipping?.method ||
+    (order.shipping?.carrier ? 'Livraison' : 'Livraison');
+
+  return {
+    id: order.orderNumber || order._id?.toString?.() || order._id || '',
+    rawId: order._id?.toString?.() || order._id || '',
+    date: createdAt
+      ? new Date(createdAt).toLocaleDateString('fr-FR')
+      : '',
+    status: order.status || 'pending',
+    itemsCount,
+    total,
+    paymentMethod,
+    placedAtLabel: formatPlacedAtLabel(createdAt),
+    items,
+    subtotal,
+    shippingAmount,
+    shippingMethod: shippingMethodLabel,
+  };
+}
+
+function buildClientsFromOrders(apiOrders) {
+  const clientsMap = new Map();
+
+  apiOrders.forEach((apiOrder) => {
+    const customer = apiOrder.customer || {};
+    const email = (customer.email || '').trim().toLowerCase();
+
+    if (!email) {
+      return;
+    }
+
+    const firstName = customer.firstName || '';
+    const lastName = customer.lastName || '';
+    const phone = customer.phone || '';
+    const shippingAddress = apiOrder.shippingAddress || {};
+    const addressParts = [
+      shippingAddress.addressLine1 || '',
+      shippingAddress.addressLine2 || '',
+      `${shippingAddress.postalCode || ''} ${shippingAddress.city || ''}`.trim(),
+      shippingAddress.country || '',
+    ].filter(Boolean);
+    const address = addressParts.join(', ');
+
+    const orderForClient = normalizeAdminOrderForClient(apiOrder);
+
+    const existing = clientsMap.get(email);
+
+    if (existing) {
+      existing.orders.push(orderForClient);
+      existing.ordersCount += 1;
+      existing.totalSpent += orderForClient.total;
+    } else {
+      const initials = `${(firstName || 'C')[0] || 'C'}${
+        (lastName || 'L')[0] || ''
+      }`.toUpperCase();
+
+      clientsMap.set(email, {
+        id: email,
+        initials,
+        firstName,
+        lastName,
+        email,
+        phone,
+        address,
+        ordersCount: 1,
+        totalSpent: orderForClient.total,
+        orders: [orderForClient],
+      });
+    }
+  });
+
+  return Array.from(clientsMap.values()).sort((a, b) =>
+    getClientFullName(a).localeCompare(getClientFullName(b), 'fr')
+  );
 }
 
 export default function AdminClientsPage() {
   const router = useRouter();
   const { isAuthenticated, isAdmin, isAuthReady } = useAuth();
 
-  const [clients] = useState(MOCK_CLIENTS);
+  const [clients, setClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState('');
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const [clientsError, setClientsError] = useState('');
 
   const selectedClient =
     clients.find((client) => client.id === selectedClientId) || null;
@@ -295,7 +212,8 @@ export default function AdminClientsPage() {
   const selectedOrderSummary = useMemo(() => {
     if (!selectedClient || !selectedOrderId) return null;
     return (
-      selectedClient.orders.find((order) => order.id === selectedOrderId) || null
+      selectedClient.orders.find((order) => order.id === selectedOrderId) ||
+      null
     );
   }, [selectedClient, selectedOrderId]);
 
@@ -304,8 +222,21 @@ export default function AdminClientsPage() {
       return null;
     }
 
-    if (MOCK_ORDER_DETAILS[selectedOrderSummary.id]) {
-      return MOCK_ORDER_DETAILS[selectedOrderSummary.id];
+    if (
+      Array.isArray(selectedOrderSummary.items) &&
+      selectedOrderSummary.items.length > 0
+    ) {
+      return {
+        id: selectedOrderSummary.id,
+        placedAtLabel: selectedOrderSummary.placedAtLabel,
+        status: selectedOrderSummary.status,
+        items: selectedOrderSummary.items,
+        subtotal: selectedOrderSummary.subtotal,
+        shippingAmount: selectedOrderSummary.shippingAmount,
+        total: selectedOrderSummary.total,
+        paymentMethod: selectedOrderSummary.paymentMethod,
+        shippingMethod: selectedOrderSummary.shippingMethod,
+      };
     }
 
     return buildFallbackOrderDetails(selectedOrderSummary);
@@ -335,6 +266,42 @@ export default function AdminClientsPage() {
       router.replace('/');
     }
   }, [isAuthReady, isAuthenticated, isAdmin, router]);
+
+  useEffect(() => {
+    async function loadClientsFromOrders() {
+      if (!isAuthReady || !isAuthenticated || !isAdmin) {
+        return;
+      }
+
+      setIsLoadingClients(true);
+      setClientsError('');
+
+      try {
+        const response = await fetch('/api/admin/orders');
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message || 'Impossible de récupérer les commandes clients.'
+          );
+        }
+
+        const apiOrders = Array.isArray(data?.orders) ? data.orders : [];
+        const nextClients = buildClientsFromOrders(apiOrders);
+
+        setClients(nextClients);
+      } catch (error) {
+        setClients([]);
+        setClientsError(
+          error?.message || 'Impossible de charger les fiches clients.'
+        );
+      } finally {
+        setIsLoadingClients(false);
+      }
+    }
+
+    loadClientsFromOrders();
+  }, [isAuthReady, isAuthenticated, isAdmin]);
 
   if (!isAuthReady) {
     return (
@@ -381,7 +348,8 @@ export default function AdminClientsPage() {
       <>
         <Head>
           <title>
-            {selectedOrderSummary.id} - {getClientFullName(selectedClient)} | Administration
+            {selectedOrderSummary.id} - {getClientFullName(selectedClient)} |
+            Administration
           </title>
         </Head>
 
@@ -540,11 +508,11 @@ export default function AdminClientsPage() {
                       </p>
                       <p>
                         <FiPhone aria-hidden="true" />{' '}
-                        <span>{selectedClient.phone}</span>
+                        <span>{selectedClient.phone || '—'}</span>
                       </p>
                       <p>
                         <FiMapPin aria-hidden="true" />{' '}
-                        <span>{selectedClient.address}</span>
+                        <span>{selectedClient.address || 'Adresse inconnue'}</span>
                       </p>
                     </div>
                   </div>
@@ -582,7 +550,7 @@ export default function AdminClientsPage() {
                       <div className={styles.clientOrderMain}>
                         <p className={styles.clientOrderId}>{order.id}</p>
                         <p className={styles.clientOrderMeta}>
-                          Date : {order.date}
+                          Date : {order.date || '—'}
                         </p>
                         <p className={styles.clientOrderMeta}>
                           {order.itemsCount}{' '}
@@ -655,7 +623,9 @@ export default function AdminClientsPage() {
                 </div>
                 <div className={styles.kpiContent}>
                   <p className={styles.kpiLabel}>Total clients</p>
-                  <p className={styles.kpiValue}>{totalClients}</p>
+                  <p className={styles.kpiValue}>
+                    {isLoadingClients ? '...' : totalClients}
+                  </p>
                 </div>
               </article>
 
@@ -665,7 +635,9 @@ export default function AdminClientsPage() {
                 </div>
                 <div className={styles.kpiContent}>
                   <p className={styles.kpiLabel}>Total commandes</p>
-                  <p className={styles.kpiValue}>{totalOrders}</p>
+                  <p className={styles.kpiValue}>
+                    {isLoadingClients ? '...' : totalOrders}
+                  </p>
                 </div>
               </article>
 
@@ -675,54 +647,80 @@ export default function AdminClientsPage() {
                 </div>
                 <div className={styles.kpiContent}>
                   <p className={styles.kpiLabel}>Chiffre d&apos;affaires</p>
-                  <p className={styles.kpiValue}>{formatPrice(totalRevenue)}</p>
+                  <p className={styles.kpiValue}>
+                    {isLoadingClients ? '...' : formatPrice(totalRevenue)}
+                  </p>
                 </div>
               </article>
             </section>
 
             <section className={styles.clientsListSection}>
-              <div className={styles.clientsList}>
-                {clients.map((client) => (
-                  <article
-                    key={client.id}
-                    className={styles.clientCard}
-                    onClick={() => setSelectedClientId(client.id)}
-                  >
-                    <div className={styles.clientCardMain}>
-                      <div className={styles.avatar}>
-                        <span>{client.initials}</span>
-                      </div>
+              {clientsError ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingBox}>{clientsError}</div>
+                </div>
+              ) : null}
 
-                      <div className={styles.clientInfo}>
-                        <p className={styles.clientName}>
-                          {getClientFullName(client)}
-                        </p>
-                        <p className={styles.clientContact}>
-                          <FiMail aria-hidden="true" />
-                          <span>{client.email}</span>
-                        </p>
-                        <p className={styles.clientContact}>
-                          <FiPhone aria-hidden="true" />
-                          <span>{client.phone}</span>
-                        </p>
+              {isLoadingClients && !clientsError ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingBox}>
+                    Chargement des fiches clients...
+                  </div>
+                </div>
+              ) : null}
+
+              {!isLoadingClients && !clientsError ? (
+                <div className={styles.clientsList}>
+                  {clients.length === 0 ? (
+                    <div className={styles.loadingContainer}>
+                      <div className={styles.loadingBox}>
+                        Aucune cliente enregistrée pour le moment.
                       </div>
                     </div>
+                  ) : (
+                    clients.map((client) => (
+                      <article
+                        key={client.id}
+                        className={styles.clientCard}
+                        onClick={() => setSelectedClientId(client.id)}
+                      >
+                        <div className={styles.clientCardMain}>
+                          <div className={styles.avatar}>
+                            <span>{client.initials}</span>
+                          </div>
 
-                    <div className={styles.clientStats}>
-                      <p className={styles.clientStat}>
-                        <span>Commandes</span>
-                        <span>{client.ordersCount}</span>
-                      </p>
-                      <p className={styles.clientStat}>
-                        <span>Total dépensé</span>
-                        <span className={styles.clientTotalSpent}>
-                          {formatPrice(client.totalSpent)}
-                        </span>
-                      </p>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                          <div className={styles.clientInfo}>
+                            <p className={styles.clientName}>
+                              {getClientFullName(client)}
+                            </p>
+                            <p className={styles.clientContact}>
+                              <FiMail aria-hidden="true" />
+                              <span>{client.email}</span>
+                            </p>
+                            <p className={styles.clientContact}>
+                              <FiPhone aria-hidden="true" />
+                              <span>{client.phone || '—'}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className={styles.clientStats}>
+                          <p className={styles.clientStat}>
+                            <span>Commandes</span>
+                            <span>{client.ordersCount}</span>
+                          </p>
+                          <p className={styles.clientStat}>
+                            <span>Total dépensé</span>
+                            <span className={styles.clientTotalSpent}>
+                              {formatPrice(client.totalSpent)}
+                            </span>
+                          </p>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              ) : null}
             </section>
           </section>
         </div>

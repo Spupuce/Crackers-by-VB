@@ -74,6 +74,27 @@ export default async function handler(req, res) {
     const trackingResult = await refreshOrderTracking(order);
     let updated = false;
 
+    console.log('REFRESH_TRACKING_DEBUG', {
+      orderId: order._id?.toString?.() || order._id,
+      orderNumber: order.orderNumber || '',
+      currentStatus: order.status,
+      carrier: order.shipping?.carrier || '',
+      trackingNumber: order.shipping?.trackingNumber || '',
+      trackingResultSummary: {
+        ok: trackingResult.ok,
+        trackingStatus: trackingResult.trackingStatus,
+        externalStatus: trackingResult.externalStatus,
+        delivered: trackingResult.delivered,
+        deliveredAt: trackingResult.deliveredAt,
+        shouldUpdateOrder: trackingResult.shouldUpdateOrder,
+        nextOrderStatus: trackingResult.nextOrderStatus,
+        nextShippedAt: trackingResult.nextShippedAt,
+        nextDeliveredAt: trackingResult.nextDeliveredAt,
+        message: trackingResult.message,
+      },
+      raw: trackingResult.raw,
+    });
+
     if (trackingResult.shouldUpdateOrder) {
       ensureShippingObject(order);
 
