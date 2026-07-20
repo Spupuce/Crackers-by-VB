@@ -1,12 +1,16 @@
 /* styles/AdminClients.module.css */
 
 .page {
-  background-color: var(--color-bg);
-  padding: 48px 24px 80px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, var(--color-status-primary-bg), transparent 36%),
+    var(--color-bg);
+  color: var(--color-text);
+  padding: 44px 24px 72px;
 }
 
 .container {
-  max-width: 1220px;
+  max-width: 1150px;
   margin: 0 auto;
 }
 
@@ -26,6 +30,7 @@
   text-align: center;
   font-size: 0.95rem;
   color: var(--color-text-soft);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 /* Lien retour */
@@ -34,13 +39,17 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-  color: var(--color-text-soft);
-  background: none;
-  border: none;
+  margin-bottom: 22px;
   padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-gray-600);
+  font-size: 1.05rem;
   cursor: pointer;
+}
+
+.backLink:hover {
+  color: var(--color-primary-dark);
 }
 
 .backLink svg {
@@ -60,14 +69,17 @@
 }
 
 .pageTitle {
-  font-size: 1.8rem;
-  font-weight: 600;
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.1;
   color: var(--color-text);
-  margin-bottom: 6px;
+  font-weight: 600;
 }
 
 .pageSubtitle {
-  font-size: 0.95rem;
+  margin: 14px 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--color-text-soft);
 }
 
@@ -83,26 +95,27 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 18px;
-  border-radius: 14px;
+  padding: 18px;
+  border-radius: 20px;
   background: var(--color-white);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-warm-soft);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .kpiIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background-color: var(--color-section);
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--color-status-primary-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-primary-dark);
+  flex-shrink: 0;
 }
 
 .kpiIcon svg {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
 }
 
 .kpiContent {
@@ -118,8 +131,8 @@
 
 .kpiValue {
   font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--color-text);
+  font-weight: 700;
+  color: var(--color-gray-900);
 }
 
 /* Liste clients */
@@ -139,20 +152,19 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 18px;
-  border-radius: 14px;
+  padding: 18px;
+  border-radius: 20px;
   background-color: var(--color-white);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-warm-soft);
+  box-shadow: var(--shadow-warm-medium);
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease,
-    border-color 0.15s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .clientCard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-warm-medium);
+  transform: translateY(-1px);
   border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .clientCardMain {
@@ -166,14 +178,14 @@
 .avatar {
   width: 52px;
   height: 52px;
-  border-radius: 999px;
-  background-color: var(--color-section);
+  border-radius: 14px;
+  background: var(--color-status-primary-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-primary-dark);
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-weight: 700;
+  font-size: 1.05rem;
   flex-shrink: 0;
 }
 
@@ -183,9 +195,9 @@
 
 .clientName {
   font-size: 1.02rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 4px;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin: 0 0 4px;
 }
 
 .clientContact {
@@ -194,10 +206,11 @@
   gap: 6px;
   font-size: 0.86rem;
   color: var(--color-text-soft);
+  margin: 0;
 }
 
 .clientContact + .clientContact {
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .clientContact svg {
@@ -209,7 +222,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
-  min-width: 140px;
+  min-width: 150px;
 }
 
 .clientStat {
@@ -218,34 +231,37 @@
   gap: 10px;
   font-size: 0.86rem;
   color: var(--color-text-soft);
+  margin: 0;
 }
 
 .clientStat span:last-child {
-  font-weight: 600;
-  color: var(--color-text);
+  font-weight: 700;
+  color: var(--color-gray-900);
 }
 
 .clientTotalSpent {
-  color: var(--color-primary-dark);
+  color: var(--color-secondary);
 }
 
 /* Fiche client */
 
 .clientDetail {
-  border-radius: 18px;
+  border-radius: 20px;
   background-color: var(--color-white);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-warm-soft);
+  box-shadow: var(--shadow-warm-medium);
   overflow: hidden;
 }
+
+/* header de fiche aligné sur les autres pages admin */
 
 .clientDetailHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 18px 20px;
-  background-color: var(--color-section);
+  padding: 20px 24px;
+  background-color: var(--color-white);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -260,17 +276,22 @@
   min-width: 0;
 }
 
+/* Nom client : même style qu’un titre de carte (gris foncé, poids 600) */
+
 .clientDetailName {
+  margin: 0 0 4px;
   font-size: 1.4rem;
+  line-height: 1.2;
   font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 4px;
+  color: var(--color-gray-900);
 }
+
+/* Meta : même ton que les autres cartes (gris soft, pas orange) */
 
 .clientDetailMeta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   font-size: 0.9rem;
   color: var(--color-text-soft);
 }
@@ -279,10 +300,11 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  margin: 0;
 }
 
 .clientDetailMeta svg {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .clientDetailStats {
@@ -305,28 +327,28 @@
 .clientDetailStatValue {
   display: block;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text);
 }
 
 /* Historique commandes (fiche client) */
 
 .clientHistorySection {
-  padding: 20px 20px 22px;
+  padding: 22px 24px 24px;
   border-top: 1px solid var(--color-border);
 }
 
 .sectionTitle {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 12px;
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+  color: var(--color-gray-900);
+  font-weight: 700;
 }
 
 .clientOrdersList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
 .clientOrderRow {
@@ -334,33 +356,34 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  padding: 14px;
+  border-radius: 14px;
+  background-color: var(--color-gray-50);
 }
 
 .clientOrderMain {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .clientOrderId {
-  font-size: 0.96rem;
-  font-weight: 600;
-  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin: 0;
 }
 
 .clientOrderMeta {
   font-size: 0.86rem;
-  color: var(--color-text-soft);
+  color: var(--color-gray-600);
+  margin: 0;
 }
 
 .clientOrderRight {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .clientOrderPriceBlock {
@@ -369,13 +392,15 @@
 
 .clientOrderTotal {
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-primary-dark);
+  font-weight: 700;
+  color: var(--color-secondary);
+  margin: 0;
 }
 
 .clientOrderPayment {
   font-size: 0.82rem;
-  color: var(--color-text-soft);
+  color: var(--color-gray-400);
+  margin: 4px 0 0;
 }
 
 /* Statuts */
@@ -383,73 +408,73 @@
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-height: 26px;
-  padding: 0 10px;
+  min-height: 30px;
+  padding: 5px 12px;
   border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  border: 1px solid transparent;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .statusPending {
-  background-color: #fff7e6;
-  color: #b45309;
-  border-color: #fed7aa;
+  background: var(--color-status-primary-bg);
+  color: var(--color-status-primary-text);
 }
 
 .statusPreparing {
-  background-color: #eef2ff;
-  color: #4338ca;
-  border-color: #c7d2fe;
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-text);
 }
 
 .statusShipped {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  border-color: #bae6fd;
+  background: var(--color-status-info-bg);
+  color: var(--color-purple);
 }
 
 .statusDelivered {
-  background-color: #ecfdf5;
-  color: #15803d;
-  border-color: #bbf7d0;
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-text);
 }
 
 .statusCancelled {
-  background-color: #fef2f2;
-  color: #b91c1c;
-  border-color: #fecaca;
+  background: var(--color-error-highlight, rgba(239, 68, 68, 0.12));
+  color: var(--color-error);
 }
 
 /* Bouton voir commande */
 
 .viewOrderButton {
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  border: none;
-  background-color: var(--color-primary);
-  color: var(--color-white);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: var(--color-white);
   cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.viewOrderButton:hover {
+  transform: translateY(-1px);
+  background: var(--color-primary-dark);
 }
 
 /* Détail commande */
 
 .orderDetail {
-  border-radius: 18px;
+  border-radius: 20px;
   background-color: var(--color-white);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-warm-soft);
+  box-shadow: var(--shadow-warm-medium);
   overflow: hidden;
 }
 
 .orderDetailHeader {
-  padding: 18px 20px 16px;
-  background-color: var(--color-section);
+  padding: 20px 24px;
+  background-color: var(--color-white);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -458,51 +483,53 @@
 }
 
 .orderDetailTitle {
+  margin: 0;
   font-size: 1.4rem;
+  line-height: 1.2;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-gray-900);
 }
 
 .orderDetailSubtitle {
   font-size: 0.9rem;
   color: var(--color-text-soft);
-  margin-top: 2px;
+  margin: 4px 0 0;
 }
 
 .orderDetailSection {
-  padding: 20px 20px 18px;
-  border-top: 1px solid var(--color-border);
+  padding: 22px 24px 0;
+  border-top: none;
 }
 
 .orderItemsList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
 .orderItemRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background-color: var(--color-bg);
+  gap: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background-color: var(--color-gray-50);
 }
 
 .orderItemLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
 }
 
 .orderItemImageWrapper {
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   border-radius: 12px;
   overflow: hidden;
-  background-color: var(--color-gray-100);
+  background-color: var(--color-section);
   flex-shrink: 0;
 }
 
@@ -517,61 +544,62 @@
 }
 
 .orderItemName {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin: 0 0 6px;
 }
 
 .orderItemMeta {
-  font-size: 0.82rem;
-  color: var(--color-text-soft);
-  margin-top: 2px;
+  font-size: 0.86rem;
+  color: var(--color-gray-600);
+  margin: 0 0 4px;
 }
 
 .orderItemUnitPrice {
-  font-size: 0.82rem;
-  color: var(--color-primary-dark);
-  margin-top: 2px;
+  font-size: 0.86rem;
+  color: var(--color-secondary);
+  margin: 0;
+  font-weight: 600;
 }
 
 .orderItemTotal {
-  font-size: 0.96rem;
-  font-weight: 600;
-  color: var(--color-text);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin: 0;
+  white-space: nowrap;
 }
 
 /* Carte paiement */
 
 .paymentCard {
-  border-radius: 12px;
-  background-color: var(--color-gray-50);
-  border: 1px solid var(--color-border);
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  background: var(--color-gray-50);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 24px;
 }
 
 .paymentRow {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  font-size: 0.9rem;
-  color: var(--color-text-soft);
+  gap: 16px;
+  padding: 7px 0;
+  color: var(--color-gray-700);
 }
 
-.paymentRow span:last-child {
-  color: var(--color-text);
+.paymentRow + .paymentRow {
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .paymentTotalRow {
   margin-top: 4px;
-  padding-top: 6px;
-  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
 }
 
 .paymentTotalValue {
-  color: var(--color-primary-dark);
+  color: var(--color-secondary);
+  font-size: 1.8rem;
 }
 
 /* Responsive */
@@ -592,6 +620,7 @@
 
   .clientDetailStats {
     flex-direction: row;
+    align-items: flex-start;
   }
 
   .orderDetailHeader {
@@ -600,22 +629,14 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .page {
-    padding: 32px 18px 60px;
-  }
-
-  .kpiRow {
-    grid-template-columns: minmax(0, 1fr);
+    padding: 36px 16px 60px;
   }
 
   .clientCard {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .clientStats {
-    align-items: flex-start;
+    padding: 16px;
+    border-radius: 18px;
   }
 
   .clientOrderRow {
@@ -628,12 +649,62 @@
     justify-content: space-between;
   }
 
+  .clientHistorySection,
+  .orderDetailSection {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
   .orderItemRow {
+    flex-direction: column;
+  }
+
+  .orderItemTotal {
+    font-size: 1.05rem;
+  }
+
+  .paymentTotalValue {
+    font-size: 1.45rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .kpiRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .clientCard {
     flex-direction: column;
     align-items: flex-start;
   }
 
+  .clientStats {
+    align-items: flex-start;
+    min-width: 0;
+  }
+
   .orderItemTotal {
     align-self: flex-end;
+  }
+}
+
+@media (max-width: 520px) {
+  .clientOrderRight {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .clientOrderPriceBlock {
+    text-align: left;
+  }
+
+  .orderItemLeft {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .paymentRow {
+    flex-direction: column;
+    gap: 4px;
   }
 }
