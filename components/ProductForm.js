@@ -768,8 +768,34 @@ export default function ProductForm({
                   autoComplete="off"
                 />
               </div>
+            </div>
 
-              <div className={styles.field}>
+            <div className={styles.imageFieldRow}>
+              <div className={styles.imageUploadColumn}>
+                <label htmlFor="colorImageFile" className={styles.smallLabel}>
+                  Téléverser une photo couleur
+                </label>
+                <input
+                  id="colorImageFile"
+                  name="colorImageFile"
+                  type="file"
+                  accept="image/*"
+                  className={styles.fileInput}
+                  onChange={handleColorImageUpload}
+                />
+
+                {isUploadingColorImage && (
+                  <p className={styles.stockHint}>
+                    Téléversement de la photo couleur en cours...
+                  </p>
+                )}
+
+                {colorImageUploadError && (
+                  <p className={styles.errorText}>{colorImageUploadError}</p>
+                )}
+              </div>
+
+              <div className={styles.imageUrlColumn}>
                 <label htmlFor="colorImageUrl" className={styles.smallLabel}>
                   URL photo couleur
                 </label>
@@ -788,39 +814,15 @@ export default function ProductForm({
               </div>
             </div>
 
-            <div className={styles.field}>
-              <label htmlFor="colorImageFile" className={styles.smallLabel}>
-                Téléverser une photo couleur
-              </label>
-              <input
-                id="colorImageFile"
-                name="colorImageFile"
-                type="file"
-                accept="image/*"
-                className={styles.fileInput}
-                onChange={handleColorImageUpload}
-              />
-
-              {isUploadingColorImage && (
-                <p className={styles.stockHint}>
-                  Téléversement de la photo couleur en cours...
-                </p>
-              )}
-
-              {colorImageUploadError && (
-                <p className={styles.errorText}>{colorImageUploadError}</p>
-              )}
-
-              {colorDraft.imageUrl && (
-                <div className={styles.mainImagePreviewWrapper}>
-                  <img
-                    src={colorDraft.imageUrl}
-                    alt="Prévisualisation de la photo couleur"
-                    className={styles.mainImagePreview}
-                  />
-                </div>
-              )}
-            </div>
+            {colorDraft.imageUrl && (
+              <div className={styles.mainImagePreviewWrapper}>
+                <img
+                  src={colorDraft.imageUrl}
+                  alt="Prévisualisation de la photo couleur"
+                  className={styles.mainImagePreview}
+                />
+              </div>
+            )}
 
             <div className={styles.colorActions}>
               <button
