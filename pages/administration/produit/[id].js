@@ -76,6 +76,7 @@ export default function EditProductPage() {
   const [saveFeedback, setSaveFeedback] = useState('');
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifyFeedback, setNotifyFeedback] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const scrollToTop = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -224,6 +225,8 @@ export default function EditProductPage() {
         return;
       }
 
+      setHasUnsavedChanges(false);
+
       const refreshedProduct = await fetchProduct();
 
       if (submitAction === 'save-and-notify') {
@@ -309,11 +312,29 @@ export default function EditProductPage() {
     }
   }
 
+  function confirmLeaveIfNeeded() {
+    if (!hasUnsavedChanges) {
+      return true;
+    }
+
+    return window.confirm(
+      'Des modifications ne sont pas enregistrées. Voulez-vous vraiment quitter cette page ?'
+    );
+  }
+
   function handleCancel() {
+    if (!confirmLeaveIfNeeded()) {
+      return;
+    }
+
     router.push('/administration/stock');
   }
 
   function handleBackToStock() {
+    if (!confirmLeaveIfNeeded()) {
+      return;
+    }
+
     router.push('/administration/stock');
   }
 
@@ -395,6 +416,7 @@ export default function EditProductPage() {
                     hasPendingRestockRequests={
                       hasPendingRestockRequests && !notifyLoading
                     }
+                    onUnsavedChangesChange={setHasUnsavedChanges}
                   />
 
                   {pendingRequestsCount > 0 && (
