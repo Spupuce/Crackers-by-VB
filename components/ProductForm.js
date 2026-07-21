@@ -687,6 +687,10 @@ export default function ProductForm({
 
           <div className={styles.imageFieldRow}>
             <div className={styles.imageUploadColumn}>
+              <label htmlFor="mainImageFile" className={styles.smallLabel}>
+                Fichier image
+              </label>
+
               <input
                 ref={mainImageInputRef}
                 id="mainImageFile"
