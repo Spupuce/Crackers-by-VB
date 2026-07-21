@@ -64,13 +64,16 @@ export default function ProductForm({
   initialValues = null,
   onSubmit,
   hasPendingRestockRequests = false,
+  onUnsavedChangesChange,
 }) {
   const [showColorForm, setShowColorForm] = useState(false);
   const [colorDraft, setColorDraft] = useState(createEmptyColorDraft());
   const [editingColorIndex, setEditingColorIndex] = useState(null);
   const [submitAction, setSubmitAction] = useState("save");
 
-  const [formValues, setFormValues] = useState(buildInitialFormValues(initialValues));
+  const [formValues, setFormValues] = useState(
+    buildInitialFormValues(initialValues)
+  );
   const [stockInputValue, setStockInputValue] = useState(
     initialValues?.stock ?? ""
   );
@@ -181,6 +184,12 @@ export default function ProductForm({
     colors,
     hasColorDraftChanges,
   ]);
+
+  useEffect(() => {
+    if (typeof onUnsavedChangesChange === "function") {
+      onUnsavedChangesChange(hasUnsavedChanges);
+    }
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
   useEffect(() => {
     const handleBeforeUnload = (event) => {
@@ -519,6 +528,10 @@ export default function ProductForm({
       stock: hasColors ? Number(visualStock) || 0 : stockInputValue,
       colors,
     });
+
+    if (typeof onUnsavedChangesChange === "function") {
+      onUnsavedChangesChange(false);
+    }
   }
 
   return (
