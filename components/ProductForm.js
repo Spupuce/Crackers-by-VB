@@ -31,6 +31,34 @@ function sanitizeColors(colors) {
   }));
 }
 
+function buildInitialFormValues(initialValues) {
+  return {
+    name: initialValues?.name || "",
+    category: initialValues?.category || "",
+    price: initialValues?.price ?? "",
+    promoPrice: initialValues?.promoPrice ?? "",
+    description: initialValues?.description || "",
+    imageUrl: initialValues?.imageUrl || "",
+    stock: initialValues?.stock ?? "",
+  };
+}
+
+function serializeProductSnapshot(values) {
+  return JSON.stringify({
+    name: values.name || "",
+    category: values.category || "",
+    price: values.price === "" ? "" : Number(values.price),
+    promoPrice:
+      values.promoPrice === "" || values.promoPrice === null
+        ? ""
+        : Number(values.promoPrice),
+    description: values.description || "",
+    imageUrl: values.imageUrl || "",
+    stock: values.stock === "" ? "" : Number(values.stock),
+    colors: sanitizeColors(values.colors || []),
+  });
+}
+
 export default function ProductForm({
   mode = "create",
   initialValues = null,
@@ -41,6 +69,8 @@ export default function ProductForm({
   const [colorDraft, setColorDraft] = useState(createEmptyColorDraft());
   const [editingColorIndex, setEditingColorIndex] = useState(null);
   const [submitAction, setSubmitAction] = useState("save");
+
+  const [formValues, setFormValues] = useState(buildInitialFormValues(initialValues));
   const [stockInputValue, setStockInputValue] = useState(
     initialValues?.stock ?? ""
   );
@@ -52,6 +82,12 @@ export default function ProductForm({
   );
 
   const initialColorsSnapshotRef = useRef(sanitizeColors(initialValues?.colors));
+  const initialProductSnapshotRef = useRef(
+    serializeProductSnapshot({
+      ...buildInitialFormValues(initialValues),
+      colors: sanitizeColors(initialValues?.colors),
+    })
+  );
 
   const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl || "");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -66,12 +102,22 @@ export default function ProductForm({
         ? sanitizeColors(initialValues.colors)
         : [];
 
+    const nextFormValues = buildInitialFormValues(initialValues);
+
     setColors(normalizedInitialColors);
+    setFormValues(nextFormValues);
     setStockInputValue(initialValues?.stock ?? "");
     initialColorsSnapshotRef.current = sanitizeColors(normalizedInitialColors);
+    initialProductSnapshotRef.current = serializeProductSnapshot({
+      ...nextFormValues,
+      colors: normalizedInitialColors,
+    });
     setImageUrl(initialValues?.imageUrl || "");
     setImageUploadError("");
     setColorImageUploadError("");
+    setShowColorForm(false);
+    setColorDraft(createEmptyColorDraft());
+    setEditingColorIndex(null);
   }, [initialValues]);
 
   const activeColors = useMemo(
@@ -107,12 +153,65 @@ export default function ProductForm({
 
   const isEditingColor = editingColorIndex !== null;
 
+  const hasColorDraftChanges = useMemo(() => {
+    return Boolean(
+      colorDraft.name.trim() ||
+        String(colorDraft.quantity).trim() ||
+        colorDraft.imageUrl.trim()
+    );
+  }, [colorDraft]);
+
+  const hasUnsavedChanges = useMemo(() => {
+    const currentSnapshot = serializeProductSnapshot({
+      ...formValues,
+      imageUrl,
+      stock: hasColors ? Number(visualStock) || 0 : stockInputValue,
+      colors,
+    });
+
+    return (
+      currentSnapshot !== initialProductSnapshotRef.current || hasColorDraftChanges
+    );
+  }, [
+    formValues,
+    imageUrl,
+    hasColors,
+    visualStock,
+    stockInputValue,
+    colors,
+    hasColorDraftChanges,
+  ]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (!hasUnsavedChanges) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
   function resetColorForm() {
     setColorDraft(createEmptyColorDraft());
     setEditingColorIndex(null);
     setShowColorForm(false);
     setColorImageUploadError("");
     setIsUploadingColorImage(false);
+  }
+
+  function handleFieldChange(field, value) {
+    setFormValues((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   }
 
   function handleColorDraftChange(field, value) {
@@ -160,6 +259,16 @@ export default function ProductForm({
   }
 
   function handleCancelColor() {
+    if (hasColorDraftChanges) {
+      const shouldCancel = window.confirm(
+        "Les modifications de cette couleur ne sont pas enregistrées. Voulez-vous vraiment annuler ?"
+      );
+
+      if (!shouldCancel) {
+        return;
+      }
+    }
+
     resetColorForm();
   }
 
@@ -214,6 +323,16 @@ export default function ProductForm({
   }
 
   function handleShowColorForm() {
+    if (showColorForm && hasColorDraftChanges) {
+      const shouldReset = window.confirm(
+        "Une couleur est en cours de modification et n’est pas enregistrée. Voulez-vous l’abandonner ?"
+      );
+
+      if (!shouldReset) {
+        return;
+      }
+    }
+
     setEditingColorIndex(null);
     setColorDraft(createEmptyColorDraft());
     setShowColorForm(true);
@@ -225,6 +344,16 @@ export default function ProductForm({
 
     if (!colorToEdit) {
       return;
+    }
+
+    if (showColorForm && hasColorDraftChanges) {
+      const shouldReplace = window.confirm(
+        "Une couleur en cours de modification n’est pas enregistrée. Voulez-vous l’abandonner ?"
+      );
+
+      if (!shouldReplace) {
+        return;
+      }
     }
 
     setEditingColorIndex(index);
@@ -271,6 +400,10 @@ export default function ProductForm({
       }
 
       setImageUrl(data.imageUrl);
+      setFormValues((prev) => ({
+        ...prev,
+        imageUrl: data.imageUrl,
+      }));
     } catch (error) {
       setImageUploadError("Une erreur est survenue pendant le téléversement.");
     } finally {
@@ -329,15 +462,21 @@ export default function ProductForm({
   function handleFormSubmit(event) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
-    const promoPriceValue = formData.get("promoPrice")?.toString().trim() || "";
+    if (showColorForm) {
+      window.alert(
+        "Une couleur est en cours de modification. Validez ou annulez cette couleur avant d’enregistrer le produit."
+      );
+      return;
+    }
+
+    const promoPriceValue = formValues.promoPrice?.toString().trim() || "";
 
     const payload = {
-      name: formData.get("name")?.toString().trim() || "",
-      category: formData.get("category")?.toString().trim() || "",
-      price: Number(formData.get("price")),
+      name: formValues.name?.toString().trim() || "",
+      category: formValues.category?.toString().trim() || "",
+      price: Number(formValues.price),
       promoPrice: promoPriceValue === "" ? null : Number(promoPriceValue),
-      description: formData.get("description")?.toString().trim() || "",
+      description: formValues.description?.toString().trim() || "",
       imageUrl: imageUrl?.toString().trim() || "",
       stock: hasColors ? Number(visualStock) || 0 : Number(stockInputValue) || 0,
       colors,
@@ -373,6 +512,13 @@ export default function ProductForm({
     if (typeof onSubmit === "function") {
       onSubmit(payload, { mode, submitAction, restockedColors });
     }
+
+    initialProductSnapshotRef.current = serializeProductSnapshot({
+      ...formValues,
+      imageUrl,
+      stock: hasColors ? Number(visualStock) || 0 : stockInputValue,
+      colors,
+    });
   }
 
   return (
@@ -389,7 +535,8 @@ export default function ProductForm({
               type="text"
               placeholder="Ex : Pull tricoté main"
               className={styles.input}
-              defaultValue={initialValues?.name || ""}
+              value={formValues.name}
+              onChange={(e) => handleFieldChange("name", e.target.value)}
               autoComplete="off"
               required
             />
@@ -403,7 +550,8 @@ export default function ProductForm({
               id="category"
               name="category"
               className={styles.input}
-              defaultValue={initialValues?.category || ""}
+              value={formValues.category}
+              onChange={(e) => handleFieldChange("category", e.target.value)}
               autoComplete="off"
               required
             >
@@ -431,7 +579,8 @@ export default function ProductForm({
               step="0.01"
               placeholder="Ex : 45.00"
               className={styles.input}
-              defaultValue={initialValues?.price ?? ""}
+              value={formValues.price}
+              onChange={(e) => handleFieldChange("price", e.target.value)}
               autoComplete="off"
               required
             />
@@ -450,7 +599,8 @@ export default function ProductForm({
               step="0.01"
               placeholder="Ex : 35.00"
               className={styles.input}
-              defaultValue={initialValues?.promoPrice ?? ""}
+              value={formValues.promoPrice}
+              onChange={(e) => handleFieldChange("promoPrice", e.target.value)}
               autoComplete="off"
             />
           </div>
@@ -477,6 +627,7 @@ export default function ProductForm({
             onChange={(e) => {
               if (!hasColors) {
                 setStockInputValue(e.target.value);
+                handleFieldChange("stock", e.target.value);
               }
             }}
             autoComplete="off"
@@ -521,7 +672,10 @@ export default function ProductForm({
                 placeholder="https://..."
                 className={styles.input}
                 value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+                onChange={(e) => {
+                  setImageUrl(e.target.value);
+                  handleFieldChange("imageUrl", e.target.value);
+                }}
                 autoComplete="url"
                 required
               />
@@ -549,7 +703,8 @@ export default function ProductForm({
             placeholder="Décrivez votre création..."
             className={styles.textarea}
             rows={5}
-            defaultValue={initialValues?.description || ""}
+            value={formValues.description}
+            onChange={(e) => handleFieldChange("description", e.target.value)}
             autoComplete="off"
           />
         </div>
@@ -673,7 +828,7 @@ export default function ProductForm({
                 className={styles.primaryButton}
                 onClick={handleValidateColor}
               >
-                {isEditingColor ? "Mettre à jour" : "Valider"}
+                {isEditingColor ? "Mettre à jour la couleur" : "Ajouter la couleur"}
               </button>
 
               <button
@@ -821,6 +976,12 @@ export default function ProductForm({
         )}
 
         <div className={styles.submitArea}>
+          {showColorForm ? (
+            <p className={styles.stockHint}>
+              Validez ou annulez la couleur en cours avant d’enregistrer le produit.
+            </p>
+          ) : null}
+
           {mode === "edit" ? (
             <button
               type="submit"

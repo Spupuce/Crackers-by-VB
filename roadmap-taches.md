@@ -276,8 +276,6 @@
                 - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).
 
 
-Double confirmation quand couleur
-Décalage de ligne sur nouveau produit
 Mettre en avant sur l'accueil à ajouter sur stock
 Bug produit épuisé sur accueil client
 Si une couleur épuisé ne pas avoir besoin de selectionner la couleur
