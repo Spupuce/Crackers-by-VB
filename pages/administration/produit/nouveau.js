@@ -1,5 +1,4 @@
 // pages/administration/produit/nouveau.js
-
 import { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -12,6 +11,7 @@ export default function NewProductPage() {
   const router = useRouter();
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   async function handleSubmit(payload) {
     try {
@@ -33,6 +33,7 @@ export default function NewProductPage() {
         return;
       }
 
+      setHasUnsavedChanges(false);
       router.push('/administration/stock');
     } catch (error) {
       setError('Impossible de créer le produit.');
@@ -41,7 +42,21 @@ export default function NewProductPage() {
     }
   }
 
+  function confirmLeaveIfNeeded() {
+    if (!hasUnsavedChanges) {
+      return true;
+    }
+
+    return window.confirm(
+      'Des modifications ne sont pas enregistrées. Voulez-vous vraiment quitter cette page ?'
+    );
+  }
+
   function handleCancelPage() {
+    if (!confirmLeaveIfNeeded()) {
+      return;
+    }
+
     router.push('/administration/stock');
   }
 
@@ -91,6 +106,7 @@ export default function NewProductPage() {
                 mode="create"
                 initialValues={null}
                 onSubmit={handleSubmit}
+                onUnsavedChangesChange={setHasUnsavedChanges}
               />
             </div>
           </section>
