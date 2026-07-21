@@ -276,6 +276,8 @@
                 - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).
 
 
-Mettre en avant sur l'accueil à ajouter sur stock
+"Mettre en avant" "Produits les plus demandés" plutot que sur l'accueil à ajouter sur stock une coche mettre en avant et compléter avec les produits en évitant les doublons
 Bug produit épuisé sur accueil client
 Si une couleur épuisé ne pas avoir besoin de selectionner la couleur
+Placer la photo en hauteur en largeur et zoom
+Pouvoir ajouter plusieurs photos
