@@ -59,6 +59,14 @@ function serializeProductSnapshot(values) {
   });
 }
 
+function getFileLabel(file) {
+  if (!file?.name) {
+    return "Aucun fichier choisi";
+  }
+
+  return file.name;
+}
+
 export default function ProductForm({
   mode = "create",
   initialValues = null,
@@ -92,6 +100,12 @@ export default function ProductForm({
     })
   );
 
+  const mainImageInputRef = useRef(null);
+  const colorImageInputRef = useRef(null);
+
+  const [mainImageFileName, setMainImageFileName] = useState("Aucun fichier choisi");
+  const [colorImageFileName, setColorImageFileName] = useState("Aucun fichier choisi");
+
   const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl || "");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState("");
@@ -121,6 +135,8 @@ export default function ProductForm({
     setShowColorForm(false);
     setColorDraft(createEmptyColorDraft());
     setEditingColorIndex(null);
+    setMainImageFileName("Aucun fichier choisi");
+    setColorImageFileName("Aucun fichier choisi");
   }, [initialValues]);
 
   const activeColors = useMemo(
@@ -214,6 +230,11 @@ export default function ProductForm({
     setShowColorForm(false);
     setColorImageUploadError("");
     setIsUploadingColorImage(false);
+    setColorImageFileName("Aucun fichier choisi");
+
+    if (colorImageInputRef.current) {
+      colorImageInputRef.current.value = "";
+    }
   }
 
   function handleFieldChange(field, value) {
@@ -346,6 +367,11 @@ export default function ProductForm({
     setColorDraft(createEmptyColorDraft());
     setShowColorForm(true);
     setColorImageUploadError("");
+    setColorImageFileName("Aucun fichier choisi");
+
+    if (colorImageInputRef.current) {
+      colorImageInputRef.current.value = "";
+    }
   }
 
   function handleEditColor(index) {
@@ -373,10 +399,16 @@ export default function ProductForm({
     });
     setShowColorForm(true);
     setColorImageUploadError("");
+    setColorImageFileName("Aucun fichier choisi");
+
+    if (colorImageInputRef.current) {
+      colorImageInputRef.current.value = "";
+    }
   }
 
   async function handleMainImageUpload(event) {
     const file = event.target.files?.[0];
+    setMainImageFileName(getFileLabel(file));
 
     if (!file) {
       return;
@@ -422,6 +454,7 @@ export default function ProductForm({
 
   async function handleColorImageUpload(event) {
     const file = event.target.files?.[0];
+    setColorImageFileName(getFileLabel(file));
 
     if (!file) {
       return;
@@ -655,13 +688,25 @@ export default function ProductForm({
           <div className={styles.imageFieldRow}>
             <div className={styles.imageUploadColumn}>
               <input
+                ref={mainImageInputRef}
                 id="mainImageFile"
                 name="mainImageFile"
                 type="file"
                 accept="image/*"
-                className={styles.fileInput}
+                className={styles.hiddenFileInput}
                 onChange={handleMainImageUpload}
               />
+
+              <div className={styles.fileControl}>
+                <button
+                  type="button"
+                  className={styles.fileButton}
+                  onClick={() => mainImageInputRef.current?.click()}
+                >
+                  Choisir un fichier
+                </button>
+                <span className={styles.fileName}>{mainImageFileName}</span>
+              </div>
 
               {isUploadingImage && (
                 <p className={styles.stockHint}>
@@ -785,17 +830,30 @@ export default function ProductForm({
 
             <div className={styles.imageFieldRow}>
               <div className={styles.imageUploadColumn}>
-                <label htmlFor="colorImageFile" className={styles.smallLabel}>
-                  Téléverser une photo couleur
-                </label>
                 <input
+                  ref={colorImageInputRef}
                   id="colorImageFile"
                   name="colorImageFile"
                   type="file"
                   accept="image/*"
-                  className={styles.fileInput}
+                  className={styles.hiddenFileInput}
                   onChange={handleColorImageUpload}
                 />
+
+                <label htmlFor="colorImageFile" className={styles.smallLabel}>
+                  Téléverser une photo couleur
+                </label>
+
+                <div className={styles.fileControl}>
+                  <button
+                    type="button"
+                    className={styles.fileButton}
+                    onClick={() => colorImageInputRef.current?.click()}
+                  >
+                    Choisir un fichier
+                  </button>
+                  <span className={styles.fileName}>{colorImageFileName}</span>
+                </div>
 
                 {isUploadingColorImage && (
                   <p className={styles.stockHint}>
