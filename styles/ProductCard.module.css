@@ -27,17 +27,17 @@
 
 .badge {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 10px;
+  right: 10px;
   background-color: var(--color-error);
   color: var(--color-white);
   font-size: 0.72rem;
   font-weight: 600;
   padding: 6px 10px;
-  border-radius: 4px;
+  border-radius: 999px;
   white-space: nowrap;
   z-index: 2;
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .content {
