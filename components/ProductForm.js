@@ -8,6 +8,7 @@ function createEmptyColorDraft() {
     name: "",
     quantity: "",
     imageUrl: "",
+    images: [],
   };
 }
 
@@ -15,20 +16,66 @@ function normalizeColorName(value) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
+function sanitizeImages(images) {
+  if (!Array.isArray(images)) {
+    return [];
+  }
+
+  return images
+    .map((image) => {
+      if (!image) return null;
+
+      if (typeof image === "string") {
+        const url = image.trim();
+        return url
+          ? {
+              url,
+              cropX: 50,
+              cropY: 50,
+              zoom: 1,
+            }
+          : null;
+      }
+
+      const url = typeof image.url === "string" ? image.url.trim() : "";
+      if (!url) return null;
+
+      const cropX = Number(image.cropX);
+      const cropY = Number(image.cropY);
+      const zoom = Number(image.zoom);
+
+      return {
+        url,
+        cropX: Number.isFinite(cropX) ? Math.min(100, Math.max(0, cropX)) : 50,
+        cropY: Number.isFinite(cropY) ? Math.min(100, Math.max(0, cropY)) : 50,
+        zoom: Number.isFinite(zoom) ? Math.min(3, Math.max(1, zoom)) : 1,
+      };
+    })
+    .filter(Boolean);
+}
+
 function sanitizeColors(colors) {
   if (!Array.isArray(colors)) {
     return [];
   }
 
-  return colors.map((color) => ({
-    name: color?.name || "",
-    quantity: Math.max(0, Number(color?.quantity) || 0),
-    imageUrl: color?.imageUrl || "",
-    isArchived: Boolean(color?.isArchived),
-    archivedAt: color?.isArchived
-      ? color?.archivedAt || new Date().toISOString()
-      : null,
-  }));
+  return colors.map((color) => {
+    const normalizedImages = sanitizeImages(color?.images);
+    const fallbackImageUrl =
+      typeof color?.imageUrl === "string" ? color.imageUrl.trim() : "";
+    const resolvedImageUrl = fallbackImageUrl || normalizedImages[0]?.url || "";
+
+    return {
+      name: color?.name || "",
+      quantity: Math.max(0, Number(color?.quantity) || 0),
+      imageUrl: resolvedImageUrl,
+      images: normalizedImages,
+      isArchived: Boolean(color?.isArchived),
+      archivedAt: color?.isArchived
+        ? color?.archivedAt || new Date().toISOString()
+        : null,
+    };
+  });
 }
 
 function buildInitialFormValues(initialValues) {
@@ -39,6 +86,7 @@ function buildInitialFormValues(initialValues) {
     promoPrice: initialValues?.promoPrice ?? "",
     description: initialValues?.description || "",
     imageUrl: initialValues?.imageUrl || "",
+    images: sanitizeImages(initialValues?.images),
     stock: initialValues?.stock ?? "",
   };
 }
@@ -54,6 +102,7 @@ function serializeProductSnapshot(values) {
         : Number(values.promoPrice),
     description: values.description || "",
     imageUrl: values.imageUrl || "",
+    images: sanitizeImages(values.images || []),
     stock: values.stock === "" ? "" : Number(values.stock),
     colors: sanitizeColors(values.colors || []),
   });
@@ -107,6 +156,9 @@ export default function ProductForm({
   const [colorImageFileName, setColorImageFileName] = useState("Aucun fichier choisi");
 
   const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl || "");
+  const [productImages, setProductImages] = useState(
+    sanitizeImages(initialValues?.images)
+  );
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState("");
 
@@ -130,6 +182,7 @@ export default function ProductForm({
       colors: normalizedInitialColors,
     });
     setImageUrl(initialValues?.imageUrl || "");
+    setProductImages(sanitizeImages(initialValues?.images));
     setImageUploadError("");
     setColorImageUploadError("");
     setShowColorForm(false);
@@ -176,7 +229,8 @@ export default function ProductForm({
     return Boolean(
       colorDraft.name.trim() ||
         String(colorDraft.quantity).trim() ||
-        colorDraft.imageUrl.trim()
+        colorDraft.imageUrl.trim() ||
+        (Array.isArray(colorDraft.images) && colorDraft.images.length > 0)
     );
   }, [colorDraft]);
 
@@ -184,6 +238,7 @@ export default function ProductForm({
     const currentSnapshot = serializeProductSnapshot({
       ...formValues,
       imageUrl,
+      images: productImages,
       stock: hasColors ? Number(visualStock) || 0 : stockInputValue,
       colors,
     });
@@ -194,6 +249,7 @@ export default function ProductForm({
   }, [
     formValues,
     imageUrl,
+    productImages,
     hasColors,
     visualStock,
     stockInputValue,
@@ -255,6 +311,7 @@ export default function ProductForm({
     const normalizedName = colorDraft.name.trim();
     const normalizedQuantity = Math.max(0, Number(colorDraft.quantity) || 0);
     const normalizedImageUrl = colorDraft.imageUrl.trim();
+    const normalizedImages = sanitizeImages(colorDraft.images);
 
     if (!normalizedName) {
       return;
@@ -263,7 +320,8 @@ export default function ProductForm({
     const normalizedColor = {
       name: normalizedName,
       quantity: normalizedQuantity,
-      imageUrl: normalizedImageUrl,
+      imageUrl: normalizedImageUrl || normalizedImages[0]?.url || "",
+      images: normalizedImages,
       isArchived: false,
       archivedAt: null,
     };
@@ -396,6 +454,7 @@ export default function ProductForm({
       name: colorToEdit.name || "",
       quantity: colorToEdit.quantity ?? "",
       imageUrl: colorToEdit.imageUrl || "",
+      images: sanitizeImages(colorToEdit.images),
     });
     setShowColorForm(true);
     setColorImageUploadError("");
@@ -440,11 +499,22 @@ export default function ProductForm({
         return;
       }
 
+      const nextImage = {
+        url: data.imageUrl,
+        cropX: 50,
+        cropY: 50,
+        zoom: 1,
+      };
+
       setImageUrl(data.imageUrl);
-      setFormValues((prev) => ({
-        ...prev,
-        imageUrl: data.imageUrl,
-      }));
+      setProductImages((prev) => {
+        const nextImages = [nextImage, ...prev.filter((image) => image.url !== nextImage.url)];
+        setFormValues((current) => ({
+          ...current,
+          imageUrl: data.imageUrl,
+        }));
+        return nextImages;
+      });
     } catch (error) {
       setImageUploadError("Une erreur est survenue pendant le téléversement.");
     } finally {
@@ -491,6 +561,14 @@ export default function ProductForm({
       setColorDraft((prev) => ({
         ...prev,
         imageUrl: data.imageUrl,
+        images: [
+          {
+            url: data.imageUrl,
+            cropX: 50,
+            cropY: 50,
+            zoom: 1,
+          },
+        ],
       }));
     } catch (error) {
       setColorImageUploadError(
@@ -520,6 +598,7 @@ export default function ProductForm({
       promoPrice: promoPriceValue === "" ? null : Number(promoPriceValue),
       description: formValues.description?.toString().trim() || "",
       imageUrl: imageUrl?.toString().trim() || "",
+      images: productImages,
       stock: hasColors ? Number(visualStock) || 0 : Number(stockInputValue) || 0,
       colors,
     };
@@ -558,6 +637,7 @@ export default function ProductForm({
     initialProductSnapshotRef.current = serializeProductSnapshot({
       ...formValues,
       imageUrl,
+      images: productImages,
       stock: hasColors ? Number(visualStock) || 0 : stockInputValue,
       colors,
     });
@@ -753,6 +833,95 @@ export default function ProductForm({
               />
             </div>
           )}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Photos supplémentaires du produit</label>
+
+          <div className={styles.imageFieldRow}>
+            <div className={styles.imageUploadColumn}>
+              <label htmlFor="productExtraImageFile" className={styles.smallLabel}>
+                Ajouter une photo
+              </label>
+              <input
+                id="productExtraImageFile"
+                name="productExtraImageFile"
+                type="file"
+                accept="image/*"
+                className={styles.hiddenFileInput}
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  const formData = new FormData();
+                  formData.append("image", file);
+                  setIsUploadingImage(true);
+                  setImageUploadError("");
+                  try {
+                    const response = await fetch("/api/admin/upload-image", {
+                      method: "POST",
+                      body: formData,
+                    });
+                    if (!response.ok) {
+                      setImageUploadError("Échec du téléversement de l’image.");
+                      return;
+                    }
+                    const data = await response.json();
+                    if (!data?.imageUrl) {
+                      setImageUploadError("Aucune URL d’image retournée par le serveur.");
+                      return;
+                    }
+                    setProductImages((prev) => [
+                      ...prev,
+                      { url: data.imageUrl, cropX: 50, cropY: 50, zoom: 1 },
+                    ]);
+                  } catch (error) {
+                    setImageUploadError("Une erreur est survenue pendant le téléversement.");
+                  } finally {
+                    setIsUploadingImage(false);
+                    event.target.value = "";
+                  }
+                }}
+              />
+              <div className={styles.fileControl}>
+                <button
+                  type="button"
+                  className={styles.fileButton}
+                  onClick={() => document.getElementById("productExtraImageFile")?.click()}
+                >
+                  Choisir un fichier
+                </button>
+                <span className={styles.fileName}>
+                  {productImages.length > 0
+                    ? `${productImages.length} photo(s) ajoutée(s)`
+                    : "Aucune photo supplémentaire"}
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.imageUrlColumn}>
+              <label className={styles.smallLabel}>Aperçu des photos</label>
+              <div className={styles.extraImagesGrid}>
+                {productImages.map((image, index) => (
+                  <div key={`${image.url}-${index}`} className={styles.extraImageItem}>
+                    <img
+                      src={image.url}
+                      alt={`Photo supplémentaire ${index + 1}`}
+                      className={styles.extraImagePreview}
+                    />
+                    <button
+                      type="button"
+                      className={styles.extraImageRemove}
+                      onClick={() =>
+                        setProductImages((prev) => prev.filter((_, i) => i !== index))
+                      }
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className={styles.field}>
