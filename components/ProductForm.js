@@ -2,119 +2,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FiArchive, FiEdit2, FiTrash2 } from "react-icons/fi";
 import styles from "../styles/AdminProductForm.module.css";
-
-function createEmptyColorDraft() {
-  return {
-    name: "",
-    quantity: "",
-    imageUrl: "",
-    images: [],
-  };
-}
-
-function normalizeColorName(value) {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
-
-function sanitizeImages(images) {
-  if (!Array.isArray(images)) {
-    return [];
-  }
-
-  return images
-    .map((image) => {
-      if (!image) return null;
-
-      if (typeof image === "string") {
-        const url = image.trim();
-        return url
-          ? {
-              url,
-              cropX: 50,
-              cropY: 50,
-              zoom: 1,
-            }
-          : null;
-      }
-
-      const url = typeof image.url === "string" ? image.url.trim() : "";
-      if (!url) return null;
-
-      const cropX = Number(image.cropX);
-      const cropY = Number(image.cropY);
-      const zoom = Number(image.zoom);
-
-      return {
-        url,
-        cropX: Number.isFinite(cropX) ? Math.min(100, Math.max(0, cropX)) : 50,
-        cropY: Number.isFinite(cropY) ? Math.min(100, Math.max(0, cropY)) : 50,
-        zoom: Number.isFinite(zoom) ? Math.min(3, Math.max(1, zoom)) : 1,
-      };
-    })
-    .filter(Boolean);
-}
-
-function sanitizeColors(colors) {
-  if (!Array.isArray(colors)) {
-    return [];
-  }
-
-  return colors.map((color) => {
-    const normalizedImages = sanitizeImages(color?.images);
-    const fallbackImageUrl =
-      typeof color?.imageUrl === "string" ? color.imageUrl.trim() : "";
-    const resolvedImageUrl = fallbackImageUrl || normalizedImages[0]?.url || "";
-
-    return {
-      name: color?.name || "",
-      quantity: Math.max(0, Number(color?.quantity) || 0),
-      imageUrl: resolvedImageUrl,
-      images: normalizedImages,
-      isArchived: Boolean(color?.isArchived),
-      archivedAt: color?.isArchived
-        ? color?.archivedAt || new Date().toISOString()
-        : null,
-    };
-  });
-}
-
-function buildInitialFormValues(initialValues) {
-  return {
-    name: initialValues?.name || "",
-    category: initialValues?.category || "",
-    price: initialValues?.price ?? "",
-    promoPrice: initialValues?.promoPrice ?? "",
-    description: initialValues?.description || "",
-    imageUrl: initialValues?.imageUrl || "",
-    images: sanitizeImages(initialValues?.images),
-    stock: initialValues?.stock ?? "",
-  };
-}
-
-function serializeProductSnapshot(values) {
-  return JSON.stringify({
-    name: values.name || "",
-    category: values.category || "",
-    price: values.price === "" ? "" : Number(values.price),
-    promoPrice:
-      values.promoPrice === "" || values.promoPrice === null
-        ? ""
-        : Number(values.promoPrice),
-    description: values.description || "",
-    imageUrl: values.imageUrl || "",
-    images: sanitizeImages(values.images || []),
-    stock: values.stock === "" ? "" : Number(values.stock),
-    colors: sanitizeColors(values.colors || []),
-  });
-}
-
-function getFileLabel(file) {
-  if (!file?.name) {
-    return "Aucun fichier choisi";
-  }
-
-  return file.name;
-}
+import {
+  buildInitialFormValues,
+  createEmptyColorDraft,
+  getFileLabel,
+  normalizeColorName,
+  sanitizeColors,
+  sanitizeImages,
+  serializeProductSnapshot,
+} from "../utils/productForm";
 
 export default function ProductForm({
   mode = "create",
@@ -152,8 +48,12 @@ export default function ProductForm({
   const mainImageInputRef = useRef(null);
   const colorImageInputRef = useRef(null);
 
-  const [mainImageFileName, setMainImageFileName] = useState("Aucun fichier choisi");
-  const [colorImageFileName, setColorImageFileName] = useState("Aucun fichier choisi");
+  const [mainImageFileName, setMainImageFileName] = useState(
+    "Aucun fichier choisi"
+  );
+  const [colorImageFileName, setColorImageFileName] = useState(
+    "Aucun fichier choisi"
+  );
 
   const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl || "");
   const [productImages, setProductImages] = useState(
@@ -206,6 +106,7 @@ export default function ProductForm({
 
   const visualStock = useMemo(() => {
     if (!hasColors) return "";
+
     return activeColors.reduce((total, color) => {
       const quantity = Number(color.quantity) || 0;
       return total + quantity;
@@ -508,17 +409,65 @@ export default function ProductForm({
 
       setImageUrl(data.imageUrl);
       setProductImages((prev) => {
-        const nextImages = [nextImage, ...prev.filter((image) => image.url !== nextImage.url)];
+        const nextImages = [
+          nextImage,
+          ...prev.filter((image) => image.url !== nextImage.url),
+        ];
+
         setFormValues((current) => ({
           ...current,
           imageUrl: data.imageUrl,
         }));
+
         return nextImages;
       });
     } catch (error) {
       setImageUploadError("Une erreur est survenue pendant le téléversement.");
     } finally {
       setIsUploadingImage(false);
+    }
+  }
+
+  async function handleExtraProductImageUpload(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageUploadError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        setImageUploadError("Échec du téléversement de l’image.");
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!data?.imageUrl) {
+        setImageUploadError("Aucune URL d’image retournée par le serveur.");
+        return;
+      }
+
+      setProductImages((prev) => [
+        ...prev,
+        { url: data.imageUrl, cropX: 50, cropY: 50, zoom: 1 },
+      ]);
+    } catch (error) {
+      setImageUploadError("Une erreur est survenue pendant le téléversement.");
+    } finally {
+      setIsUploadingImage(false);
+      event.target.value = "";
     }
   }
 
@@ -577,6 +526,27 @@ export default function ProductForm({
     } finally {
       setIsUploadingColorImage(false);
     }
+  }
+
+  function handleRemoveProductImage(indexToRemove) {
+    setProductImages((prev) => {
+      const nextImages = prev.filter((_, index) => index !== indexToRemove);
+      const nextMainImageUrl = nextImages[0]?.url || imageUrl || "";
+
+      if (
+        imageUrl &&
+        prev[indexToRemove] &&
+        prev[indexToRemove].url === imageUrl
+      ) {
+        setImageUrl(nextMainImageUrl);
+        setFormValues((current) => ({
+          ...current,
+          imageUrl: nextMainImageUrl,
+        }));
+      }
+
+      return nextImages;
+    });
   }
 
   function handleFormSubmit(event) {
@@ -843,50 +813,23 @@ export default function ProductForm({
               <label htmlFor="productExtraImageFile" className={styles.smallLabel}>
                 Ajouter une photo
               </label>
+
               <input
                 id="productExtraImageFile"
                 name="productExtraImageFile"
                 type="file"
                 accept="image/*"
                 className={styles.hiddenFileInput}
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  const formData = new FormData();
-                  formData.append("image", file);
-                  setIsUploadingImage(true);
-                  setImageUploadError("");
-                  try {
-                    const response = await fetch("/api/admin/upload-image", {
-                      method: "POST",
-                      body: formData,
-                    });
-                    if (!response.ok) {
-                      setImageUploadError("Échec du téléversement de l’image.");
-                      return;
-                    }
-                    const data = await response.json();
-                    if (!data?.imageUrl) {
-                      setImageUploadError("Aucune URL d’image retournée par le serveur.");
-                      return;
-                    }
-                    setProductImages((prev) => [
-                      ...prev,
-                      { url: data.imageUrl, cropX: 50, cropY: 50, zoom: 1 },
-                    ]);
-                  } catch (error) {
-                    setImageUploadError("Une erreur est survenue pendant le téléversement.");
-                  } finally {
-                    setIsUploadingImage(false);
-                    event.target.value = "";
-                  }
-                }}
+                onChange={handleExtraProductImageUpload}
               />
+
               <div className={styles.fileControl}>
                 <button
                   type="button"
                   className={styles.fileButton}
-                  onClick={() => document.getElementById("productExtraImageFile")?.click()}
+                  onClick={() =>
+                    document.getElementById("productExtraImageFile")?.click()
+                  }
                 >
                   Choisir un fichier
                 </button>
@@ -902,7 +845,10 @@ export default function ProductForm({
               <label className={styles.smallLabel}>Aperçu des photos</label>
               <div className={styles.extraImagesGrid}>
                 {productImages.map((image, index) => (
-                  <div key={`${image.url}-${index}`} className={styles.extraImageItem}>
+                  <div
+                    key={`${image.url}-${index}`}
+                    className={styles.extraImageItem}
+                  >
                     <img
                       src={image.url}
                       alt={`Photo supplémentaire ${index + 1}`}
@@ -911,9 +857,7 @@ export default function ProductForm({
                     <button
                       type="button"
                       className={styles.extraImageRemove}
-                      onClick={() =>
-                        setProductImages((prev) => prev.filter((_, i) => i !== index))
-                      }
+                      onClick={() => handleRemoveProductImage(index)}
                     >
                       Retirer
                     </button>
