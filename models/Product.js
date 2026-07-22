@@ -1,6 +1,35 @@
 // models/Product.js
 import mongoose from "mongoose";
 
+const imageSchema = new mongoose.Schema(
+  {
+    url: {
+      type: String,
+      required: [true, "L’URL de l’image est obligatoire."],
+      trim: true,
+    },
+    cropX: {
+      type: Number,
+      default: 50,
+      min: [0, "La position horizontale ne peut pas être inférieure à 0."],
+      max: [100, "La position horizontale ne peut pas dépasser 100."],
+    },
+    cropY: {
+      type: Number,
+      default: 50,
+      min: [0, "La position verticale ne peut pas être inférieure à 0."],
+      max: [100, "La position verticale ne peut pas dépasser 100."],
+    },
+    zoom: {
+      type: Number,
+      default: 1,
+      min: [1, "Le zoom ne peut pas être inférieur à 1."],
+      max: [3, "Le zoom ne peut pas dépasser 3."],
+    },
+  },
+  { _id: false }
+);
+
 const colorSchema = new mongoose.Schema(
   {
     name: {
@@ -19,6 +48,10 @@ const colorSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    images: {
+      type: [imageSchema],
+      default: [],
+    },
     isArchived: {
       type: Boolean,
       default: false,
@@ -28,7 +61,7 @@ const colorSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const productSchema = new mongoose.Schema(
@@ -78,6 +111,11 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
 
+    images: {
+      type: [imageSchema],
+      default: [],
+    },
+
     stock: {
       type: Number,
       required: [true, "Le stock est obligatoire."],
@@ -103,7 +141,7 @@ const productSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.models.Product ||

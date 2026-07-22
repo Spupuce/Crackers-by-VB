@@ -277,7 +277,6 @@
 
 
 "Mettre en avant" "Produits les plus demandés" plutot que sur l'accueil à ajouter sur stock une coche mettre en avant et compléter avec les produits en évitant les doublons
-Bug visuel produit épuisé sur accueil client
 Si une couleur épuisé ne pas avoir besoin de selectionner la couleur
 Placer la photo en hauteur en largeur et zoom
 Pouvoir ajouter plusieurs photos
