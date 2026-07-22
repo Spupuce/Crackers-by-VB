@@ -335,6 +335,57 @@ select.input:focus {
   object-fit: cover;
 }
 
+.extraImagesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.extraImageItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background-color: var(--color-white);
+  box-shadow: var(--shadow-warm-soft);
+}
+
+.extraImagePreview {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
+  background-color: var(--color-gray-100);
+  border: 1px solid var(--color-gray-200);
+}
+
+.extraImageRemove {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 8px;
+  background-color: var(--color-white);
+  color: var(--color-gray-700);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.extraImageRemove:hover {
+  border-color: var(--color-gray-700);
+  color: var(--color-gray-900);
+  background-color: var(--color-gray-50);
+  transform: translateY(-1px);
+}
+
 .colorPreviewList {
   margin-top: 10px;
   display: flex;
@@ -572,6 +623,10 @@ select.input:focus {
     overflow: visible;
     text-overflow: initial;
   }
+
+  .extraImagesGrid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
 }
 
 @media (max-width: 520px) {
@@ -592,5 +647,9 @@ select.input:focus {
 
   .mainImagePreviewWrapper {
     max-width: 100%;
+  }
+
+  .extraImagesGrid {
+    grid-template-columns: 1fr 1fr;
   }
 }
