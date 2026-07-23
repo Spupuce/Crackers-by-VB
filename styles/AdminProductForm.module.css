@@ -337,7 +337,7 @@ select.input:focus {
 
 .extraImagesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
   width: 100%;
 }
@@ -345,7 +345,7 @@ select.input:focus {
 .extraImageItem {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   padding: 10px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -353,13 +353,78 @@ select.input:focus {
   box-shadow: var(--shadow-warm-soft);
 }
 
-.extraImagePreview {
+.extraImageBadgeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.primaryImageBadge,
+.secondaryImageBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.primaryImageBadge {
+  background-color: var(--color-status-primary-bg);
+  color: var(--color-primary-dark);
+  border: 1px solid var(--color-primary-light);
+}
+
+.secondaryImageBadge {
+  background-color: var(--color-gray-100);
+  color: var(--color-text-soft);
+  border: 1px solid var(--color-gray-200);
+}
+
+.extraImagePreviewFrame {
+  position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  object-fit: cover;
+  overflow: hidden;
   border-radius: 10px;
   background-color: var(--color-gray-100);
   border: 1px solid var(--color-gray-200);
+}
+
+.extraImagePreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center center;
+  transition: transform 0.2s ease, object-position 0.2s ease;
+}
+
+.cropControls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.cropControl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cropControl input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.extraImageActions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .extraImageRemove {
@@ -580,7 +645,9 @@ select.input:focus {
   .colorsHeader,
   .submitButtons,
   .colorPreviewActions,
-  .colorActions {
+  .colorActions,
+  .extraImageBadgeRow,
+  .extraImageActions {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -625,7 +692,15 @@ select.input:focus {
   }
 
   .extraImagesGrid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .extraImageActions {
+    width: 100%;
+  }
+
+  .extraImageRemove {
+    width: 100%;
   }
 }
 
@@ -650,6 +725,6 @@ select.input:focus {
   }
 
   .extraImagesGrid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 }
