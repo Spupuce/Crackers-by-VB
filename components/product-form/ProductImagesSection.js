@@ -54,15 +54,6 @@ function getPreviewStyle(image) {
   };
 }
 
-function areImagesEqual(leftImage, rightImage) {
-  return (
-    leftImage.url === rightImage.url &&
-    Number(leftImage.offsetX || 0) === Number(rightImage.offsetX || 0) &&
-    Number(leftImage.offsetY || 0) === Number(rightImage.offsetY || 0) &&
-    Number(leftImage.zoom || 1) === Number(rightImage.zoom || 1)
-  );
-}
-
 export default function ProductImagesSection({
   mainImageInputRef,
   extraImageInputRef,
@@ -86,7 +77,6 @@ export default function ProductImagesSection({
     [productImages]
   );
 
-  const [draftImages, setDraftImages] = useState(normalizedImages);
   const [dragState, setDragState] = useState({
     index: null,
     startPointerX: 0,
@@ -96,10 +86,6 @@ export default function ProductImagesSection({
   });
 
   const previewRefs = useRef({});
-
-  useEffect(() => {
-    setDraftImages(normalizedImages);
-  }, [normalizedImages]);
 
   useEffect(() => {
     function handlePointerUp() {
@@ -125,7 +111,7 @@ export default function ProductImagesSection({
         }
 
         const frame = previewRefs.current[currentState.index];
-        const currentImage = draftImages[currentState.index];
+        const currentImage = normalizedImages[currentState.index];
 
         if (!frame || !currentImage || Number(currentImage.zoom) <= 1) {
           return currentState;
@@ -153,17 +139,10 @@ export default function ProductImagesSection({
           Math.min(maxOffsetY, DRAG_LIMIT_PX)
         );
 
-        setDraftImages((prev) =>
-          prev.map((image, index) =>
-            index === currentState.index
-              ? {
-                  ...image,
-                  offsetX: nextOffsetX,
-                  offsetY: nextOffsetY,
-                }
-              : image
-          )
-        );
+        onUpdateProductImageCrop(currentState.index, {
+          offsetX: nextOffsetX,
+          offsetY: nextOffsetY,
+        });
 
         return currentState;
       });
@@ -182,7 +161,7 @@ export default function ProductImagesSection({
       window.removeEventListener("touchend", handlePointerUp);
       window.removeEventListener("touchcancel", handlePointerUp);
     };
-  }, [draftImages]);
+  }, [normalizedImages, onUpdateProductImageCrop]);
 
   function handleDragStart(event, index, image) {
     if (Number(image.zoom) <= 1) {
@@ -205,22 +184,15 @@ export default function ProductImagesSection({
   function handleZoomChange(index, value) {
     const nextZoom = clamp(Number(value), MIN_ZOOM, MAX_ZOOM);
 
-    setDraftImages((prev) =>
-      prev.map((image, imageIndex) =>
-        imageIndex === index
-          ? {
-              ...image,
-              zoom: nextZoom,
-              ...(nextZoom <= 1
-                ? {
-                    offsetX: 0,
-                    offsetY: 0,
-                  }
-                : {}),
-            }
-          : image
-      )
-    );
+    onUpdateProductImageCrop(index, {
+      zoom: nextZoom,
+      ...(nextZoom <= 1
+        ? {
+            offsetX: 0,
+            offsetY: 0,
+          }
+        : {}),
+    });
   }
 
   function handleWheelZoom(event, index, image) {
@@ -229,50 +201,15 @@ export default function ProductImagesSection({
     const zoomStep = event.deltaY < 0 ? 0.1 : -0.1;
     const nextZoom = clamp((Number(image.zoom) || 1) + zoomStep, MIN_ZOOM, MAX_ZOOM);
 
-    setDraftImages((prev) =>
-      prev.map((currentImage, imageIndex) =>
-        imageIndex === index
-          ? {
-              ...currentImage,
-              zoom: nextZoom,
-              ...(nextZoom <= 1
-                ? {
-                    offsetX: 0,
-                    offsetY: 0,
-                  }
-                : {}),
-            }
-          : currentImage
-      )
-    );
-  }
-
-  function handleSaveImageCrop(index) {
-    const draftImage = draftImages[index];
-
-    if (!draftImage) {
-      return;
-    }
-
     onUpdateProductImageCrop(index, {
-      offsetX: draftImage.offsetX,
-      offsetY: draftImage.offsetY,
-      zoom: draftImage.zoom,
+      zoom: nextZoom,
+      ...(nextZoom <= 1
+        ? {
+            offsetX: 0,
+            offsetY: 0,
+          }
+        : {}),
     });
-  }
-
-  function handleResetImageCrop(index) {
-    const sourceImage = normalizedImages[index];
-
-    if (!sourceImage) {
-      return;
-    }
-
-    setDraftImages((prev) =>
-      prev.map((image, imageIndex) =>
-        imageIndex === index ? { ...sourceImage } : image
-      )
-    );
   }
 
   return (
@@ -386,17 +323,15 @@ export default function ProductImagesSection({
           <div className={styles.imageUrlColumn}>
             <label className={styles.smallLabel}>Aperçu et cadrage</label>
 
-            {draftImages.length === 0 ? (
+            {normalizedImages.length === 0 ? (
               <p className={styles.stockHint}>
                 Ajoute plusieurs photos pour enrichir la fiche produit.
               </p>
             ) : (
               <div className={styles.extraImagesGrid}>
-                {draftImages.map((image, index) => {
-                  const sourceImage = normalizedImages[index] || getSafeImage();
+                {normalizedImages.map((image, index) => {
                   const isMainImage = image.url === imageUrl;
                   const isDragging = dragState.index === index;
-                  const hasPendingSave = !areImagesEqual(image, sourceImage);
                   const canDrag = Number(image.zoom) > 1;
 
                   return (
@@ -472,38 +407,13 @@ export default function ProductImagesSection({
 
                         <div className={styles.imageCardHintRow}>
                           <p className={styles.stockHint}>
-                            Le cadrage sera enregistré après validation.
+                            Ajuste le zoom et le cadrage, puis enregistre le produit
+                            pour valider.
                           </p>
-
-                          {hasPendingSave && (
-                            <span className={styles.imagePendingBadge}>
-                              Modifications en attente
-                            </span>
-                          )}
                         </div>
                       </div>
 
                       <div className={styles.extraImageActions}>
-                        {hasPendingSave && (
-                          <>
-                            <button
-                              type="button"
-                              className={styles.outlineButton}
-                              onClick={() => handleResetImageCrop(index)}
-                            >
-                              Réinitialiser
-                            </button>
-
-                            <button
-                              type="button"
-                              className={styles.primaryButton}
-                              onClick={() => handleSaveImageCrop(index)}
-                            >
-                              Valider le cadrage
-                            </button>
-                          </>
-                        )}
-
                         <button
                           type="button"
                           className={styles.extraImageRemove}

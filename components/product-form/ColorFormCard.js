@@ -54,15 +54,6 @@ function getPreviewStyle(image) {
   };
 }
 
-function areImagesEqual(leftImage, rightImage) {
-  return (
-    leftImage.url === rightImage.url &&
-    Number(leftImage.offsetX || 0) === Number(rightImage.offsetX || 0) &&
-    Number(leftImage.offsetY || 0) === Number(rightImage.offsetY || 0) &&
-    Number(leftImage.zoom || 1) === Number(rightImage.zoom || 1)
-  );
-}
-
 export default function ColorFormCard({
   showColorForm,
   isEditingColor,
@@ -89,7 +80,6 @@ export default function ColorFormCard({
     [colorDraft.images]
   );
 
-  const [draftImages, setDraftImages] = useState(normalizedImages);
   const [dragState, setDragState] = useState({
     index: null,
     startPointerX: 0,
@@ -99,10 +89,6 @@ export default function ColorFormCard({
   });
 
   const previewRefs = useRef({});
-
-  useEffect(() => {
-    setDraftImages(normalizedImages);
-  }, [normalizedImages]);
 
   useEffect(() => {
     function handlePointerUp() {
@@ -128,7 +114,7 @@ export default function ColorFormCard({
         }
 
         const frame = previewRefs.current[currentState.index];
-        const currentImage = draftImages[currentState.index];
+        const currentImage = normalizedImages[currentState.index];
 
         if (!frame || !currentImage || Number(currentImage.zoom) <= 1) {
           return currentState;
@@ -156,17 +142,10 @@ export default function ColorFormCard({
           Math.min(maxOffsetY, DRAG_LIMIT_PX)
         );
 
-        setDraftImages((prev) =>
-          prev.map((image, index) =>
-            index === currentState.index
-              ? {
-                  ...image,
-                  offsetX: nextOffsetX,
-                  offsetY: nextOffsetY,
-                }
-              : image
-          )
-        );
+        onUpdateColorImageCrop(currentState.index, {
+          offsetX: nextOffsetX,
+          offsetY: nextOffsetY,
+        });
 
         return currentState;
       });
@@ -185,7 +164,7 @@ export default function ColorFormCard({
       window.removeEventListener("touchend", handlePointerUp);
       window.removeEventListener("touchcancel", handlePointerUp);
     };
-  }, [draftImages]);
+  }, [normalizedImages, onUpdateColorImageCrop]);
 
   if (!showColorForm) {
     return null;
@@ -212,22 +191,15 @@ export default function ColorFormCard({
   function handleZoomChange(index, value) {
     const nextZoom = clamp(Number(value), MIN_ZOOM, MAX_ZOOM);
 
-    setDraftImages((prev) =>
-      prev.map((image, imageIndex) =>
-        imageIndex === index
-          ? {
-              ...image,
-              zoom: nextZoom,
-              ...(nextZoom <= 1
-                ? {
-                    offsetX: 0,
-                    offsetY: 0,
-                  }
-                : {}),
-            }
-          : image
-      )
-    );
+    onUpdateColorImageCrop(index, {
+      zoom: nextZoom,
+      ...(nextZoom <= 1
+        ? {
+            offsetX: 0,
+            offsetY: 0,
+          }
+        : {}),
+    });
   }
 
   function handleWheelZoom(event, index, image) {
@@ -236,50 +208,15 @@ export default function ColorFormCard({
     const zoomStep = event.deltaY < 0 ? 0.1 : -0.1;
     const nextZoom = clamp((Number(image.zoom) || 1) + zoomStep, MIN_ZOOM, MAX_ZOOM);
 
-    setDraftImages((prev) =>
-      prev.map((currentImage, imageIndex) =>
-        imageIndex === index
-          ? {
-              ...currentImage,
-              zoom: nextZoom,
-              ...(nextZoom <= 1
-                ? {
-                    offsetX: 0,
-                    offsetY: 0,
-                  }
-                : {}),
-            }
-          : currentImage
-      )
-    );
-  }
-
-  function handleSaveImageCrop(index) {
-    const draftImage = draftImages[index];
-
-    if (!draftImage) {
-      return;
-    }
-
     onUpdateColorImageCrop(index, {
-      offsetX: draftImage.offsetX,
-      offsetY: draftImage.offsetY,
-      zoom: draftImage.zoom,
+      zoom: nextZoom,
+      ...(nextZoom <= 1
+        ? {
+            offsetX: 0,
+            offsetY: 0,
+          }
+        : {}),
     });
-  }
-
-  function handleResetImageCrop(index) {
-    const sourceImage = normalizedImages[index];
-
-    if (!sourceImage) {
-      return;
-    }
-
-    setDraftImages((prev) =>
-      prev.map((image, imageIndex) =>
-        imageIndex === index ? { ...sourceImage } : image
-      )
-    );
   }
 
   return (
@@ -420,16 +357,14 @@ export default function ColorFormCard({
         </div>
       )}
 
-      {draftImages.length > 0 && (
+      {normalizedImages.length > 0 && (
         <div className={styles.field}>
           <label className={styles.smallLabel}>Galerie de la couleur</label>
 
           <div className={styles.extraImagesGrid}>
-            {draftImages.map((image, index) => {
-              const sourceImage = normalizedImages[index] || getSafeImage();
+            {normalizedImages.map((image, index) => {
               const isMainImage = image.url === colorDraft.imageUrl;
               const isDragging = dragState.index === index;
-              const hasPendingSave = !areImagesEqual(image, sourceImage);
               const canDrag = Number(image.zoom) > 1;
 
               return (
@@ -505,38 +440,13 @@ export default function ColorFormCard({
 
                     <div className={styles.imageCardHintRow}>
                       <p className={styles.stockHint}>
-                        Le cadrage sera enregistré après validation.
+                        Ajuste le zoom et le cadrage, puis enregistre la couleur
+                        pour valider.
                       </p>
-
-                      {hasPendingSave && (
-                        <span className={styles.imagePendingBadge}>
-                          Modifications en attente
-                        </span>
-                      )}
                     </div>
                   </div>
 
                   <div className={styles.extraImageActions}>
-                    {hasPendingSave && (
-                      <>
-                        <button
-                          type="button"
-                          className={styles.outlineButton}
-                          onClick={() => handleResetImageCrop(index)}
-                        >
-                          Réinitialiser
-                        </button>
-
-                        <button
-                          type="button"
-                          className={styles.primaryButton}
-                          onClick={() => handleSaveImageCrop(index)}
-                        >
-                          Valider le cadrage
-                        </button>
-                      </>
-                    )}
-
                     <button
                       type="button"
                       className={styles.extraImageRemove}
