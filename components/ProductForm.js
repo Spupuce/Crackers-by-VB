@@ -1,7 +1,9 @@
 // components/ProductForm.js
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FiArchive, FiEdit2, FiTrash2 } from "react-icons/fi";
 import styles from "../styles/AdminProductForm.module.css";
+import ProductImagesSection from "./product-form/ProductImagesSection";
+import ColorFormCard from "./product-form/ColorFormCard";
+import ColorPreviewList from "./product-form/ColorPreviewList";
 import {
   buildInitialFormValues,
   createEmptyColorDraft,
@@ -11,6 +13,15 @@ import {
   sanitizeImages,
   serializeProductSnapshot,
 } from "../utils/productForm";
+
+function buildDefaultImage(url) {
+  return {
+    url,
+    cropX: 50,
+    cropY: 50,
+    zoom: 1,
+  };
+}
 
 export default function ProductForm({
   mode = "create",
@@ -46,14 +57,18 @@ export default function ProductForm({
   );
 
   const mainImageInputRef = useRef(null);
+  const extraImageInputRef = useRef(null);
   const colorImageInputRef = useRef(null);
+  const extraColorImageInputRef = useRef(null);
 
   const [mainImageFileName, setMainImageFileName] = useState(
     "Aucun fichier choisi"
   );
+  const [extraImageFileName, setExtraImageFileName] = useState("");
   const [colorImageFileName, setColorImageFileName] = useState(
     "Aucun fichier choisi"
   );
+  const [extraColorImageFileName, setExtraColorImageFileName] = useState("");
 
   const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl || "");
   const [productImages, setProductImages] = useState(
@@ -89,7 +104,25 @@ export default function ProductForm({
     setColorDraft(createEmptyColorDraft());
     setEditingColorIndex(null);
     setMainImageFileName("Aucun fichier choisi");
+    setExtraImageFileName("");
     setColorImageFileName("Aucun fichier choisi");
+    setExtraColorImageFileName("");
+
+    if (mainImageInputRef.current) {
+      mainImageInputRef.current.value = "";
+    }
+
+    if (extraImageInputRef.current) {
+      extraImageInputRef.current.value = "";
+    }
+
+    if (colorImageInputRef.current) {
+      colorImageInputRef.current.value = "";
+    }
+
+    if (extraColorImageInputRef.current) {
+      extraColorImageInputRef.current.value = "";
+    }
   }, [initialValues]);
 
   const activeColors = useMemo(
@@ -188,9 +221,14 @@ export default function ProductForm({
     setColorImageUploadError("");
     setIsUploadingColorImage(false);
     setColorImageFileName("Aucun fichier choisi");
+    setExtraColorImageFileName("");
 
     if (colorImageInputRef.current) {
       colorImageInputRef.current.value = "";
+    }
+
+    if (extraColorImageInputRef.current) {
+      extraColorImageInputRef.current.value = "";
     }
   }
 
@@ -205,6 +243,20 @@ export default function ProductForm({
     setColorDraft((prev) => ({
       ...prev,
       [field]: value,
+    }));
+  }
+
+  function updateColorDraftImages(nextImages, nextMainImageUrl = null) {
+    const normalizedImages = sanitizeImages(nextImages);
+    const resolvedMainImageUrl =
+      nextMainImageUrl !== null
+        ? nextMainImageUrl
+        : normalizedImages[0]?.url || "";
+
+    setColorDraft((prev) => ({
+      ...prev,
+      imageUrl: resolvedMainImageUrl,
+      images: normalizedImages,
     }));
   }
 
@@ -327,9 +379,14 @@ export default function ProductForm({
     setShowColorForm(true);
     setColorImageUploadError("");
     setColorImageFileName("Aucun fichier choisi");
+    setExtraColorImageFileName("");
 
     if (colorImageInputRef.current) {
       colorImageInputRef.current.value = "";
+    }
+
+    if (extraColorImageInputRef.current) {
+      extraColorImageInputRef.current.value = "";
     }
   }
 
@@ -360,10 +417,37 @@ export default function ProductForm({
     setShowColorForm(true);
     setColorImageUploadError("");
     setColorImageFileName("Aucun fichier choisi");
+    setExtraColorImageFileName("");
 
     if (colorImageInputRef.current) {
       colorImageInputRef.current.value = "";
     }
+
+    if (extraColorImageInputRef.current) {
+      extraColorImageInputRef.current.value = "";
+    }
+  }
+
+  async function uploadImageFile(file, errorMessage) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch("/api/admin/upload-image", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    if (!data?.imageUrl) {
+      throw new Error("Aucune URL d’image retournée par le serveur.");
+    }
+
+    return data.imageUrl;
   }
 
   async function handleMainImageUpload(event) {
@@ -378,36 +462,14 @@ export default function ProductForm({
     setIsUploadingImage(true);
 
     try {
-      const formData = new FormData();
-      formData.append("image", file);
+      const uploadedImageUrl = await uploadImageFile(
+        file,
+        "Échec du téléversement de l’image."
+      );
 
-      const response = await fetch("/api/admin/upload-image", {
-        method: "POST",
-        body: formData,
-      });
+      const nextImage = buildDefaultImage(uploadedImageUrl);
 
-      if (!response.ok) {
-        setImageUploadError("Échec du téléversement de l’image.");
-        setIsUploadingImage(false);
-        return;
-      }
-
-      const data = await response.json();
-
-      if (!data?.imageUrl) {
-        setImageUploadError("Aucune URL d’image retournée par le serveur.");
-        setIsUploadingImage(false);
-        return;
-      }
-
-      const nextImage = {
-        url: data.imageUrl,
-        cropX: 50,
-        cropY: 50,
-        zoom: 1,
-      };
-
-      setImageUrl(data.imageUrl);
+      setImageUrl(uploadedImageUrl);
       setProductImages((prev) => {
         const nextImages = [
           nextImage,
@@ -416,13 +478,13 @@ export default function ProductForm({
 
         setFormValues((current) => ({
           ...current,
-          imageUrl: data.imageUrl,
+          imageUrl: uploadedImageUrl,
         }));
 
         return nextImages;
       });
     } catch (error) {
-      setImageUploadError("Une erreur est survenue pendant le téléversement.");
+      setImageUploadError(error.message || "Une erreur est survenue.");
     } finally {
       setIsUploadingImage(false);
     }
@@ -430,6 +492,7 @@ export default function ProductForm({
 
   async function handleExtraProductImageUpload(event) {
     const file = event.target.files?.[0];
+    setExtraImageFileName(getFileLabel(file));
 
     if (!file) {
       return;
@@ -439,35 +502,23 @@ export default function ProductForm({
     setImageUploadError("");
 
     try {
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const response = await fetch("/api/admin/upload-image", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        setImageUploadError("Échec du téléversement de l’image.");
-        return;
-      }
-
-      const data = await response.json();
-
-      if (!data?.imageUrl) {
-        setImageUploadError("Aucune URL d’image retournée par le serveur.");
-        return;
-      }
+      const uploadedImageUrl = await uploadImageFile(
+        file,
+        "Échec du téléversement de l’image."
+      );
 
       setProductImages((prev) => [
         ...prev,
-        { url: data.imageUrl, cropX: 50, cropY: 50, zoom: 1 },
+        buildDefaultImage(uploadedImageUrl),
       ]);
     } catch (error) {
-      setImageUploadError("Une erreur est survenue pendant le téléversement.");
+      setImageUploadError(error.message || "Une erreur est survenue.");
     } finally {
       setIsUploadingImage(false);
-      event.target.value = "";
+
+      if (event.target) {
+        event.target.value = "";
+      }
     }
   }
 
@@ -483,61 +534,98 @@ export default function ProductForm({
     setIsUploadingColorImage(true);
 
     try {
-      const formData = new FormData();
-      formData.append("image", file);
+      const uploadedImageUrl = await uploadImageFile(
+        file,
+        "Échec du téléversement de la photo couleur."
+      );
 
-      const response = await fetch("/api/admin/upload-image", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        setColorImageUploadError("Échec du téléversement de la photo couleur.");
-        setIsUploadingColorImage(false);
-        return;
-      }
-
-      const data = await response.json();
-
-      if (!data?.imageUrl) {
-        setColorImageUploadError(
-          "Aucune URL d’image retournée pour la photo couleur."
-        );
-        setIsUploadingColorImage(false);
-        return;
-      }
-
-      setColorDraft((prev) => ({
-        ...prev,
-        imageUrl: data.imageUrl,
-        images: [
-          {
-            url: data.imageUrl,
-            cropX: 50,
-            cropY: 50,
-            zoom: 1,
-          },
-        ],
-      }));
+      updateColorDraftImages([buildDefaultImage(uploadedImageUrl)], uploadedImageUrl);
     } catch (error) {
       setColorImageUploadError(
-        "Une erreur est survenue pendant le téléversement de la photo couleur."
+        error.message ||
+          "Une erreur est survenue pendant le téléversement de la photo couleur."
       );
     } finally {
       setIsUploadingColorImage(false);
     }
   }
 
+  async function handleExtraColorImageUpload(event) {
+    const file = event.target.files?.[0];
+    setExtraColorImageFileName(getFileLabel(file));
+
+    if (!file) {
+      return;
+    }
+
+    setColorImageUploadError("");
+    setIsUploadingColorImage(true);
+
+    try {
+      const uploadedImageUrl = await uploadImageFile(
+        file,
+        "Échec du téléversement de la photo couleur."
+      );
+
+      updateColorDraftImages([
+        ...sanitizeImages(colorDraft.images),
+        buildDefaultImage(uploadedImageUrl),
+      ]);
+    } catch (error) {
+      setColorImageUploadError(
+        error.message ||
+          "Une erreur est survenue pendant le téléversement de la photo couleur."
+      );
+    } finally {
+      setIsUploadingColorImage(false);
+
+      if (event.target) {
+        event.target.value = "";
+      }
+    }
+  }
+
+  function handleSetMainProductImage(indexToPromote) {
+    setProductImages((prev) => {
+      const selectedImage = prev[indexToPromote];
+
+      if (!selectedImage) {
+        return prev;
+      }
+
+      setImageUrl(selectedImage.url);
+      setFormValues((current) => ({
+        ...current,
+        imageUrl: selectedImage.url,
+      }));
+
+      return prev;
+    });
+  }
+
+  function handleUpdateProductImageCrop(indexToUpdate, updates) {
+    setProductImages((prev) =>
+      prev.map((image, index) =>
+        index === indexToUpdate
+          ? {
+              ...image,
+              ...updates,
+            }
+          : image
+      )
+    );
+  }
+
   function handleRemoveProductImage(indexToRemove) {
     setProductImages((prev) => {
       const nextImages = prev.filter((_, index) => index !== indexToRemove);
-      const nextMainImageUrl = nextImages[0]?.url || imageUrl || "";
+      const removedImage = prev[indexToRemove];
+      const removedWasMain = removedImage?.url === imageUrl;
+      const nextMainImageUrl = removedWasMain
+        ? nextImages[0]?.url || ""
+        : imageUrl;
 
-      if (
-        imageUrl &&
-        prev[indexToRemove] &&
-        prev[indexToRemove].url === imageUrl
-      ) {
+      if (removedWasMain) {
         setImageUrl(nextMainImageUrl);
         setFormValues((current) => ({
           ...current,
@@ -547,6 +635,42 @@ export default function ProductForm({
 
       return nextImages;
     });
+  }
+
+  function handleSetMainColorImage(indexToPromote) {
+    const selectedImage = sanitizeImages(colorDraft.images)[indexToPromote];
+
+    if (!selectedImage) {
+      return;
+    }
+
+    updateColorDraftImages(colorDraft.images, selectedImage.url);
+  }
+
+  function handleUpdateColorImageCrop(indexToUpdate, updates) {
+    updateColorDraftImages(
+      sanitizeImages(colorDraft.images).map((image, index) =>
+        index === indexToUpdate
+          ? {
+              ...image,
+              ...updates,
+            }
+          : image
+      ),
+      colorDraft.imageUrl
+    );
+  }
+
+  function handleRemoveColorImage(indexToRemove) {
+    const currentImages = sanitizeImages(colorDraft.images);
+    const nextImages = currentImages.filter((_, index) => index !== indexToRemove);
+    const removedImage = currentImages[indexToRemove];
+    const removedWasMain = removedImage?.url === colorDraft.imageUrl;
+    const nextMainImageUrl = removedWasMain
+      ? nextImages[0]?.url || ""
+      : colorDraft.imageUrl;
+
+    updateColorDraftImages(nextImages, nextMainImageUrl);
   }
 
   function handleFormSubmit(event) {
@@ -568,9 +692,9 @@ export default function ProductForm({
       promoPrice: promoPriceValue === "" ? null : Number(promoPriceValue),
       description: formValues.description?.toString().trim() || "",
       imageUrl: imageUrl?.toString().trim() || "",
-      images: productImages,
+      images: sanitizeImages(productImages),
       stock: hasColors ? Number(visualStock) || 0 : Number(stockInputValue) || 0,
-      colors,
+      colors: sanitizeColors(colors),
     };
 
     const initialColorsSnapshot = initialColorsSnapshotRef.current;
@@ -607,9 +731,9 @@ export default function ProductForm({
     initialProductSnapshotRef.current = serializeProductSnapshot({
       ...formValues,
       imageUrl,
-      images: productImages,
+      images: sanitizeImages(productImages),
       stock: hasColors ? Number(visualStock) || 0 : stockInputValue,
-      colors,
+      colors: sanitizeColors(colors),
     });
 
     if (typeof onUnsavedChangesChange === "function") {
@@ -732,141 +856,27 @@ export default function ProductForm({
           />
         </div>
 
-        <div className={styles.field}>
-          <label className={styles.label}>Image principale *</label>
-
-          <div className={styles.imageFieldRow}>
-            <div className={styles.imageUploadColumn}>
-              <label htmlFor="mainImageFile" className={styles.smallLabel}>
-                Fichier image
-              </label>
-
-              <input
-                ref={mainImageInputRef}
-                id="mainImageFile"
-                name="mainImageFile"
-                type="file"
-                accept="image/*"
-                className={styles.hiddenFileInput}
-                onChange={handleMainImageUpload}
-              />
-
-              <div className={styles.fileControl}>
-                <button
-                  type="button"
-                  className={styles.fileButton}
-                  onClick={() => mainImageInputRef.current?.click()}
-                >
-                  Choisir un fichier
-                </button>
-                <span className={styles.fileName}>{mainImageFileName}</span>
-              </div>
-
-              {isUploadingImage && (
-                <p className={styles.stockHint}>
-                  Téléversement de l’image en cours...
-                </p>
-              )}
-
-              {imageUploadError && (
-                <p className={styles.errorText}>{imageUploadError}</p>
-              )}
-            </div>
-
-            <div className={styles.imageUrlColumn}>
-              <label htmlFor="imageUrl" className={styles.smallLabel}>
-                URL de l’image (remplie automatiquement)
-              </label>
-              <input
-                id="imageUrl"
-                name="imageUrl"
-                type="url"
-                placeholder="https://..."
-                className={styles.input}
-                value={imageUrl}
-                onChange={(e) => {
-                  setImageUrl(e.target.value);
-                  handleFieldChange("imageUrl", e.target.value);
-                }}
-                autoComplete="url"
-                required
-              />
-            </div>
-          </div>
-
-          {imageUrl && (
-            <div className={styles.mainImagePreviewWrapper}>
-              <img
-                src={imageUrl}
-                alt="Prévisualisation de l’image principale du produit"
-                className={styles.mainImagePreview}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className={styles.field}>
-          <label className={styles.label}>Photos supplémentaires du produit</label>
-
-          <div className={styles.imageFieldRow}>
-            <div className={styles.imageUploadColumn}>
-              <label htmlFor="productExtraImageFile" className={styles.smallLabel}>
-                Ajouter une photo
-              </label>
-
-              <input
-                id="productExtraImageFile"
-                name="productExtraImageFile"
-                type="file"
-                accept="image/*"
-                className={styles.hiddenFileInput}
-                onChange={handleExtraProductImageUpload}
-              />
-
-              <div className={styles.fileControl}>
-                <button
-                  type="button"
-                  className={styles.fileButton}
-                  onClick={() =>
-                    document.getElementById("productExtraImageFile")?.click()
-                  }
-                >
-                  Choisir un fichier
-                </button>
-                <span className={styles.fileName}>
-                  {productImages.length > 0
-                    ? `${productImages.length} photo(s) ajoutée(s)`
-                    : "Aucune photo supplémentaire"}
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.imageUrlColumn}>
-              <label className={styles.smallLabel}>Aperçu des photos</label>
-              <div className={styles.extraImagesGrid}>
-                {productImages.map((image, index) => (
-                  <div
-                    key={`${image.url}-${index}`}
-                    className={styles.extraImageItem}
-                  >
-                    <img
-                      src={image.url}
-                      alt={`Photo supplémentaire ${index + 1}`}
-                      className={styles.extraImagePreview}
-                    />
-                    <button
-                      type="button"
-                      className={styles.extraImageRemove}
-                      onClick={() => handleRemoveProductImage(index)}
-                    >
-                      Retirer
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProductImagesSection
+          mainImageInputRef={mainImageInputRef}
+          extraImageInputRef={extraImageInputRef}
+          mainImageFileName={mainImageFileName}
+          extraImageFileName={extraImageFileName}
+          onMainImageButtonClick={() => mainImageInputRef.current?.click()}
+          onExtraImageButtonClick={() => extraImageInputRef.current?.click()}
+          onMainImageUpload={handleMainImageUpload}
+          onExtraProductImageUpload={handleExtraProductImageUpload}
+          isUploadingImage={isUploadingImage}
+          imageUploadError={imageUploadError}
+          imageUrl={imageUrl}
+          onImageUrlChange={(e) => {
+            setImageUrl(e.target.value);
+            handleFieldChange("imageUrl", e.target.value);
+          }}
+          productImages={productImages}
+          onRemoveProductImage={handleRemoveProductImage}
+          onSetMainProductImage={handleSetMainProductImage}
+          onUpdateProductImageCrop={handleUpdateProductImageCrop}
+        />
 
         <div className={styles.field}>
           <label htmlFor="description" className={styles.label}>
@@ -898,265 +908,39 @@ export default function ProductForm({
           </button>
         </div>
 
-        {showColorForm && (
-          <div className={styles.colorCard}>
-            <div className={styles.colorCardHeader}>
-              <p className={styles.colorCardTitle}>
-                {isEditingColor ? "Modifier la couleur" : "Ajouter une couleur"}
-              </p>
-            </div>
+        <ColorFormCard
+          showColorForm={showColorForm}
+          isEditingColor={isEditingColor}
+          colorDraft={colorDraft}
+          onColorDraftChange={handleColorDraftChange}
+          colorImageInputRef={colorImageInputRef}
+          extraColorImageInputRef={extraColorImageInputRef}
+          onColorImageButtonClick={() => colorImageInputRef.current?.click()}
+          onExtraColorImageButtonClick={() =>
+            extraColorImageInputRef.current?.click()
+          }
+          colorImageFileName={colorImageFileName}
+          extraColorImageFileName={extraColorImageFileName}
+          onColorImageUpload={handleColorImageUpload}
+          onExtraColorImageUpload={handleExtraColorImageUpload}
+          isUploadingColorImage={isUploadingColorImage}
+          colorImageUploadError={colorImageUploadError}
+          onValidateColor={handleValidateColor}
+          onCancelColor={handleCancelColor}
+          onSetMainColorImage={handleSetMainColorImage}
+          onRemoveColorImage={handleRemoveColorImage}
+          onUpdateColorImageCrop={handleUpdateColorImageCrop}
+        />
 
-            <div className={styles.colorRow}>
-              <div className={styles.field}>
-                <label htmlFor="colorName" className={styles.smallLabel}>
-                  Nom de la couleur
-                </label>
-                <input
-                  id="colorName"
-                  name="colorName"
-                  type="text"
-                  placeholder="Ex : Rose poudré"
-                  className={styles.input}
-                  value={colorDraft.name}
-                  onChange={(e) =>
-                    handleColorDraftChange("name", e.target.value)
-                  }
-                  autoComplete="off"
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="colorQuantity" className={styles.smallLabel}>
-                  Quantité
-                </label>
-                <input
-                  id="colorQuantity"
-                  name="colorQuantity"
-                  type="number"
-                  min="0"
-                  placeholder="Ex : 2"
-                  className={styles.input}
-                  value={colorDraft.quantity}
-                  onChange={(e) =>
-                    handleColorDraftChange("quantity", e.target.value)
-                  }
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-
-            <div className={styles.imageFieldRow}>
-              <div className={styles.imageUploadColumn}>
-                <input
-                  ref={colorImageInputRef}
-                  id="colorImageFile"
-                  name="colorImageFile"
-                  type="file"
-                  accept="image/*"
-                  className={styles.hiddenFileInput}
-                  onChange={handleColorImageUpload}
-                />
-
-                <label htmlFor="colorImageFile" className={styles.smallLabel}>
-                  Téléverser une photo couleur
-                </label>
-
-                <div className={styles.fileControl}>
-                  <button
-                    type="button"
-                    className={styles.fileButton}
-                    onClick={() => colorImageInputRef.current?.click()}
-                  >
-                    Choisir un fichier
-                  </button>
-                  <span className={styles.fileName}>{colorImageFileName}</span>
-                </div>
-
-                {isUploadingColorImage && (
-                  <p className={styles.stockHint}>
-                    Téléversement de la photo couleur en cours...
-                  </p>
-                )}
-
-                {colorImageUploadError && (
-                  <p className={styles.errorText}>{colorImageUploadError}</p>
-                )}
-              </div>
-
-              <div className={styles.imageUrlColumn}>
-                <label htmlFor="colorImageUrl" className={styles.smallLabel}>
-                  URL photo couleur
-                </label>
-                <input
-                  id="colorImageUrl"
-                  name="colorImageUrl"
-                  type="url"
-                  placeholder="https://..."
-                  className={styles.input}
-                  value={colorDraft.imageUrl}
-                  onChange={(e) =>
-                    handleColorDraftChange("imageUrl", e.target.value)
-                  }
-                  autoComplete="url"
-                />
-              </div>
-            </div>
-
-            {colorDraft.imageUrl && (
-              <div className={styles.mainImagePreviewWrapper}>
-                <img
-                  src={colorDraft.imageUrl}
-                  alt="Prévisualisation de la photo couleur"
-                  className={styles.mainImagePreview}
-                />
-              </div>
-            )}
-
-            <div className={styles.colorActions}>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={handleValidateColor}
-              >
-                {isEditingColor ? "Mettre à jour la couleur" : "Ajouter la couleur"}
-              </button>
-
-              <button
-                type="button"
-                className={styles.outlineButton}
-                onClick={handleCancelColor}
-              >
-                Annuler
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeColors.length > 0 && (
-          <div className={styles.colorPreviewList}>
-            {activeColors.map((color) => {
-              const realIndex = colors.findIndex(
-                (entry) =>
-                  entry.name === color.name &&
-                  entry.imageUrl === color.imageUrl &&
-                  Number(entry.quantity) === Number(color.quantity) &&
-                  entry.isArchived === color.isArchived
-              );
-
-              return (
-                <div
-                  key={`${color.name}-${realIndex}`}
-                  className={styles.colorPreviewItem}
-                >
-                  {color.imageUrl && (
-                    <div className={styles.colorPreviewImageWrapper}>
-                      <img
-                        src={color.imageUrl}
-                        alt={color.name}
-                        className={styles.colorPreviewImage}
-                      />
-                    </div>
-                  )}
-
-                  <div className={styles.colorPreviewInfo}>
-                    <span className={styles.colorPreviewName}>{color.name}</span>
-                    <span className={styles.colorPreviewQuantity}>
-                      Quantité : {color.quantity}
-                    </span>
-                  </div>
-
-                  <div className={styles.colorPreviewActions}>
-                    <button
-                      type="button"
-                      className={styles.colorPreviewEdit}
-                      onClick={() => handleEditColor(realIndex)}
-                      aria-label={`Modifier la couleur ${color.name}`}
-                      title={`Modifier la couleur ${color.name}`}
-                    >
-                      <FiEdit2 />
-                    </button>
-
-                    <button
-                      type="button"
-                      className={styles.colorPreviewArchive}
-                      onClick={() => handleArchiveColor(realIndex)}
-                      aria-label={`Archiver la couleur ${color.name}`}
-                      title={`Archiver la couleur ${color.name}`}
-                    >
-                      <FiArchive />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {archivedColors.length > 0 && (
-          <div className={styles.archivedColorsSection}>
-            <h3 className={styles.archivedColorsTitle}>
-              Couleurs archivées ({archivedColors.length})
-            </h3>
-
-            <div className={styles.colorPreviewList}>
-              {archivedColors.map((color) => {
-                const realIndex = colors.findIndex(
-                  (entry) =>
-                    entry.name === color.name &&
-                    entry.imageUrl === color.imageUrl &&
-                    Number(entry.quantity) === Number(color.quantity) &&
-                    entry.isArchived === color.isArchived
-                );
-
-                return (
-                  <div
-                    key={`${color.name}-${realIndex}`}
-                    className={styles.colorPreviewItemArchived}
-                  >
-                    {color.imageUrl && (
-                      <div className={styles.colorPreviewImageWrapper}>
-                        <img
-                          src={color.imageUrl}
-                          alt={color.name}
-                          className={styles.colorPreviewImage}
-                        />
-                      </div>
-                    )}
-
-                    <div className={styles.colorPreviewInfo}>
-                      <span className={styles.colorPreviewName}>{color.name}</span>
-                      <span className={styles.colorPreviewQuantity}>
-                        Quantité : {color.quantity}
-                      </span>
-                    </div>
-
-                    <div className={styles.colorPreviewActions}>
-                      <button
-                        type="button"
-                        className={styles.colorPreviewRestore}
-                        onClick={() => handleUnarchiveColor(realIndex)}
-                        aria-label={`Désarchiver la couleur ${color.name}`}
-                        title={`Désarchiver la couleur ${color.name}`}
-                      >
-                        Désarchiver
-                      </button>
-
-                      <button
-                        type="button"
-                        className={styles.colorPreviewDelete}
-                        onClick={() => handleRemoveArchivedColor(realIndex)}
-                        aria-label={`Supprimer définitivement la couleur ${color.name}`}
-                        title={`Supprimer définitivement la couleur ${color.name}`}
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        <ColorPreviewList
+          colors={colors}
+          activeColors={activeColors}
+          archivedColors={archivedColors}
+          onEditColor={handleEditColor}
+          onArchiveColor={handleArchiveColor}
+          onUnarchiveColor={handleUnarchiveColor}
+          onRemoveArchivedColor={handleRemoveArchivedColor}
+        />
 
         {canShowNotifyButton && (
           <p className={styles.stockHint}>
