@@ -4,7 +4,7 @@ import styles from "../../styles/AdminProductForm.module.css";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
-const DRAG_LIMIT = 60;
+const DRAG_LIMIT_PX = 80;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -14,16 +14,16 @@ function getSafeImage(image) {
   if (!image || typeof image !== "object") {
     return {
       url: "",
-      cropX: 50,
-      cropY: 50,
+      offsetX: 0,
+      offsetY: 0,
       zoom: 1,
     };
   }
 
   return {
     url: image.url || "",
-    cropX: Number.isFinite(Number(image.cropX)) ? Number(image.cropX) : 50,
-    cropY: Number.isFinite(Number(image.cropY)) ? Number(image.cropY) : 50,
+    offsetX: Number.isFinite(Number(image.offsetX)) ? Number(image.offsetX) : 0,
+    offsetY: Number.isFinite(Number(image.offsetY)) ? Number(image.offsetY) : 0,
     zoom: Number.isFinite(Number(image.zoom))
       ? clamp(Number(image.zoom), MIN_ZOOM, MAX_ZOOM)
       : 1,
@@ -46,12 +46,11 @@ function getPointerPosition(event) {
 
 function getPreviewStyle(image) {
   const safeZoom = clamp(Number(image.zoom) || 1, MIN_ZOOM, MAX_ZOOM);
-  const translateStrength = safeZoom > 1 ? (safeZoom - 1) / (MAX_ZOOM - 1) : 0;
-  const translateX = ((Number(image.cropX) || 50) - 50) * translateStrength;
-  const translateY = ((Number(image.cropY) || 50) - 50) * translateStrength;
+  const offsetX = Number(image.offsetX) || 0;
+  const offsetY = Number(image.offsetY) || 0;
 
   return {
-    transform: `translate(${translateX}%, ${translateY}%) scale(${safeZoom})`,
+    transform: `translate(${offsetX}px, ${offsetY}px) scale(${safeZoom})`,
   };
 }
 
@@ -82,8 +81,8 @@ export default function ProductImagesSection({
     index: null,
     startPointerX: 0,
     startPointerY: 0,
-    startCropX: 50,
-    startCropY: 50,
+    startOffsetX: 0,
+    startOffsetY: 0,
   });
 
   const [pendingImageIndex, setPendingImageIndex] = useState(null);
@@ -101,8 +100,8 @@ export default function ProductImagesSection({
           index: null,
           startPointerX: 0,
           startPointerY: 0,
-          startCropX: 50,
-          startCropY: 50,
+          startOffsetX: 0,
+          startOffsetY: 0,
         };
       });
     }
@@ -120,27 +119,31 @@ export default function ProductImagesSection({
           return currentState;
         }
 
+        event.preventDefault();
+
         const position = getPointerPosition(event);
         const rect = frame.getBoundingClientRect();
         const deltaX = position.x - currentState.startPointerX;
         const deltaY = position.y - currentState.startPointerY;
 
-        const zoomFactor = Math.max(0.35, Number(currentImage.zoom) - 1);
+        const zoomFactor = Math.max(1, Number(currentImage.zoom));
+        const maxOffsetX = (rect.width * (zoomFactor - 1)) / 2;
+        const maxOffsetY = (rect.height * (zoomFactor - 1)) / 2;
 
-        const nextCropX = clamp(
-          currentState.startCropX + (deltaX / rect.width) * DRAG_LIMIT * zoomFactor,
-          0,
-          100
+        const nextOffsetX = clamp(
+          currentState.startOffsetX + deltaX,
+          -Math.min(maxOffsetX, DRAG_LIMIT_PX),
+          Math.min(maxOffsetX, DRAG_LIMIT_PX)
         );
-        const nextCropY = clamp(
-          currentState.startCropY + (deltaY / rect.height) * DRAG_LIMIT * zoomFactor,
-          0,
-          100
+        const nextOffsetY = clamp(
+          currentState.startOffsetY + deltaY,
+          -Math.min(maxOffsetY, DRAG_LIMIT_PX),
+          Math.min(maxOffsetY, DRAG_LIMIT_PX)
         );
 
         onUpdateProductImageCrop(currentState.index, {
-          cropX: nextCropX,
-          cropY: nextCropY,
+          offsetX: nextOffsetX,
+          offsetY: nextOffsetY,
         });
 
         return currentState;
@@ -175,22 +178,22 @@ export default function ProductImagesSection({
       index,
       startPointerX: position.x,
       startPointerY: position.y,
-      startCropX: image.cropX,
-      startCropY: image.cropY,
+      startOffsetX: Number(image.offsetX) || 0,
+      startOffsetY: Number(image.offsetY) || 0,
     });
   }
 
   function handleZoomChange(index, value) {
-    setPendingImageIndex(index);
-
     const nextZoom = clamp(Number(value), MIN_ZOOM, MAX_ZOOM);
+
+    setPendingImageIndex(index);
 
     onUpdateProductImageCrop(index, {
       zoom: nextZoom,
       ...(nextZoom <= 1
         ? {
-            cropX: 50,
-            cropY: 50,
+            offsetX: 0,
+            offsetY: 0,
           }
         : {}),
     });
@@ -208,8 +211,8 @@ export default function ProductImagesSection({
       zoom: nextZoom,
       ...(nextZoom <= 1
         ? {
-            cropX: 50,
-            cropY: 50,
+            offsetX: 0,
+            offsetY: 0,
           }
         : {}),
     });
