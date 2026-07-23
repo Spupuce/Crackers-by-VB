@@ -4,7 +4,7 @@ import styles from "../../styles/AdminProductForm.module.css";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
-const DRAG_LIMIT = 40;
+const DRAG_LIMIT = 60;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -46,11 +46,12 @@ function getPointerPosition(event) {
 
 function getPreviewStyle(image) {
   const safeZoom = clamp(Number(image.zoom) || 1, MIN_ZOOM, MAX_ZOOM);
-  const translateX = ((Number(image.cropX) || 50) - 50) * 0.8;
-  const translateY = ((Number(image.cropY) || 50) - 50) * 0.8;
+  const translateStrength = safeZoom > 1 ? (safeZoom - 1) / (MAX_ZOOM - 1) : 0;
+  const translateX = ((Number(image.cropX) || 50) - 50) * translateStrength;
+  const translateY = ((Number(image.cropY) || 50) - 50) * translateStrength;
 
   return {
-    transform: `translate(${translateX}px, ${translateY}px) scale(${safeZoom})`,
+    transform: `translate(${translateX}%, ${translateY}%) scale(${safeZoom})`,
   };
 }
 
@@ -113,8 +114,9 @@ export default function ProductImagesSection({
         }
 
         const frame = previewRefs.current[currentState.index];
+        const currentImage = normalizedImages[currentState.index];
 
-        if (!frame) {
+        if (!frame || !currentImage || Number(currentImage.zoom) <= 1) {
           return currentState;
         }
 
@@ -123,13 +125,15 @@ export default function ProductImagesSection({
         const deltaX = position.x - currentState.startPointerX;
         const deltaY = position.y - currentState.startPointerY;
 
+        const zoomFactor = Math.max(0.35, Number(currentImage.zoom) - 1);
+
         const nextCropX = clamp(
-          currentState.startCropX + (deltaX / rect.width) * DRAG_LIMIT,
+          currentState.startCropX + (deltaX / rect.width) * DRAG_LIMIT * zoomFactor,
           0,
           100
         );
         const nextCropY = clamp(
-          currentState.startCropY + (deltaY / rect.height) * DRAG_LIMIT,
+          currentState.startCropY + (deltaY / rect.height) * DRAG_LIMIT * zoomFactor,
           0,
           100
         );
@@ -156,9 +160,13 @@ export default function ProductImagesSection({
       window.removeEventListener("touchend", handlePointerUp);
       window.removeEventListener("touchcancel", handlePointerUp);
     };
-  }, [onUpdateProductImageCrop]);
+  }, [normalizedImages, onUpdateProductImageCrop]);
 
   function handleDragStart(event, index, image) {
+    if (Number(image.zoom) <= 1) {
+      return;
+    }
+
     event.preventDefault();
 
     const position = getPointerPosition(event);
@@ -174,8 +182,17 @@ export default function ProductImagesSection({
 
   function handleZoomChange(index, value) {
     setPendingImageIndex(index);
+
+    const nextZoom = clamp(Number(value), MIN_ZOOM, MAX_ZOOM);
+
     onUpdateProductImageCrop(index, {
-      zoom: clamp(Number(value), MIN_ZOOM, MAX_ZOOM),
+      zoom: nextZoom,
+      ...(nextZoom <= 1
+        ? {
+            cropX: 50,
+            cropY: 50,
+          }
+        : {}),
     });
   }
 
@@ -186,8 +203,15 @@ export default function ProductImagesSection({
     const nextZoom = clamp((Number(image.zoom) || 1) + zoomStep, MIN_ZOOM, MAX_ZOOM);
 
     setPendingImageIndex(index);
+
     onUpdateProductImageCrop(index, {
       zoom: nextZoom,
+      ...(nextZoom <= 1
+        ? {
+            cropX: 50,
+            cropY: 50,
+          }
+        : {}),
     });
   }
 
@@ -312,6 +336,7 @@ export default function ProductImagesSection({
                   const isMainImage = image.url === imageUrl;
                   const isDragging = dragState.index === index;
                   const hasPendingSave = pendingImageIndex === index;
+                  const canDrag = Number(image.zoom) > 1;
 
                   return (
                     <div
@@ -349,7 +374,7 @@ export default function ProductImagesSection({
                         }}
                         className={`${styles.extraImagePreviewFrame} ${
                           isDragging ? styles.extraImagePreviewFrameDragging : ""
-                        }`}
+                        } ${canDrag ? styles.extraImagePreviewFrameMovable : ""}`}
                         onMouseDown={(event) => handleDragStart(event, index, image)}
                         onTouchStart={(event) => handleDragStart(event, index, image)}
                         onWheel={(event) => handleWheelZoom(event, index, image)}
@@ -358,14 +383,16 @@ export default function ProductImagesSection({
                         <img
                           src={image.url}
                           alt={`Photo produit ${index + 1}`}
-                          className={styles.extraImagePreview}
+                          className={styles.extraImagePreviewContain}
                           style={getPreviewStyle(image)}
                           draggable={false}
                         />
 
                         <div className={styles.imageDragOverlay}>
                           <span className={styles.imageDragOverlayText}>
-                            Glisse pour cadrer • molette pour zoomer
+                            {canDrag
+                              ? "Zoome puis glisse pour ajuster"
+                              : "Image entière visible • zoome pour ajuster"}
                           </span>
                         </div>
                       </div>
