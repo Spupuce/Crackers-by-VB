@@ -14,6 +14,7 @@ function getSafeImage(image) {
   if (!image || typeof image !== "object") {
     return {
       url: "",
+      publicId: "",
       offsetX: 0,
       offsetY: 0,
       zoom: 1,
@@ -22,6 +23,7 @@ function getSafeImage(image) {
 
   return {
     url: image.url || "",
+    publicId: typeof image.publicId === "string" ? image.publicId : "",
     offsetX: Number.isFinite(Number(image.offsetX)) ? Number(image.offsetX) : 0,
     offsetY: Number.isFinite(Number(image.offsetY)) ? Number(image.offsetY) : 0,
     zoom: Number.isFinite(Number(image.zoom))
@@ -88,6 +90,7 @@ export default function ProductImagesSection({
     if (imageUrl) {
       return getSafeImage({
         url: imageUrl,
+        publicId: "",
         offsetX: 0,
         offsetY: 0,
         zoom: 1,
@@ -137,8 +140,6 @@ export default function ProductImagesSection({
           return currentState;
         }
 
-        event.preventDefault();
-
         const position = getPointerPosition(event);
         const rect = frame.getBoundingClientRect();
         const deltaX = position.x - currentState.startPointerX;
@@ -170,7 +171,7 @@ export default function ProductImagesSection({
 
     window.addEventListener("mousemove", handlePointerMove);
     window.addEventListener("mouseup", handlePointerUp);
-    window.addEventListener("touchmove", handlePointerMove, { passive: false });
+    window.addEventListener("touchmove", handlePointerMove, { passive: true });
     window.addEventListener("touchend", handlePointerUp);
     window.addEventListener("touchcancel", handlePointerUp);
 
@@ -188,7 +189,9 @@ export default function ProductImagesSection({
       return;
     }
 
-    event.preventDefault();
+    if (event.cancelable) {
+      event.preventDefault();
+    }
 
     const position = getPointerPosition(event);
 
@@ -216,7 +219,9 @@ export default function ProductImagesSection({
   }
 
   function handleWheelZoom(event, index, image) {
-    event.preventDefault();
+    if (event.cancelable) {
+      event.preventDefault();
+    }
 
     const zoomStep = event.deltaY < 0 ? 0.1 : -0.1;
     const nextZoom = clamp((Number(image.zoom) || 1) + zoomStep, MIN_ZOOM, MAX_ZOOM);

@@ -14,8 +14,54 @@ function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeImageEntry(image) {
+  if (!image) {
+    return null;
+  }
+
+  if (typeof image === 'string') {
+    const url = normalizeText(image);
+
+    if (!url) {
+      return null;
+    }
+
+    return {
+      url,
+      publicId: '',
+      offsetX: 0,
+      offsetY: 0,
+      zoom: 1,
+    };
+  }
+
+  const url = normalizeText(image.url);
+
+  if (!url) {
+    return null;
+  }
+
+  return {
+    url,
+    publicId: normalizeText(image.publicId),
+    offsetX: Number.isFinite(Number(image.offsetX)) ? Number(image.offsetX) : 0,
+    offsetY: Number.isFinite(Number(image.offsetY)) ? Number(image.offsetY) : 0,
+    zoom: Number.isFinite(Number(image.zoom)) ? Number(image.zoom) : 1,
+  };
+}
+
 export default function ProductDetailPage({ product }) {
-  const defaultImage = normalizeText(product?.imageUrl);
+  const normalizedProductImages = useMemo(() => {
+    if (!Array.isArray(product?.images)) {
+      return [];
+    }
+
+    return product.images.map(normalizeImageEntry).filter(Boolean);
+  }, [product?.images]);
+
+  const defaultImage =
+    normalizeText(product?.imageUrl) || normalizedProductImages[0]?.url || '';
+
   const [selectedColor, setSelectedColor] = useState('');
 
   const availableColors = useMemo(() => {
@@ -55,14 +101,42 @@ export default function ProductDetailPage({ product }) {
     const usedImages = new Set();
 
     if (defaultImage) {
-      items.push({
-        type: 'default',
-        imageUrl: defaultImage,
-        label: 'Image principale',
-        colorName: '',
-      });
-      usedImages.add(defaultImage);
+      const defaultImageData =
+        normalizedProductImages.find((image) => image.url === defaultImage) ||
+        normalizeImageEntry(defaultImage);
+
+      if (defaultImageData) {
+        items.push({
+          type: 'default',
+          imageUrl: defaultImageData.url,
+          label: 'Image principale',
+          colorName: '',
+          publicId: defaultImageData.publicId,
+          offsetX: defaultImageData.offsetX,
+          offsetY: defaultImageData.offsetY,
+          zoom: defaultImageData.zoom,
+        });
+        usedImages.add(defaultImageData.url);
+      }
     }
+
+    normalizedProductImages.forEach((image, index) => {
+      if (!image?.url || usedImages.has(image.url)) {
+        return;
+      }
+
+      items.push({
+        type: 'gallery',
+        imageUrl: image.url,
+        label: `Vue ${index + 1}`,
+        colorName: '',
+        publicId: image.publicId,
+        offsetX: image.offsetX,
+        offsetY: image.offsetY,
+        zoom: image.zoom,
+      });
+      usedImages.add(image.url);
+    });
 
     if (Array.isArray(product?.colors)) {
       product.colors.forEach((color) => {
@@ -71,42 +145,35 @@ export default function ProductDetailPage({ product }) {
         }
 
         const colorName = normalizeText(color?.name);
-        const imageUrl = normalizeText(color?.imageUrl);
+        const normalizedColorImages = Array.isArray(color?.images)
+          ? color.images.map(normalizeImageEntry).filter(Boolean)
+          : [];
+        const fallbackColorImage = normalizeText(color?.imageUrl);
+        const colorMainImage =
+          normalizedColorImages.find((image) => image.url === fallbackColorImage) ||
+          normalizedColorImages[0] ||
+          normalizeImageEntry(fallbackColorImage);
 
-        if (!colorName || !imageUrl || usedImages.has(imageUrl)) {
+        if (!colorName || !colorMainImage?.url || usedImages.has(colorMainImage.url)) {
           return;
         }
 
         items.push({
           type: 'color',
-          imageUrl,
+          imageUrl: colorMainImage.url,
           label: colorName,
           colorName,
+          publicId: colorMainImage.publicId,
+          offsetX: colorMainImage.offsetX,
+          offsetY: colorMainImage.offsetY,
+          zoom: colorMainImage.zoom,
         });
-        usedImages.add(imageUrl);
-      });
-    }
-
-    if (Array.isArray(product?.gallery)) {
-      product.gallery.forEach((imageUrl, index) => {
-        const normalizedImage = normalizeText(imageUrl);
-
-        if (!normalizedImage || usedImages.has(normalizedImage)) {
-          return;
-        }
-
-        items.push({
-          type: 'gallery',
-          imageUrl: normalizedImage,
-          label: `Vue ${index + 1}`,
-          colorName: '',
-        });
-        usedImages.add(normalizedImage);
+        usedImages.add(colorMainImage.url);
       });
     }
 
     return items;
-  }, [defaultImage, product?.colors, product?.gallery]);
+  }, [defaultImage, normalizedProductImages, product?.colors]);
 
   const selectedGalleryImage = useMemo(() => {
     if (!selectedColor) {
