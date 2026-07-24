@@ -69,7 +69,7 @@
 
 
 - Corriger la galerie boutique pour afficher toutes les images enregistrées.
-🟡Rendre les miniatures supplémentaires cliquables sur la fiche produit.
+✅ Rendre les miniatures supplémentaires cliquables sur la fiche produit.
 - Vérifier que le clic sur une miniature met bien à jour l’image principale sans casser la couleur sélectionnée.
 - Uniformiser le format de données image entre admin et boutique (url, publicId, offsetX, offsetY, zoom).
 - Aligner le rendu visuel de l’aperçu admin avec le rendu final côté client.

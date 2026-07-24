@@ -110,6 +110,36 @@ export default function ProductImagesSection({
 
   const previewRefs = useRef({});
 
+  const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
+
+  const selectedGalleryImage = useMemo(() => {
+    if (!normalizedImages.length) {
+      return null;
+    }
+
+    const index =
+      selectedGalleryIndex >= 0 && selectedGalleryIndex < normalizedImages.length
+        ? selectedGalleryIndex
+        : 0;
+
+    return normalizedImages[index] || null;
+  }, [normalizedImages, selectedGalleryIndex]);
+
+  useEffect(() => {
+    // Réinitialiser la sélection si la liste change
+    setSelectedGalleryIndex((currentIndex) => {
+      if (!normalizedImages.length) {
+        return 0;
+      }
+
+      if (currentIndex >= normalizedImages.length) {
+        return normalizedImages.length - 1;
+      }
+
+      return currentIndex;
+    });
+  }, [normalizedImages]);
+
   useEffect(() => {
     function handlePointerUp() {
       setDragState((currentState) => {
@@ -237,6 +267,10 @@ export default function ProductImagesSection({
     });
   }
 
+  function handleSelectGalleryImage(index) {
+    setSelectedGalleryIndex(index);
+  }
+
   return (
     <>
       <div className={styles.field}>
@@ -355,104 +389,126 @@ export default function ProductImagesSection({
                 Ajoute plusieurs photos pour enrichir la fiche produit.
               </p>
             ) : (
-              <div className={styles.extraImagesGrid}>
-                {normalizedImages.map((image, index) => {
-                  const isMainImage = image.url === imageUrl;
-                  const isDragging = dragState.index === index;
-                  const canDrag = Number(image.zoom) > 1;
+              <>
+                {selectedGalleryImage?.url && (
+                  <div className={styles.mainImagePreviewWrapper}>
+                    <img
+                      src={selectedGalleryImage.url}
+                      alt="Aperçu de la photo sélectionnée de la galerie"
+                      className={styles.mainImagePreview}
+                      style={getPreviewStyle(selectedGalleryImage)}
+                      draggable={false}
+                    />
+                  </div>
+                )}
 
-                  return (
-                    <div
-                      key={`${image.url}-${index}`}
-                      className={styles.extraImageItem}
-                    >
-                      <div className={styles.extraImageBadgeRow}>
-                        <span
-                          className={
-                            isMainImage
-                              ? styles.primaryImageBadge
-                              : styles.secondaryImageBadge
+                <div className={styles.extraImagesGrid}>
+                  {normalizedImages.map((image, index) => {
+                    const isMainImage = image.url === imageUrl;
+                    const isDragging = dragState.index === index;
+                    const canDrag = Number(image.zoom) > 1;
+                    const isSelected = selectedGalleryIndex === index;
+
+                    return (
+                      <div
+                        key={`${image.url}-${index}`}
+                        className={`${styles.extraImageItem} ${
+                          isSelected ? styles.extraImageItemSelected : ""
+                        }`}
+                      >
+                        <div className={styles.extraImageBadgeRow}>
+                          <span
+                            className={
+                              isMainImage
+                                ? styles.primaryImageBadge
+                                : styles.secondaryImageBadge
+                            }
+                          >
+                            {isMainImage ? "Image principale" : `Image ${index + 1}`}
+                          </span>
+
+                          {!isMainImage && (
+                            <button
+                              type="button"
+                              className={styles.outlineButton}
+                              onClick={() => onSetMainProductImage(index)}
+                            >
+                              Définir comme principale
+                            </button>
+                          )}
+                        </div>
+
+                        <div
+                          ref={(node) => {
+                            previewRefs.current[index] = node;
+                          }}
+                          className={`${styles.extraImagePreviewFrame} ${
+                            isDragging ? styles.extraImagePreviewFrameDragging : ""
+                          } ${canDrag ? styles.extraImagePreviewFrameMovable : ""}`}
+                          onMouseDown={(event) =>
+                            handleDragStart(event, index, image)
                           }
+                          onTouchStart={(event) =>
+                            handleDragStart(event, index, image)
+                          }
+                          onWheel={(event) => handleWheelZoom(event, index, image)}
+                          onClick={() => handleSelectGalleryImage(index)}
+                          role="presentation"
                         >
-                          {isMainImage ? "Image principale" : `Image ${index + 1}`}
-                        </span>
+                          <img
+                            src={image.url}
+                            alt={`Photo produit ${index + 1}`}
+                            className={styles.extraImagePreviewContain}
+                            style={getPreviewStyle(image)}
+                            draggable={false}
+                          />
 
-                        {!isMainImage && (
+                          <div className={styles.imageDragOverlay}>
+                            <span className={styles.imageDragOverlayText}>
+                              {canDrag
+                                ? "Zoome puis glisse pour ajuster"
+                                : "Image entière visible • zoome pour ajuster"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className={styles.cropControls}>
+                          <label className={styles.cropControl}>
+                            <span className={styles.smallLabel}>Zoom</span>
+                            <input
+                              type="range"
+                              min={MIN_ZOOM}
+                              max={MAX_ZOOM}
+                              step="0.1"
+                              value={image.zoom}
+                              onChange={(event) =>
+                                handleZoomChange(index, event.target.value)
+                              }
+                            />
+                          </label>
+
+                          <div className={styles.imageCardHintRow}>
+                            <p className={styles.stockHint}>
+                              Ajuste le zoom et le cadrage, puis enregistre le produit
+                              pour valider.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className={styles.extraImageActions}>
                           <button
                             type="button"
-                            className={styles.outlineButton}
-                            onClick={() => onSetMainProductImage(index)}
+                            className={styles.extraImageRemove}
+                            onClick={() => onRemoveProductImage(index)}
                           >
-                            Définir comme principale
+                            Retirer
                           </button>
-                        )}
-                      </div>
-
-                      <div
-                        ref={(node) => {
-                          previewRefs.current[index] = node;
-                        }}
-                        className={`${styles.extraImagePreviewFrame} ${
-                          isDragging ? styles.extraImagePreviewFrameDragging : ""
-                        } ${canDrag ? styles.extraImagePreviewFrameMovable : ""}`}
-                        onMouseDown={(event) => handleDragStart(event, index, image)}
-                        onTouchStart={(event) => handleDragStart(event, index, image)}
-                        onWheel={(event) => handleWheelZoom(event, index, image)}
-                        role="presentation"
-                      >
-                        <img
-                          src={image.url}
-                          alt={`Photo produit ${index + 1}`}
-                          className={styles.extraImagePreviewContain}
-                          style={getPreviewStyle(image)}
-                          draggable={false}
-                        />
-
-                        <div className={styles.imageDragOverlay}>
-                          <span className={styles.imageDragOverlayText}>
-                            {canDrag
-                              ? "Zoome puis glisse pour ajuster"
-                              : "Image entière visible • zoome pour ajuster"}
-                          </span>
                         </div>
                       </div>
-
-                      <div className={styles.cropControls}>
-                        <label className={styles.cropControl}>
-                          <span className={styles.smallLabel}>Zoom</span>
-                          <input
-                            type="range"
-                            min={MIN_ZOOM}
-                            max={MAX_ZOOM}
-                            step="0.1"
-                            value={image.zoom}
-                            onChange={(event) =>
-                              handleZoomChange(index, event.target.value)
-                            }
-                          />
-                        </label>
-
-                        <div className={styles.imageCardHintRow}>
-                          <p className={styles.stockHint}>
-                            Ajuste le zoom et le cadrage, puis enregistre le produit
-                            pour valider.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className={styles.extraImageActions}>
-                        <button
-                          type="button"
-                          className={styles.extraImageRemove}
-                          onClick={() => onRemoveProductImage(index)}
-                        >
-                          Retirer
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>

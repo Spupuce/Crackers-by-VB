@@ -18,9 +18,10 @@
   background-color: var(--color-gray-50);
 }
 
+/* cadre carré pour les visuels de la boutique */
 .image {
   width: 100%;
-  height: 290px;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   display: block;
 }

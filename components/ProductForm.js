@@ -63,15 +63,15 @@ function normalizePreviewImage(image) {
     url,
     publicId,
     offsetX: Number.isFinite(offsetX)
-      ? clamp(offsetX, MIN_OFFSET, MAX_ZOOM)
+      ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
       : hasOffsetCoordinates
       ? 0
-      : clamp(fallbackOffsetX, MIN_OFFSET, MAX_ZOOM),
+      : clamp(fallbackOffsetX, MIN_OFFSET, MAX_OFFSET),
     offsetY: Number.isFinite(offsetY)
-      ? clamp(offsetY, MIN_OFFSET, MAX_ZOOM)
+      ? clamp(offsetY, MIN_OFFSET, MAX_OFFSET)
       : hasOffsetCoordinates
       ? 0
-      : clamp(fallbackOffsetY, MIN_OFFSET, MAX_ZOOM),
+      : clamp(fallbackOffsetY, MIN_OFFSET, MAX_OFFSET),
     zoom: Number.isFinite(zoom) ? clamp(zoom, MIN_ZOOM, MAX_ZOOM) : 1,
   };
 }
