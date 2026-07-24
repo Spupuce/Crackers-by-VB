@@ -68,7 +68,23 @@
                 - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).
 
 
-"Mettre en avant" "Produits les plus demandés" plutot que sur l'accueil à ajouter sur stock une coche mettre en avant et compléter avec les produits en évitant les doublons
-Si une couleur épuisé ne pas avoir besoin de selectionner la couleur
-Placer la photo en hauteur en largeur et zoom
-Pouvoir ajouter plusieurs photos
+- Corriger la galerie boutique pour afficher toutes les images enregistrées.
+🟡Rendre les miniatures supplémentaires cliquables sur la fiche produit.
+- Vérifier que le clic sur une miniature met bien à jour l’image principale sans casser la couleur sélectionnée.
+- Uniformiser le format de données image entre admin et boutique (url, publicId, offsetX, offsetY, zoom).
+- Aligner le rendu visuel de l’aperçu admin avec le rendu final côté client.
+- Reprendre la logique de cadrage pour que le zoom et le déplacement utilisent les mêmes règles partout.
+- Corriger les limites de déplacement pour pouvoir scroller correctement en largeur et en hauteur quand l’image est zoomée.
+- Remplacer la logique de drag actuelle par une gestion plus fiable souris + tactile.
+- Ajouter un bouton de remise à zéro du cadrage par image.
+- Vérifier le rendu des images principales et des images de couleurs avec les mêmes transformations.
+- Tester les cas suivants : produit avec 1 image, plusieurs images, couleurs avec images, couleurs sans image.
+- Nettoyer les anciens formats encore tolérés (gallery, ancien crop) une fois la migration terminée.
+- Ajouter ensuite la suppression Cloudinary des images retirées, à partir du publicId.
+
+Ordre conseillé
+1. Corriger les miniatures non cliquables en boutique.
+2. Corriger le rendu final pour qu’il corresponde à l’aperçu admin.
+3. Refaire le cadrage drag/zoom proprement.
+4. Harmoniser les images des déclinaisons couleur.
+5. Brancher la suppression Cloudinary.
