@@ -23,9 +23,10 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function buildDefaultImage(url) {
+function buildDefaultImage(url, publicId = "") {
   return {
     url,
+    publicId,
     offsetX: 0,
     offsetY: 0,
     zoom: 1,
@@ -43,6 +44,9 @@ function normalizePreviewImage(image) {
     return null;
   }
 
+  const publicId =
+    typeof image.publicId === "string" ? image.publicId.trim() : "";
+
   const offsetX = Number(image.offsetX);
   const offsetY = Number(image.offsetY);
   const zoom = Number(image.zoom);
@@ -57,16 +61,17 @@ function normalizePreviewImage(image) {
 
   return {
     url,
+    publicId,
     offsetX: Number.isFinite(offsetX)
-      ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
+      ? clamp(offsetX, MIN_OFFSET, MAX_ZOOM)
       : hasOffsetCoordinates
       ? 0
-      : clamp(fallbackOffsetX, MIN_OFFSET, MAX_OFFSET),
+      : clamp(fallbackOffsetX, MIN_OFFSET, MAX_ZOOM),
     offsetY: Number.isFinite(offsetY)
-      ? clamp(offsetY, MIN_OFFSET, MAX_OFFSET)
+      ? clamp(offsetY, MIN_OFFSET, MAX_ZOOM)
       : hasOffsetCoordinates
       ? 0
-      : clamp(fallbackOffsetY, MIN_OFFSET, MAX_OFFSET),
+      : clamp(fallbackOffsetY, MIN_OFFSET, MAX_ZOOM),
     zoom: Number.isFinite(zoom) ? clamp(zoom, MIN_ZOOM, MAX_ZOOM) : 1,
   };
 }
@@ -537,7 +542,10 @@ export default function ProductForm({
       throw new Error("Aucune URL d’image retournée par le serveur.");
     }
 
-    return data.imageUrl;
+    return {
+      imageUrl: data.imageUrl,
+      publicId: data.publicId || "",
+    };
   }
 
   async function handleMainImageUpload(event) {
@@ -552,20 +560,19 @@ export default function ProductForm({
     setIsUploadingImage(true);
 
     try {
-      const uploadedImageUrl = await uploadImageFile(
+      const { imageUrl: uploadedImageUrl, publicId } = await uploadImageFile(
         file,
         "Échec du téléversement de l’image."
       );
 
-      const nextImage = buildDefaultImage(uploadedImageUrl);
+      const nextImage = buildDefaultImage(uploadedImageUrl, publicId);
 
       setImageUrl(uploadedImageUrl);
       setProductImages((prev) => {
+        const normalizedPrev = normalizePreviewImages(prev);
         const nextImages = [
           nextImage,
-          ...normalizePreviewImages(prev).filter(
-            (image) => image.url !== nextImage.url
-          ),
+          ...normalizedPrev.filter((image) => image.url !== nextImage.url),
         ];
 
         setFormValues((current) => ({
@@ -594,17 +601,22 @@ export default function ProductForm({
     setImageUploadError("");
 
     try {
-      const uploadedImageUrl = await uploadImageFile(
+      const { imageUrl: uploadedImageUrl, publicId } = await uploadImageFile(
         file,
         "Échec du téléversement de l’image."
       );
 
-      setProductImages((prev) => [
-        ...normalizePreviewImages(prev).filter(
-          (image) => image.url !== uploadedImageUrl
-        ),
-        buildDefaultImage(uploadedImageUrl),
-      ]);
+      const newImage = buildDefaultImage(uploadedImageUrl, publicId);
+
+      setProductImages((prev) => {
+        const normalizedPrev = normalizePreviewImages(prev);
+        return [
+          ...normalizedPrev.filter(
+            (image) => image.url !== uploadedImageUrl
+          ),
+          newImage,
+        ];
+      });
     } catch (error) {
       setImageUploadError(error.message || "Une erreur est survenue.");
     } finally {
@@ -628,12 +640,15 @@ export default function ProductForm({
     setIsUploadingColorImage(true);
 
     try {
-      const uploadedImageUrl = await uploadImageFile(
+      const { imageUrl: uploadedImageUrl, publicId } = await uploadImageFile(
         file,
         "Échec du téléversement de la photo couleur."
       );
 
-      updateColorDraftImages([buildDefaultImage(uploadedImageUrl)], uploadedImageUrl);
+      updateColorDraftImages(
+        [buildDefaultImage(uploadedImageUrl, publicId)],
+        uploadedImageUrl
+      );
     } catch (error) {
       setColorImageUploadError(
         error.message ||
@@ -656,16 +671,18 @@ export default function ProductForm({
     setIsUploadingColorImage(true);
 
     try {
-      const uploadedImageUrl = await uploadImageFile(
+      const { imageUrl: uploadedImageUrl, publicId } = await uploadImageFile(
         file,
         "Échec du téléversement de la photo couleur."
       );
+
+      const newImage = buildDefaultImage(uploadedImageUrl, publicId);
 
       updateColorDraftImages([
         ...normalizePreviewImages(colorDraft.images).filter(
           (image) => image.url !== uploadedImageUrl
         ),
-        buildDefaultImage(uploadedImageUrl),
+        newImage,
       ]);
     } catch (error) {
       setColorImageUploadError(
@@ -716,10 +733,14 @@ export default function ProductForm({
   function handleRemoveProductImage(indexToRemove) {
     setProductImages((prev) => {
       const normalizedPrev = normalizePreviewImages(prev);
-      const nextImages = normalizedPrev.filter((_, index) => index !== indexToRemove);
+      const nextImages = normalizedPrev.filter(
+        (_, index) => index !== indexToRemove
+      );
       const removedImage = normalizedPrev[indexToRemove];
       const removedWasMain = removedImage?.url === imageUrl;
-      const nextMainImageUrl = removedWasMain ? nextImages[0]?.url || "" : imageUrl;
+      const nextMainImageUrl = removedWasMain
+        ? nextImages[0]?.url || ""
+        : imageUrl;
 
       if (removedWasMain) {
         setImageUrl(nextMainImageUrl);
@@ -734,7 +755,9 @@ export default function ProductForm({
   }
 
   function handleSetMainColorImage(indexToPromote) {
-    const selectedImage = normalizePreviewImages(colorDraft.images)[indexToPromote];
+    const selectedImage = normalizePreviewImages(colorDraft.images)[
+      indexToPromote
+    ];
 
     if (!selectedImage) {
       return;
@@ -759,7 +782,9 @@ export default function ProductForm({
 
   function handleRemoveColorImage(indexToRemove) {
     const currentImages = normalizePreviewImages(colorDraft.images);
-    const nextImages = currentImages.filter((_, index) => index !== indexToRemove);
+    const nextImages = currentImages.filter(
+      (_, index) => index !== indexToRemove
+    );
     const removedImage = currentImages[indexToRemove];
     const removedWasMain = removedImage?.url === colorDraft.imageUrl;
     const nextMainImageUrl = removedWasMain
@@ -1053,7 +1078,8 @@ export default function ProductForm({
         <div className={styles.submitArea}>
           {showColorForm ? (
             <p className={styles.stockHint}>
-              Validez ou annulez la couleur en cours avant d’enregistrer le produit.
+              Validez ou annulez la couleur en cours avant d’enregistrer le
+              produit.
             </p>
           ) : null}
 

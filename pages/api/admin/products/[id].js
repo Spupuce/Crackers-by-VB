@@ -50,6 +50,7 @@ function normalizeImageEntry(image) {
 
     return {
       url: trimmedUrl,
+      publicId: '',
       offsetX: 0,
       offsetY: 0,
       zoom: 1,
@@ -66,6 +67,9 @@ function normalizeImageEntry(image) {
     return null;
   }
 
+  const publicId =
+    typeof image.publicId === 'string' ? image.publicId.trim() : '';
+
   const offsetX = Number(image.offsetX);
   const offsetY = Number(image.offsetY);
   const cropX = Number(image.cropX);
@@ -77,6 +81,7 @@ function normalizeImageEntry(image) {
 
   return {
     url,
+    publicId,
     offsetX: Number.isFinite(offsetX)
       ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
       : hasOffsetCoordinates
@@ -302,7 +307,8 @@ export default async function handler(req, res) {
 
       if (!product.isArchived) {
         return res.status(403).json({
-          message: 'Vous devez d’abord archiver le produit avant de le supprimer définitivement.',
+          message:
+            'Vous devez d’abord archiver le produit avant de le supprimer définitivement.',
         });
       }
 
