@@ -5,6 +5,23 @@ import RestockRequest from '../../../../models/RestockRequest';
 import { resolveProductStock } from '../../../../lib/services/stockService';
 import { generateUniqueSlug } from '../../../../lib/services/slugService';
 
+const MIN_OFFSET = -80;
+const MAX_OFFSET = 80;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function convertLegacyCropToOffset(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return clamp((value - 50) * 1.6, MIN_OFFSET, MAX_OFFSET);
+}
+
 function buildStatusFilter(status) {
   switch (status) {
     case 'active':
@@ -45,8 +62,9 @@ function normalizeImageEntry(image) {
 
     return {
       url: trimmedUrl,
-      cropX: 50,
-      cropY: 50,
+      publicId: '',
+      offsetX: 0,
+      offsetY: 0,
       zoom: 1,
     };
   }
@@ -61,15 +79,32 @@ function normalizeImageEntry(image) {
     return null;
   }
 
+  const publicId =
+    typeof image.publicId === 'string' ? image.publicId.trim() : '';
+
+  const offsetX = Number(image.offsetX);
+  const offsetY = Number(image.offsetY);
   const cropX = Number(image.cropX);
   const cropY = Number(image.cropY);
   const zoom = Number(image.zoom);
 
+  const hasOffsetCoordinates =
+    Number.isFinite(offsetX) || Number.isFinite(offsetY);
+
   return {
     url,
-    cropX: Number.isFinite(cropX) ? Math.min(100, Math.max(0, cropX)) : 50,
-    cropY: Number.isFinite(cropY) ? Math.min(100, Math.max(0, cropY)) : 50,
-    zoom: Number.isFinite(zoom) ? Math.min(3, Math.max(1, zoom)) : 1,
+    publicId,
+    offsetX: Number.isFinite(offsetX)
+      ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
+      : hasOffsetCoordinates
+      ? 0
+      : convertLegacyCropToOffset(cropX),
+    offsetY: Number.isFinite(offsetY)
+      ? clamp(offsetY, MIN_OFFSET, MAX_OFFSET)
+      : hasOffsetCoordinates
+      ? 0
+      : convertLegacyCropToOffset(cropY),
+    zoom: Number.isFinite(zoom) ? clamp(zoom, MIN_ZOOM, MAX_ZOOM) : 1,
   };
 }
 
