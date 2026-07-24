@@ -51,6 +51,7 @@ function getPreviewStyle(image) {
 
   return {
     transform: `translate(${offsetX}px, ${offsetY}px) scale(${safeZoom})`,
+    transformOrigin: "center center",
   };
 }
 
@@ -76,6 +77,25 @@ export default function ProductImagesSection({
     () => (Array.isArray(productImages) ? productImages.map(getSafeImage) : []),
     [productImages]
   );
+
+  const mainPreviewImage = useMemo(() => {
+    const matchingImage = normalizedImages.find((image) => image.url === imageUrl);
+
+    if (matchingImage) {
+      return matchingImage;
+    }
+
+    if (imageUrl) {
+      return getSafeImage({
+        url: imageUrl,
+        offsetX: 0,
+        offsetY: 0,
+        zoom: 1,
+      });
+    }
+
+    return null;
+  }, [normalizedImages, imageUrl]);
 
   const [dragState, setDragState] = useState({
     index: null,
@@ -273,12 +293,14 @@ export default function ProductImagesSection({
           </div>
         </div>
 
-        {imageUrl && (
+        {mainPreviewImage?.url && (
           <div className={styles.mainImagePreviewWrapper}>
             <img
-              src={imageUrl}
+              src={mainPreviewImage.url}
               alt="Prévisualisation de l’image principale du produit"
               className={styles.mainImagePreview}
+              style={getPreviewStyle(mainPreviewImage)}
+              draggable={false}
             />
           </div>
         )}
