@@ -49,6 +49,7 @@ export function sanitizeImages(images) {
 
         return {
           url,
+          publicId: "",
           offsetX: 0,
           offsetY: 0,
           zoom: 1,
@@ -61,6 +62,9 @@ export function sanitizeImages(images) {
         return null;
       }
 
+      const publicId =
+        typeof image.publicId === "string" ? image.publicId.trim() : "";
+
       const offsetX = Number(image.offsetX);
       const offsetY = Number(image.offsetY);
       const cropX = Number(image.cropX);
@@ -72,6 +76,7 @@ export function sanitizeImages(images) {
 
       return {
         url,
+        publicId,
         offsetX: Number.isFinite(offsetX)
           ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
           : hasOffsetCoordinates
