@@ -8,17 +8,17 @@ const imageSchema = new mongoose.Schema(
       required: [true, "L’URL de l’image est obligatoire."],
       trim: true,
     },
-    cropX: {
+    offsetX: {
       type: Number,
-      default: 50,
-      min: [0, "La position horizontale ne peut pas être inférieure à 0."],
-      max: [100, "La position horizontale ne peut pas dépasser 100."],
+      default: 0,
+      min: [-80, "La position horizontale ne peut pas être inférieure à -80."],
+      max: [80, "La position horizontale ne peut pas dépasser 80."],
     },
-    cropY: {
+    offsetY: {
       type: Number,
-      default: 50,
-      min: [0, "La position verticale ne peut pas être inférieure à 0."],
-      max: [100, "La position verticale ne peut pas dépasser 100."],
+      default: 0,
+      min: [-80, "La position verticale ne peut pas être inférieure à -80."],
+      max: [80, "La position verticale ne peut pas dépasser 80."],
     },
     zoom: {
       type: Number,
