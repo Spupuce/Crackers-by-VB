@@ -14,6 +14,15 @@ import {
   serializeProductSnapshot,
 } from "../utils/productForm";
 
+const MIN_OFFSET = -80;
+const MAX_OFFSET = 80;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
 function buildDefaultImage(url) {
   return {
     url,
@@ -49,22 +58,36 @@ function normalizePreviewImage(image) {
   return {
     url,
     offsetX: Number.isFinite(offsetX)
-      ? Math.max(-80, Math.min(80, offsetX))
+      ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
       : hasOffsetCoordinates
       ? 0
-      : Math.max(-80, Math.min(80, fallbackOffsetX)),
+      : clamp(fallbackOffsetX, MIN_OFFSET, MAX_OFFSET),
     offsetY: Number.isFinite(offsetY)
-      ? Math.max(-80, Math.min(80, offsetY))
+      ? clamp(offsetY, MIN_OFFSET, MAX_OFFSET)
       : hasOffsetCoordinates
       ? 0
-      : Math.max(-80, Math.min(80, fallbackOffsetY)),
-    zoom: Number.isFinite(zoom) ? Math.max(1, Math.min(3, zoom)) : 1,
+      : clamp(fallbackOffsetY, MIN_OFFSET, MAX_OFFSET),
+    zoom: Number.isFinite(zoom) ? clamp(zoom, MIN_ZOOM, MAX_ZOOM) : 1,
   };
 }
 
 function normalizePreviewImages(images) {
-  return sanitizeImages(images)
-    .map(normalizePreviewImage)
+  if (!Array.isArray(images)) {
+    return [];
+  }
+
+  return images
+    .map((image) => {
+      if (!image) {
+        return null;
+      }
+
+      if (typeof image === "string") {
+        return normalizePreviewImage(buildDefaultImage(image.trim()));
+      }
+
+      return normalizePreviewImage(image);
+    })
     .filter(Boolean);
 }
 
@@ -89,15 +112,29 @@ export default function ProductForm({
 
   const [colors, setColors] = useState(
     initialValues?.colors && Array.isArray(initialValues.colors)
-      ? sanitizeColors(initialValues.colors)
+      ? sanitizeColors(initialValues.colors).map((color) => ({
+          ...color,
+          images: normalizePreviewImages(color.images),
+        }))
       : []
   );
 
-  const initialColorsSnapshotRef = useRef(sanitizeColors(initialValues?.colors));
+  const initialColorsSnapshotRef = useRef(
+    sanitizeColors(initialValues?.colors).map((color) => ({
+      ...color,
+      images: normalizePreviewImages(color.images),
+    }))
+  );
+
   const initialProductSnapshotRef = useRef(
     serializeProductSnapshot({
       ...buildInitialFormValues(initialValues),
-      colors: sanitizeColors(initialValues?.colors),
+      imageUrl: initialValues?.imageUrl || "",
+      images: normalizePreviewImages(initialValues?.images),
+      colors: sanitizeColors(initialValues?.colors).map((color) => ({
+        ...color,
+        images: normalizePreviewImages(color.images),
+      })),
     })
   );
 
@@ -128,7 +165,10 @@ export default function ProductForm({
   useEffect(() => {
     const normalizedInitialColors =
       initialValues?.colors && Array.isArray(initialValues.colors)
-        ? sanitizeColors(initialValues.colors)
+        ? sanitizeColors(initialValues.colors).map((color) => ({
+            ...color,
+            images: normalizePreviewImages(color.images),
+          }))
         : [];
 
     const nextFormValues = buildInitialFormValues(initialValues);
@@ -136,9 +176,11 @@ export default function ProductForm({
     setColors(normalizedInitialColors);
     setFormValues(nextFormValues);
     setStockInputValue(initialValues?.stock ?? "");
-    initialColorsSnapshotRef.current = sanitizeColors(normalizedInitialColors);
+    initialColorsSnapshotRef.current = normalizedInitialColors;
     initialProductSnapshotRef.current = serializeProductSnapshot({
       ...nextFormValues,
+      imageUrl: initialValues?.imageUrl || "",
+      images: normalizePreviewImages(initialValues?.images),
       colors: normalizedInitialColors,
     });
     setImageUrl(initialValues?.imageUrl || "");
@@ -217,9 +259,12 @@ export default function ProductForm({
     const currentSnapshot = serializeProductSnapshot({
       ...formValues,
       imageUrl,
-      images: productImages,
+      images: normalizePreviewImages(productImages),
       stock: hasColors ? Number(visualStock) || 0 : stockInputValue,
-      colors,
+      colors: colors.map((color) => ({
+        ...color,
+        images: normalizePreviewImages(color.images),
+      })),
     });
 
     return (
@@ -518,7 +563,9 @@ export default function ProductForm({
       setProductImages((prev) => {
         const nextImages = [
           nextImage,
-          ...prev.filter((image) => image.url !== nextImage.url),
+          ...normalizePreviewImages(prev).filter(
+            (image) => image.url !== nextImage.url
+          ),
         ];
 
         setFormValues((current) => ({
@@ -553,7 +600,9 @@ export default function ProductForm({
       );
 
       setProductImages((prev) => [
-        ...prev.filter((image) => image.url !== uploadedImageUrl),
+        ...normalizePreviewImages(prev).filter(
+          (image) => image.url !== uploadedImageUrl
+        ),
         buildDefaultImage(uploadedImageUrl),
       ]);
     } catch (error) {
@@ -634,10 +683,11 @@ export default function ProductForm({
 
   function handleSetMainProductImage(indexToPromote) {
     setProductImages((prev) => {
-      const selectedImage = prev[indexToPromote];
+      const normalizedPrev = normalizePreviewImages(prev);
+      const selectedImage = normalizedPrev[indexToPromote];
 
       if (!selectedImage) {
-        return prev;
+        return normalizedPrev;
       }
 
       setImageUrl(selectedImage.url);
@@ -646,18 +696,18 @@ export default function ProductForm({
         imageUrl: selectedImage.url,
       }));
 
-      return prev;
+      return normalizedPrev;
     });
   }
 
   function handleUpdateProductImageCrop(indexToUpdate, updates) {
     setProductImages((prev) =>
-      prev.map((image, index) =>
+      normalizePreviewImages(prev).map((image, index) =>
         index === indexToUpdate
-          ? {
+          ? normalizePreviewImage({
               ...image,
               ...updates,
-            }
+            })
           : image
       )
     );
@@ -665,8 +715,9 @@ export default function ProductForm({
 
   function handleRemoveProductImage(indexToRemove) {
     setProductImages((prev) => {
-      const nextImages = prev.filter((_, index) => index !== indexToRemove);
-      const removedImage = prev[indexToRemove];
+      const normalizedPrev = normalizePreviewImages(prev);
+      const nextImages = normalizedPrev.filter((_, index) => index !== indexToRemove);
+      const removedImage = normalizedPrev[indexToRemove];
       const removedWasMain = removedImage?.url === imageUrl;
       const nextMainImageUrl = removedWasMain ? nextImages[0]?.url || "" : imageUrl;
 
@@ -696,10 +747,10 @@ export default function ProductForm({
     updateColorDraftImages(
       normalizePreviewImages(colorDraft.images).map((image, index) =>
         index === indexToUpdate
-          ? {
+          ? normalizePreviewImage({
               ...image,
               ...updates,
-            }
+            })
           : image
       ),
       colorDraft.imageUrl
@@ -730,6 +781,11 @@ export default function ProductForm({
 
     const promoPriceValue = formValues.promoPrice?.toString().trim() || "";
 
+    const normalizedPayloadColors = colors.map((color) => ({
+      ...color,
+      images: normalizePreviewImages(color.images),
+    }));
+
     const payload = {
       name: formValues.name?.toString().trim() || "",
       category: formValues.category?.toString().trim() || "",
@@ -739,12 +795,7 @@ export default function ProductForm({
       imageUrl: imageUrl?.toString().trim() || "",
       images: normalizePreviewImages(productImages),
       stock: hasColors ? Number(visualStock) || 0 : Number(stockInputValue) || 0,
-      colors: sanitizeColors(
-        colors.map((color) => ({
-          ...color,
-          images: normalizePreviewImages(color.images),
-        }))
-      ),
+      colors: normalizedPayloadColors,
     };
 
     const initialColorsSnapshot = initialColorsSnapshotRef.current;
@@ -783,12 +834,7 @@ export default function ProductForm({
       imageUrl,
       images: normalizePreviewImages(productImages),
       stock: hasColors ? Number(visualStock) || 0 : stockInputValue,
-      colors: sanitizeColors(
-        colors.map((color) => ({
-          ...color,
-          images: normalizePreviewImages(color.images),
-        }))
-      ),
+      colors: normalizedPayloadColors,
     });
 
     if (typeof onUnsavedChangesChange === "function") {
