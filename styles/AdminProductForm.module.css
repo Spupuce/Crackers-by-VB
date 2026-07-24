@@ -321,18 +321,28 @@ select.input:focus {
   margin-top: 10px;
   width: 100%;
   max-width: 260px;
+  aspect-ratio: 1 / 1;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--color-border);
   background-color: var(--color-gray-100);
   box-shadow: var(--shadow-warm-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mainImagePreview {
   display: block;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transform-origin: center center;
+  transition: transform 0.18s ease;
+  will-change: transform;
+  user-select: none;
+  pointer-events: none;
 }
 
 .extraImagesGrid {

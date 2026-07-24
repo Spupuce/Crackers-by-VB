@@ -8,6 +8,11 @@ const imageSchema = new mongoose.Schema(
       required: [true, "L’URL de l’image est obligatoire."],
       trim: true,
     },
+    publicId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     offsetX: {
       type: Number,
       default: 0,
