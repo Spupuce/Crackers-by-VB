@@ -10,26 +10,21 @@ import ProductPurchasePanel from '../../components/ProductPurchasePanel';
 import { products as fallbackProducts } from '../../data/products';
 import styles from '../../styles/ProductDetail.module.css';
 
-
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
-
 
 function normalizeImageEntry(image) {
   if (!image) {
     return null;
   }
 
-
   if (typeof image === 'string') {
     const url = normalizeText(image);
-
 
     if (!url) {
       return null;
     }
-
 
     return {
       url,
@@ -40,14 +35,11 @@ function normalizeImageEntry(image) {
     };
   }
 
-
   const url = normalizeText(image.url);
-
 
   if (!url) {
     return null;
   }
-
 
   return {
     url,
@@ -58,31 +50,25 @@ function normalizeImageEntry(image) {
   };
 }
 
-
 export default function ProductDetailPage({ product }) {
   const normalizedProductImages = useMemo(() => {
     if (!Array.isArray(product?.images)) {
       return [];
     }
 
-
     return product.images.map(normalizeImageEntry).filter(Boolean);
   }, [product?.images]);
-
 
   const defaultImage =
     normalizeText(product?.imageUrl) || normalizedProductImages[0]?.url || '';
 
-
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedImageUrl, setSelectedImageUrl] = useState('');
-
 
   const availableColors = useMemo(() => {
     if (!Array.isArray(product?.colors)) {
       return [];
     }
-
 
     return product.colors
       .filter((color) => !color?.isArchived)
@@ -94,12 +80,10 @@ export default function ProductDetailPage({ product }) {
       .filter((color) => color.name);
   }, [product?.colors]);
 
-
   const selectedColorData = useMemo(() => {
     if (!selectedColor) {
       return null;
     }
-
 
     return (
       availableColors.find(
@@ -110,21 +94,17 @@ export default function ProductDetailPage({ product }) {
     );
   }, [availableColors, selectedColor]);
 
-
   const shouldShowSelectedColorSoldOutBadge =
     !!selectedColor && !!selectedColorData && selectedColorData.quantity <= 0;
-
 
   const galleryItems = useMemo(() => {
     const items = [];
     const usedImages = new Set();
 
-
     if (defaultImage) {
       const defaultImageData =
         normalizedProductImages.find((image) => image.url === defaultImage) ||
         normalizeImageEntry(defaultImage);
-
 
       if (defaultImageData) {
         items.push({
@@ -141,12 +121,10 @@ export default function ProductDetailPage({ product }) {
       }
     }
 
-
     normalizedProductImages.forEach((image, index) => {
       if (!image?.url || usedImages.has(image.url)) {
         return;
       }
-
 
       items.push({
         type: 'gallery',
@@ -161,13 +139,11 @@ export default function ProductDetailPage({ product }) {
       usedImages.add(image.url);
     });
 
-
     if (Array.isArray(product?.colors)) {
       product.colors.forEach((color) => {
         if (color?.isArchived) {
           return;
         }
-
 
         const colorName = normalizeText(color?.name);
         const normalizedColorImages = Array.isArray(color?.images)
@@ -179,11 +155,9 @@ export default function ProductDetailPage({ product }) {
           normalizedColorImages[0] ||
           normalizeImageEntry(fallbackColorImage);
 
-
         if (!colorName || !colorMainImage?.url || usedImages.has(colorMainImage.url)) {
           return;
         }
-
 
         items.push({
           type: 'color',
@@ -199,16 +173,13 @@ export default function ProductDetailPage({ product }) {
       });
     }
 
-
     return items;
   }, [defaultImage, normalizedProductImages, product?.colors]);
-
 
   const selectedGalleryImage = useMemo(() => {
     if (selectedImageUrl) {
       return selectedImageUrl;
     }
-
 
     if (selectedColor) {
       const matchingItem = galleryItems.find(
@@ -218,32 +189,28 @@ export default function ProductDetailPage({ product }) {
             normalizeText(selectedColor).toLowerCase()
       );
 
-
       return matchingItem?.imageUrl || defaultImage || galleryItems[0]?.imageUrl || '';
     }
 
-
     return defaultImage || galleryItems[0]?.imageUrl || '';
   }, [selectedImageUrl, selectedColor, galleryItems, defaultImage]);
-
 
   function handleGallerySelect(item) {
     if (!item) {
       return;
     }
 
-
     if (item.type === 'color' && item.colorName) {
+      // Quand on clique une miniature de couleur, on synchronise la couleur sélectionnée
       setSelectedColor(item.colorName);
       setSelectedImageUrl('');
       return;
     }
 
-
-    setSelectedColor('');
+    // Pour les autres miniatures (default / gallery),
+    // on met à jour l’image affichée sans toucher à la couleur déjà choisie.
     setSelectedImageUrl(item.imageUrl || '');
   }
-
 
   if (!product) {
     return (
@@ -258,7 +225,6 @@ export default function ProductDetailPage({ product }) {
               </a>
             </Link>
 
-
             <p className={styles.notFound}>Produit introuvable.</p>
           </div>
         </main>
@@ -267,7 +233,6 @@ export default function ProductDetailPage({ product }) {
     );
   }
 
-
   return (
     <>
       <Head>
@@ -275,9 +240,7 @@ export default function ProductDetailPage({ product }) {
         <meta name="description" content={product.description || ''} />
       </Head>
 
-
       <Header />
-
 
       <main className={styles.page}>
         <div className={styles.container}>
@@ -287,7 +250,6 @@ export default function ProductDetailPage({ product }) {
               <span>Retour à la boutique</span>
             </a>
           </Link>
-
 
           <div className={styles.layout}>
             <ProductGallery
@@ -307,32 +269,25 @@ export default function ProductDetailPage({ product }) {
         </div>
       </main>
 
-
       <Footer />
     </>
   );
 }
 
-
 export async function getServerSideProps(context) {
   const { slug } = context.params;
-
 
   const protocol =
     process.env.NODE_ENV === 'development' ? 'http' : 'https';
 
-
   const host = context.req.headers.host;
   const baseUrl = `${protocol}://${host}`;
-
 
   try {
     const response = await fetch(`${baseUrl}/api/products/${slug}`);
 
-
     if (response.ok) {
       const product = await response.json();
-
 
       if (!product.isArchived) {
         return {
@@ -345,12 +300,10 @@ export async function getServerSideProps(context) {
   } catch (error) {
   }
 
-
   const fallbackProduct =
     fallbackProducts.find(
       (item) => item.slug === slug && item.isActive
     ) || null;
-
 
   return {
     props: {
