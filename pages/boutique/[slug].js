@@ -101,42 +101,50 @@ export default function ProductDetailPage({ product }) {
     const items = [];
     const usedImages = new Set();
 
+    function addGalleryItem({
+      type,
+      image,
+      label,
+      colorName = '',
+    }) {
+      const normalizedImage = normalizeImageEntry(image);
+
+      if (!normalizedImage?.url || usedImages.has(normalizedImage.url)) {
+        return;
+      }
+
+      items.push({
+        type,
+        imageUrl: normalizedImage.url,
+        label,
+        colorName,
+        publicId: normalizedImage.publicId,
+        offsetX: normalizedImage.offsetX,
+        offsetY: normalizedImage.offsetY,
+        zoom: normalizedImage.zoom,
+      });
+
+      usedImages.add(normalizedImage.url);
+    }
+
     if (defaultImage) {
       const defaultImageData =
         normalizedProductImages.find((image) => image.url === defaultImage) ||
         normalizeImageEntry(defaultImage);
 
-      if (defaultImageData) {
-        items.push({
-          type: 'default',
-          imageUrl: defaultImageData.url,
-          label: 'Image principale',
-          colorName: '',
-          publicId: defaultImageData.publicId,
-          offsetX: defaultImageData.offsetX,
-          offsetY: defaultImageData.offsetY,
-          zoom: defaultImageData.zoom,
-        });
-        usedImages.add(defaultImageData.url);
-      }
+      addGalleryItem({
+        type: 'default',
+        image: defaultImageData,
+        label: 'Image principale',
+      });
     }
 
     normalizedProductImages.forEach((image, index) => {
-      if (!image?.url || usedImages.has(image.url)) {
-        return;
-      }
-
-      items.push({
+      addGalleryItem({
         type: 'gallery',
-        imageUrl: image.url,
+        image,
         label: `Vue ${index + 1}`,
-        colorName: '',
-        publicId: image.publicId,
-        offsetX: image.offsetX,
-        offsetY: image.offsetY,
-        zoom: image.zoom,
       });
-      usedImages.add(image.url);
     });
 
     if (Array.isArray(product?.colors)) {
@@ -146,30 +154,39 @@ export default function ProductDetailPage({ product }) {
         }
 
         const colorName = normalizeText(color?.name);
-        const normalizedColorImages = Array.isArray(color?.images)
-          ? color.images.map(normalizeImageEntry).filter(Boolean)
-          : [];
-        const fallbackColorImage = normalizeText(color?.imageUrl);
-        const colorMainImage =
-          normalizedColorImages.find((image) => image.url === fallbackColorImage) ||
-          normalizedColorImages[0] ||
-          normalizeImageEntry(fallbackColorImage);
 
-        if (!colorName || !colorMainImage?.url || usedImages.has(colorMainImage.url)) {
+        if (!colorName) {
           return;
         }
 
-        items.push({
+        const normalizedColorImages = Array.isArray(color?.images)
+          ? color.images.map(normalizeImageEntry).filter(Boolean)
+          : [];
+
+        const fallbackColorImage = normalizeText(color?.imageUrl);
+
+        if (normalizedColorImages.length > 0) {
+          normalizedColorImages.forEach((image, index) => {
+            addGalleryItem({
+              type: 'color',
+              image,
+              label:
+                index === 0
+                  ? colorName
+                  : `${colorName} - vue ${index + 1}`,
+              colorName,
+            });
+          });
+
+          return;
+        }
+
+        addGalleryItem({
           type: 'color',
-          imageUrl: colorMainImage.url,
+          image: fallbackColorImage,
           label: colorName,
           colorName,
-          publicId: colorMainImage.publicId,
-          offsetX: colorMainImage.offsetX,
-          offsetY: colorMainImage.offsetY,
-          zoom: colorMainImage.zoom,
         });
-        usedImages.add(colorMainImage.url);
       });
     }
 
@@ -201,14 +218,11 @@ export default function ProductDetailPage({ product }) {
     }
 
     if (item.type === 'color' && item.colorName) {
-      // Quand on clique une miniature de couleur, on synchronise la couleur sélectionnée
       setSelectedColor(item.colorName);
       setSelectedImageUrl('');
       return;
     }
 
-    // Pour les autres miniatures (default / gallery),
-    // on met à jour l’image affichée sans toucher à la couleur déjà choisie.
     setSelectedImageUrl(item.imageUrl || '');
   }
 
