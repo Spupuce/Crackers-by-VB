@@ -80,13 +80,15 @@ export default function ProductGallery({
         )}
 
         <div className={styles.mainImageViewport}>
-          <img
-            src={activeItem.imageUrl}
-            alt={productName}
-            className={styles.mainImageTransformed}
-            style={getPreviewStyle(activeItem)}
-            draggable={false}
-          />
+          <div className={styles.mainImagePreviewWrapper}>
+            <img
+              src={activeItem.imageUrl}
+              alt={productName}
+              className={styles.mainImageTransformed}
+              style={getPreviewStyle(activeItem)}
+              draggable={false}
+            />
+          </div>
         </div>
       </div>
 

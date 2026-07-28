@@ -41,6 +41,8 @@
   overflow: hidden;
   border-radius: 16px;
   background-color: var(--color-gray-50);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .mainImageViewport {
@@ -50,7 +52,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-gray-50);
+  background-color: var(--color-gray-100);
 }
 
 .mainImage {
@@ -62,10 +64,8 @@
 
 .mainImageTransformed {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   object-position: center;
   transform-origin: center center;
@@ -83,23 +83,35 @@
 }
 
 .thumbnailButton {
-  border: 1px solid transparent;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
-  background: transparent;
+  background-color: var(--color-white);
   padding: 0;
   cursor: pointer;
+  box-shadow: var(--shadow-warm-soft);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.thumbnailButton:hover {
+  border-color: var(--color-primary-light);
+  transform: translateY(-1px);
 }
 
 .thumbnailButtonActive {
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-status-primary-bg);
 }
 
 .thumbnailImage {
   width: 100%;
   aspect-ratio: 1 / 1;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  background-color: var(--color-gray-100);
 }
 
 .emptyGallery {
