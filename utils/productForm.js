@@ -3,6 +3,8 @@ const MIN_OFFSET = -80;
 const MAX_OFFSET = 80;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
+const MIN_OFFSET_PCT = -50;
+const MAX_OFFSET_PCT = 50;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -14,6 +16,22 @@ function convertLegacyCropToOffset(value) {
   }
 
   return clamp((value - 50) * 1.6, MIN_OFFSET, MAX_OFFSET);
+}
+
+function convertOffsetToPercent(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return clamp((value / MAX_OFFSET) * MAX_OFFSET_PCT, MIN_OFFSET_PCT, MAX_OFFSET_PCT);
+}
+
+function convertPercentToOffset(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return clamp((value / MAX_OFFSET_PCT) * MAX_OFFSET, MIN_OFFSET, MAX_OFFSET);
 }
 
 export function createEmptyColorDraft() {
@@ -52,6 +70,8 @@ export function sanitizeImages(images) {
           publicId: "",
           offsetX: 0,
           offsetY: 0,
+          offsetXPct: 0,
+          offsetYPct: 0,
           zoom: 1,
         };
       }
@@ -67,6 +87,8 @@ export function sanitizeImages(images) {
 
       const offsetX = Number(image.offsetX);
       const offsetY = Number(image.offsetY);
+      const offsetXPct = Number(image.offsetXPct);
+      const offsetYPct = Number(image.offsetYPct);
       const cropX = Number(image.cropX);
       const cropY = Number(image.cropY);
       const zoom = Number(image.zoom);
@@ -74,19 +96,37 @@ export function sanitizeImages(images) {
       const hasOffsetCoordinates =
         Number.isFinite(offsetX) || Number.isFinite(offsetY);
 
+      const resolvedOffsetX = Number.isFinite(offsetX)
+        ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
+        : Number.isFinite(offsetXPct)
+        ? convertPercentToOffset(offsetXPct)
+        : hasOffsetCoordinates
+        ? 0
+        : convertLegacyCropToOffset(cropX);
+
+      const resolvedOffsetY = Number.isFinite(offsetY)
+        ? clamp(offsetY, MIN_OFFSET, MAX_OFFSET)
+        : Number.isFinite(offsetYPct)
+        ? convertPercentToOffset(offsetYPct)
+        : hasOffsetCoordinates
+        ? 0
+        : convertLegacyCropToOffset(cropY);
+
+      const resolvedOffsetXPct = Number.isFinite(offsetXPct)
+        ? clamp(offsetXPct, MIN_OFFSET_PCT, MAX_OFFSET_PCT)
+        : convertOffsetToPercent(resolvedOffsetX);
+
+      const resolvedOffsetYPct = Number.isFinite(offsetYPct)
+        ? clamp(offsetYPct, MIN_OFFSET_PCT, MAX_OFFSET_PCT)
+        : convertOffsetToPercent(resolvedOffsetY);
+
       return {
         url,
         publicId,
-        offsetX: Number.isFinite(offsetX)
-          ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
-          : hasOffsetCoordinates
-          ? 0
-          : convertLegacyCropToOffset(cropX),
-        offsetY: Number.isFinite(offsetY)
-          ? clamp(offsetY, MIN_OFFSET, MAX_OFFSET)
-          : hasOffsetCoordinates
-          ? 0
-          : convertLegacyCropToOffset(cropY),
+        offsetX: resolvedOffsetX,
+        offsetY: resolvedOffsetY,
+        offsetXPct: resolvedOffsetXPct,
+        offsetYPct: resolvedOffsetYPct,
         zoom: Number.isFinite(zoom) ? clamp(zoom, MIN_ZOOM, MAX_ZOOM) : 1,
       };
     })
