@@ -68,10 +68,10 @@
                 - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).
 
 
-🟡 Corriger la galerie boutique pour afficher toutes les images enregistrées.
+✅ Corriger la galerie boutique pour afficher toutes les images enregistrées.
 ✅ Rendre les miniatures supplémentaires cliquables sur la fiche produit.
-✅🔴 Vérifier que le clic sur une miniature met bien à jour l’image principale sans casser la couleur sélectionnée.
-🔴 Uniformiser le format de données image entre admin et boutique (url, publicId, offsetX, offsetY, zoom).
+✅ Vérifier que le clic sur une miniature met bien à jour l’image principale sans casser la couleur sélectionnée.
+✅ Uniformiser le format de données image entre admin et boutique (url, publicId, offsetX, offsetY, zoom).
 🔴 Aligner le rendu visuel de l’aperçu admin avec le rendu final côté client.
 🔴 Reprendre la logique de cadrage pour que le zoom et le déplacement utilisent les mêmes règles partout.
 🔴 Corriger les limites de déplacement pour pouvoir scroller correctement en largeur et en hauteur quand l’image est zoomée.

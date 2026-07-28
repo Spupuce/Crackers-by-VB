@@ -8,55 +8,20 @@ import Footer from '../../components/Footer';
 import ProductGallery from '../../components/ProductGallery';
 import ProductPurchasePanel from '../../components/ProductPurchasePanel';
 import { products as fallbackProducts } from '../../data/products';
+import { sanitizeImages } from '../../utils/productForm';
 import styles from '../../styles/ProductDetail.module.css';
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function normalizeImageEntry(image) {
-  if (!image) {
-    return null;
-  }
-
-  if (typeof image === 'string') {
-    const url = normalizeText(image);
-
-    if (!url) {
-      return null;
-    }
-
-    return {
-      url,
-      publicId: '',
-      offsetX: 0,
-      offsetY: 0,
-      zoom: 1,
-    };
-  }
-
-  const url = normalizeText(image.url);
-
-  if (!url) {
-    return null;
-  }
-
-  return {
-    url,
-    publicId: normalizeText(image.publicId),
-    offsetX: Number.isFinite(Number(image.offsetX)) ? Number(image.offsetX) : 0,
-    offsetY: Number.isFinite(Number(image.offsetY)) ? Number(image.offsetY) : 0,
-    zoom: Number.isFinite(Number(image.zoom)) ? Number(image.zoom) : 1,
-  };
+function getFirstSanitizedImage(image) {
+  return sanitizeImages([image])[0] || null;
 }
 
 export default function ProductDetailPage({ product }) {
   const normalizedProductImages = useMemo(() => {
-    if (!Array.isArray(product?.images)) {
-      return [];
-    }
-
-    return product.images.map(normalizeImageEntry).filter(Boolean);
+    return sanitizeImages(product?.images);
   }, [product?.images]);
 
   const defaultImage =
@@ -107,7 +72,7 @@ export default function ProductDetailPage({ product }) {
       label,
       colorName = '',
     }) {
-      const normalizedImage = normalizeImageEntry(image);
+      const normalizedImage = getFirstSanitizedImage(image);
 
       if (!normalizedImage?.url || usedImages.has(normalizedImage.url)) {
         return;
@@ -130,7 +95,7 @@ export default function ProductDetailPage({ product }) {
     if (defaultImage) {
       const defaultImageData =
         normalizedProductImages.find((image) => image.url === defaultImage) ||
-        normalizeImageEntry(defaultImage);
+        getFirstSanitizedImage(defaultImage);
 
       addGalleryItem({
         type: 'default',
@@ -159,10 +124,7 @@ export default function ProductDetailPage({ product }) {
           return;
         }
 
-        const normalizedColorImages = Array.isArray(color?.images)
-          ? color.images.map(normalizeImageEntry).filter(Boolean)
-          : [];
-
+        const normalizedColorImages = sanitizeImages(color?.images);
         const fallbackColorImage = normalizeText(color?.imageUrl);
 
         if (normalizedColorImages.length > 0) {
@@ -206,7 +168,12 @@ export default function ProductDetailPage({ product }) {
             normalizeText(selectedColor).toLowerCase()
       );
 
-      return matchingItem?.imageUrl || defaultImage || galleryItems[0]?.imageUrl || '';
+      return (
+        matchingItem?.imageUrl ||
+        defaultImage ||
+        galleryItems[0]?.imageUrl ||
+        ''
+      );
     }
 
     return defaultImage || galleryItems[0]?.imageUrl || '';
