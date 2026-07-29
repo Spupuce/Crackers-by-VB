@@ -108,12 +108,15 @@ export default function ProductGallery({
                 item.label ? item.label.toLowerCase() : `l'image ${index + 1}`
               } de ${productName}`}
             >
-              <img
-                src={item.imageUrl}
-                alt={`${productName} miniature ${index + 1}`}
-                className={styles.thumbnailImage}
-                draggable={false}
-              />
+              <div className={styles.thumbnailImageWrapper}>
+                <img
+                  src={item.imageUrl}
+                  alt={`${productName} miniature ${index + 1}`}
+                  className={styles.thumbnailImage}
+                  style={getPreviewStyle(item)}
+                  draggable={false}
+                />
+              </div>
             </button>
           );
         })}

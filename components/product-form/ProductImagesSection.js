@@ -17,6 +17,8 @@ function getSafeImage(image) {
       publicId: "",
       offsetX: 0,
       offsetY: 0,
+      offsetXPct: 0,
+      offsetYPct: 0,
       zoom: 1,
     };
   }
@@ -26,6 +28,12 @@ function getSafeImage(image) {
     publicId: typeof image.publicId === "string" ? image.publicId : "",
     offsetX: Number.isFinite(Number(image.offsetX)) ? Number(image.offsetX) : 0,
     offsetY: Number.isFinite(Number(image.offsetY)) ? Number(image.offsetY) : 0,
+    offsetXPct: Number.isFinite(Number(image.offsetXPct))
+      ? Number(image.offsetXPct)
+      : 0,
+    offsetYPct: Number.isFinite(Number(image.offsetYPct))
+      ? Number(image.offsetYPct)
+      : 0,
     zoom: Number.isFinite(Number(image.zoom))
       ? clamp(Number(image.zoom), MIN_ZOOM, MAX_ZOOM)
       : 1,
@@ -165,9 +173,20 @@ export default function ProductImagesSection({
           Math.min(maxOffsetY, DRAG_LIMIT_PX)
         );
 
+        const offsetXPct =
+          rect.width > 0
+            ? (nextOffsetX / rect.width) * 100
+            : 0;
+        const offsetYPct =
+          rect.height > 0
+            ? (nextOffsetY / rect.height) * 100
+            : 0;
+
         onUpdateProductImageCrop(currentState.index, {
           offsetX: nextOffsetX,
           offsetY: nextOffsetY,
+          offsetXPct,
+          offsetYPct,
         });
 
         return currentState;
@@ -212,14 +231,19 @@ export default function ProductImagesSection({
   function handleZoomChange(index, value) {
     const nextZoom = clamp(Number(value), MIN_ZOOM, MAX_ZOOM);
 
+    if (nextZoom <= 1) {
+      onUpdateProductImageCrop(index, {
+        zoom: nextZoom,
+        offsetX: 0,
+        offsetY: 0,
+        offsetXPct: 0,
+        offsetYPct: 0,
+      });
+      return;
+    }
+
     onUpdateProductImageCrop(index, {
       zoom: nextZoom,
-      ...(nextZoom <= 1
-        ? {
-            offsetX: 0,
-            offsetY: 0,
-          }
-        : {}),
     });
   }
 
@@ -231,14 +255,19 @@ export default function ProductImagesSection({
     const zoomStep = event.deltaY < 0 ? 0.1 : -0.1;
     const nextZoom = clamp((Number(image.zoom) || 1) + zoomStep, MIN_ZOOM, MAX_ZOOM);
 
+    if (nextZoom <= 1) {
+      onUpdateProductImageCrop(index, {
+        zoom: nextZoom,
+        offsetX: 0,
+        offsetY: 0,
+        offsetXPct: 0,
+        offsetYPct: 0,
+      });
+      return;
+    }
+
     onUpdateProductImageCrop(index, {
       zoom: nextZoom,
-      ...(nextZoom <= 1
-        ? {
-            offsetX: 0,
-            offsetY: 0,
-          }
-        : {}),
     });
   }
 
@@ -401,8 +430,8 @@ export default function ProductImagesSection({
 
                         <div className={styles.imageCardHintRow}>
                           <p className={styles.stockHint}>
-                            Ajuste le zoom et le cadrage, puis enregistre le produit
-                            pour valider.
+                            Ajuste le zoom et le cadrage, puis enregistre le
+                            produit pour valider.
                           </p>
                         </div>
                       </div>
