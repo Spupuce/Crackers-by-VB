@@ -59,9 +59,6 @@ export default function ProductDetailPage({ product }) {
     );
   }, [availableColors, selectedColor]);
 
-  const shouldShowSelectedColorSoldOutBadge =
-    !!selectedColor && !!selectedColorData && selectedColorData.quantity <= 0;
-
   const galleryItems = useMemo(() => {
     const items = [];
     const usedImages = new Set();
@@ -170,21 +167,35 @@ export default function ProductDetailPage({ product }) {
     return matchingItem?.imageUrl || '';
   }, [galleryItems, selectedColor]);
 
-  const selectedGalleryImage = useMemo(() => {
+  const activeGalleryItem = useMemo(() => {
     if (selectedImageUrl) {
-      return selectedImageUrl;
+      return galleryItems.find((item) => item.imageUrl === selectedImageUrl) || null;
     }
 
     if (selectedColorImageUrl) {
-      return selectedColorImageUrl;
+      return (
+        galleryItems.find((item) => item.imageUrl === selectedColorImageUrl) || null
+      );
     }
 
-    if (selectedColor) {
-      return defaultImage || galleryItems[0]?.imageUrl || '';
-    }
+    return (
+      galleryItems.find(
+        (item) =>
+          item.imageUrl === defaultImage ||
+          (!defaultImage && item.imageUrl === galleryItems[0]?.imageUrl)
+      ) || null
+    );
+  }, [defaultImage, galleryItems, selectedColorImageUrl, selectedImageUrl]);
 
-    return defaultImage || galleryItems[0]?.imageUrl || '';
-  }, [selectedImageUrl, selectedColor, selectedColorImageUrl, galleryItems, defaultImage]);
+  const selectedGalleryImage = activeGalleryItem?.imageUrl || '';
+
+  const shouldShowSelectedColorSoldOutBadge =
+    activeGalleryItem?.type === 'color' &&
+    !!activeGalleryItem.colorName &&
+    !!selectedColorData &&
+    normalizeText(activeGalleryItem.colorName).toLowerCase() ===
+      normalizeText(selectedColor).toLowerCase() &&
+    selectedColorData.quantity <= 0;
 
   function handleGallerySelect(item) {
     if (!item) {
@@ -197,6 +208,7 @@ export default function ProductDetailPage({ product }) {
       return;
     }
 
+    setSelectedColor('');
     setSelectedImageUrl(item.imageUrl || '');
   }
 

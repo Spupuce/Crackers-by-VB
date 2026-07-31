@@ -101,10 +101,7 @@ export default function ProductPurchasePanel({
       return;
     }
 
-    const firstAvailableColor =
-      availableColors.find((color) => Number(color.quantity) > 0)?.name || '';
-
-    onSelectedColorChange?.(firstAvailableColor);
+    onSelectedColorChange?.('');
   }, [
     availableColors,
     hasColorVariants,
