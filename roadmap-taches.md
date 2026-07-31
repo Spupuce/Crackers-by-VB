@@ -73,11 +73,11 @@
 ✅ Vérifier que le clic sur une miniature met bien à jour l’image principale sans casser la couleur sélectionnée.
 ✅ Uniformiser le format de données image entre admin et boutique (url, publicId, offsetX, offsetY, zoom).
 ✅ Aligner le rendu visuel de l’aperçu admin avec le rendu final côté client.
-🔴 Reprendre la logique de cadrage pour que le zoom et le déplacement utilisent les mêmes règles partout.
-🔴 Corriger les limites de déplacement pour pouvoir scroller correctement en largeur et en hauteur quand l’image est zoomée.
+🟡 Reprendre la logique de cadrage pour que le zoom et le déplacement utilisent les mêmes règles partout.
+🟡 Corriger les limites de déplacement pour pouvoir scroller correctement en largeur et en hauteur quand l’image est zoomée.
 🔴 Remplacer la logique de drag actuelle par une gestion plus fiable souris + tactile.
 🔴 Ajouter un bouton de remise à zéro du cadrage par image.
 🔴 Vérifier le rendu des images principales et des images de couleurs avec les mêmes transformations.
-🔴 Tester les cas suivants : produit avec 1 image, plusieurs images, couleurs avec images, couleurs sans image.
+🟡 Tester les cas suivants : produit avec 1 image, plusieurs images, couleurs avec images, couleurs sans image.
 🔴- Nettoyer les anciens formats encore tolérés (gallery, ancien crop) une fois la migration terminée.
 🔴 Ajouter ensuite la suppression Cloudinary des images retirées, à partir du publicId.

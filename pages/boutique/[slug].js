@@ -155,29 +155,36 @@ export default function ProductDetailPage({ product }) {
     return items;
   }, [defaultImage, normalizedProductImages, product?.colors]);
 
+  const selectedColorImageUrl = useMemo(() => {
+    if (!selectedColor) {
+      return '';
+    }
+
+    const matchingItem = galleryItems.find(
+      (item) =>
+        item.type === 'color' &&
+        normalizeText(item.colorName).toLowerCase() ===
+          normalizeText(selectedColor).toLowerCase()
+    );
+
+    return matchingItem?.imageUrl || '';
+  }, [galleryItems, selectedColor]);
+
   const selectedGalleryImage = useMemo(() => {
     if (selectedImageUrl) {
       return selectedImageUrl;
     }
 
-    if (selectedColor) {
-      const matchingItem = galleryItems.find(
-        (item) =>
-          item.type === 'color' &&
-          normalizeText(item.colorName).toLowerCase() ===
-            normalizeText(selectedColor).toLowerCase()
-      );
+    if (selectedColorImageUrl) {
+      return selectedColorImageUrl;
+    }
 
-      return (
-        matchingItem?.imageUrl ||
-        defaultImage ||
-        galleryItems[0]?.imageUrl ||
-        ''
-      );
+    if (selectedColor) {
+      return defaultImage || galleryItems[0]?.imageUrl || '';
     }
 
     return defaultImage || galleryItems[0]?.imageUrl || '';
-  }, [selectedImageUrl, selectedColor, galleryItems, defaultImage]);
+  }, [selectedImageUrl, selectedColor, selectedColorImageUrl, galleryItems, defaultImage]);
 
   function handleGallerySelect(item) {
     if (!item) {
@@ -191,6 +198,11 @@ export default function ProductDetailPage({ product }) {
     }
 
     setSelectedImageUrl(item.imageUrl || '');
+  }
+
+  function handleSelectedColorChange(nextColor) {
+    setSelectedColor(nextColor);
+    setSelectedImageUrl('');
   }
 
   if (!product) {
@@ -244,7 +256,7 @@ export default function ProductDetailPage({ product }) {
             <ProductPurchasePanel
               product={product}
               selectedColor={selectedColor}
-              onSelectedColorChange={setSelectedColor}
+              onSelectedColorChange={handleSelectedColorChange}
             />
           </div>
         </div>
