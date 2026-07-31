@@ -64,6 +64,30 @@ function getPreviewStyle(image) {
   };
 }
 
+function getContainSize(frameWidth, frameHeight, imageWidth, imageHeight) {
+  if (!frameWidth || !frameHeight || !imageWidth || !imageHeight) {
+    return {
+      width: frameWidth || 0,
+      height: frameHeight || 0,
+    };
+  }
+
+  const frameRatio = frameWidth / frameHeight;
+  const imageRatio = imageWidth / imageHeight;
+
+  if (imageRatio > frameRatio) {
+    return {
+      width: frameWidth,
+      height: frameWidth / imageRatio,
+    };
+  }
+
+  return {
+    width: frameHeight * imageRatio,
+    height: frameHeight,
+  };
+}
+
 export default function ProductImagesSection({
   extraImageInputRef,
   extraImageFileName,
@@ -91,6 +115,7 @@ export default function ProductImagesSection({
   });
 
   const previewRefs = useRef({});
+  const imageRefs = useRef({});
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
 
   const selectedGalleryImage = useMemo(() => {
@@ -158,12 +183,18 @@ export default function ProductImagesSection({
 
         const position = getPointerPosition(event);
         const rect = frame.getBoundingClientRect();
+        const imageNode = imageRefs.current[currentState.index];
+        const imageRect = imageNode?.getBoundingClientRect();
+
         const deltaX = position.x - currentState.startPointerX;
         const deltaY = position.y - currentState.startPointerY;
 
+        const displayedWidth = imageRect?.width || rect.width;
+        const displayedHeight = imageRect?.height || rect.height;
+
         const zoomFactor = Math.max(1, Number(currentImage.zoom));
-        const maxOffsetX = ((rect.width * zoomFactor) - rect.width) / 2;
-        const maxOffsetY = ((rect.height * zoomFactor) - rect.height) / 2;
+        const maxOffsetX = Math.max(0, ((displayedWidth * zoomFactor) - displayedWidth) / 2);
+        const maxOffsetY = Math.max(0, ((displayedHeight * zoomFactor) - displayedHeight) / 2);
 
         const nextOffsetX = clamp(
           currentState.startOffsetX + deltaX,
@@ -176,8 +207,8 @@ export default function ProductImagesSection({
           maxOffsetY
         );
 
-        const offsetXPct = rect.width > 0 ? (nextOffsetX / rect.width) * 100 : 0;
-        const offsetYPct = rect.height > 0 ? (nextOffsetY / rect.height) * 100 : 0;
+        const offsetXPct = displayedWidth > 0 ? (nextOffsetX / displayedWidth) * 100 : 0;
+        const offsetYPct = displayedHeight > 0 ? (nextOffsetY / displayedHeight) * 100 : 0;
 
         onUpdateProductImageCrop(currentState.index, {
           offsetX: nextOffsetX,
@@ -347,6 +378,33 @@ export default function ProductImagesSection({
                   const canDrag = Number(image.zoom) > 1;
                   const isSelected = selectedGalleryIndex === index;
 
+                  const frameRef = (node) => {
+                    previewRefs.current[index] = node;
+                  };
+
+                  const imageRef = (node) => {
+                    imageRefs.current[index] = node;
+                  };
+
+                  const displayedSize = (() => {
+                    const frame = previewRefs.current[index];
+                    const imageNode = imageRefs.current[index];
+
+                    if (!frame || !imageNode) {
+                      return null;
+                    }
+
+                    const frameRect = frame.getBoundingClientRect();
+                    const imageRect = imageNode.getBoundingClientRect();
+
+                    return getContainSize(
+                      frameRect.width,
+                      frameRect.height,
+                      imageRect.width,
+                      imageRect.height
+                    );
+                  })();
+
                   return (
                     <div
                       key={`${image.url}-${index}`}
@@ -377,9 +435,7 @@ export default function ProductImagesSection({
                       </div>
 
                       <div
-                        ref={(node) => {
-                          previewRefs.current[index] = node;
-                        }}
+                        ref={frameRef}
                         className={`${styles.extraImagePreviewFrame} ${
                           isDragging ? styles.extraImagePreviewFrameDragging : ""
                         } ${canDrag ? styles.extraImagePreviewFrameMovable : ""}`}
@@ -394,6 +450,7 @@ export default function ProductImagesSection({
                         role="presentation"
                       >
                         <img
+                          ref={imageRef}
                           src={image.url}
                           alt={`Photo produit ${index + 1}`}
                           className={styles.extraImagePreviewContain}
