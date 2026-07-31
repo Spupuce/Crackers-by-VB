@@ -4,7 +4,6 @@ import styles from "../../styles/AdminProductForm.module.css";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
-const DRAG_LIMIT_PX = 80;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -153,34 +152,32 @@ export default function ProductImagesSection({
           return currentState;
         }
 
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+
         const position = getPointerPosition(event);
         const rect = frame.getBoundingClientRect();
         const deltaX = position.x - currentState.startPointerX;
         const deltaY = position.y - currentState.startPointerY;
 
         const zoomFactor = Math.max(1, Number(currentImage.zoom));
-        const maxOffsetX = (rect.width * (zoomFactor - 1)) / 2;
-        const maxOffsetY = (rect.height * (zoomFactor - 1)) / 2;
+        const maxOffsetX = ((rect.width * zoomFactor) - rect.width) / 2;
+        const maxOffsetY = ((rect.height * zoomFactor) - rect.height) / 2;
 
         const nextOffsetX = clamp(
           currentState.startOffsetX + deltaX,
-          -Math.min(maxOffsetX, DRAG_LIMIT_PX),
-          Math.min(maxOffsetX, DRAG_LIMIT_PX)
+          -maxOffsetX,
+          maxOffsetX
         );
         const nextOffsetY = clamp(
           currentState.startOffsetY + deltaY,
-          -Math.min(maxOffsetY, DRAG_LIMIT_PX),
-          Math.min(maxOffsetY, DRAG_LIMIT_PX)
+          -maxOffsetY,
+          maxOffsetY
         );
 
-        const offsetXPct =
-          rect.width > 0
-            ? (nextOffsetX / rect.width) * 100
-            : 0;
-        const offsetYPct =
-          rect.height > 0
-            ? (nextOffsetY / rect.height) * 100
-            : 0;
+        const offsetXPct = rect.width > 0 ? (nextOffsetX / rect.width) * 100 : 0;
+        const offsetYPct = rect.height > 0 ? (nextOffsetY / rect.height) * 100 : 0;
 
         onUpdateProductImageCrop(currentState.index, {
           offsetX: nextOffsetX,
@@ -195,7 +192,7 @@ export default function ProductImagesSection({
 
     window.addEventListener("mousemove", handlePointerMove);
     window.addEventListener("mouseup", handlePointerUp);
-    window.addEventListener("touchmove", handlePointerMove, { passive: true });
+    window.addEventListener("touchmove", handlePointerMove, { passive: false });
     window.addEventListener("touchend", handlePointerUp);
     window.addEventListener("touchcancel", handlePointerUp);
 
