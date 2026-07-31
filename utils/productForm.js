@@ -1,6 +1,4 @@
 // utils/productForm.js
-const MIN_OFFSET = -80;
-const MAX_OFFSET = 80;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
 const MIN_OFFSET_PCT = -50;
@@ -10,28 +8,12 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function convertLegacyCropToOffset(value) {
+function convertLegacyCropToPercent(value) {
   if (!Number.isFinite(value)) {
     return 0;
   }
 
-  return clamp((value - 50) * 1.6, MIN_OFFSET, MAX_OFFSET);
-}
-
-function convertOffsetToPercent(value) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-
-  return clamp((value / MAX_OFFSET) * MAX_OFFSET_PCT, MIN_OFFSET_PCT, MAX_OFFSET_PCT);
-}
-
-function convertPercentToOffset(value) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-
-  return clamp((value / MAX_OFFSET_PCT) * MAX_OFFSET, MIN_OFFSET, MAX_OFFSET);
+  return clamp(value - 50, MIN_OFFSET_PCT, MAX_OFFSET_PCT);
 }
 
 export function createEmptyColorDraft() {
@@ -93,32 +75,20 @@ export function sanitizeImages(images) {
       const cropY = Number(image.cropY);
       const zoom = Number(image.zoom);
 
-      const hasOffsetCoordinates =
-        Number.isFinite(offsetX) || Number.isFinite(offsetY);
-
-      const resolvedOffsetX = Number.isFinite(offsetX)
-        ? clamp(offsetX, MIN_OFFSET, MAX_OFFSET)
-        : Number.isFinite(offsetXPct)
-        ? convertPercentToOffset(offsetXPct)
-        : hasOffsetCoordinates
-        ? 0
-        : convertLegacyCropToOffset(cropX);
-
-      const resolvedOffsetY = Number.isFinite(offsetY)
-        ? clamp(offsetY, MIN_OFFSET, MAX_OFFSET)
-        : Number.isFinite(offsetYPct)
-        ? convertPercentToOffset(offsetYPct)
-        : hasOffsetCoordinates
-        ? 0
-        : convertLegacyCropToOffset(cropY);
+      const resolvedOffsetX = Number.isFinite(offsetX) ? offsetX : 0;
+      const resolvedOffsetY = Number.isFinite(offsetY) ? offsetY : 0;
 
       const resolvedOffsetXPct = Number.isFinite(offsetXPct)
         ? clamp(offsetXPct, MIN_OFFSET_PCT, MAX_OFFSET_PCT)
-        : convertOffsetToPercent(resolvedOffsetX);
+        : Number.isFinite(cropX)
+        ? convertLegacyCropToPercent(cropX)
+        : 0;
 
       const resolvedOffsetYPct = Number.isFinite(offsetYPct)
         ? clamp(offsetYPct, MIN_OFFSET_PCT, MAX_OFFSET_PCT)
-        : convertOffsetToPercent(resolvedOffsetY);
+        : Number.isFinite(cropY)
+        ? convertLegacyCropToPercent(cropY)
+        : 0;
 
       return {
         url,
