@@ -4,7 +4,6 @@ import styles from "../../styles/AdminProductForm.module.css";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
-const DRAG_LIMIT_PX = 80;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -51,6 +50,7 @@ function getPreviewStyle(image) {
 
   return {
     transform: `translate(${offsetX}px, ${offsetY}px) scale(${safeZoom})`,
+    transformOrigin: "center center",
   };
 }
 
@@ -120,7 +120,9 @@ export default function ColorFormCard({
           return currentState;
         }
 
-        event.preventDefault();
+        if (event.cancelable) {
+          event.preventDefault();
+        }
 
         const position = getPointerPosition(event);
         const rect = frame.getBoundingClientRect();
@@ -128,18 +130,18 @@ export default function ColorFormCard({
         const deltaY = position.y - currentState.startPointerY;
 
         const zoomFactor = Math.max(1, Number(currentImage.zoom));
-        const maxOffsetX = (rect.width * (zoomFactor - 1)) / 2;
-        const maxOffsetY = (rect.height * (zoomFactor - 1)) / 2;
+        const maxOffsetX = ((rect.width * zoomFactor) - rect.width) / 2;
+        const maxOffsetY = ((rect.height * zoomFactor) - rect.height) / 2;
 
         const nextOffsetX = clamp(
           currentState.startOffsetX + deltaX,
-          -Math.min(maxOffsetX, DRAG_LIMIT_PX),
-          Math.min(maxOffsetX, DRAG_LIMIT_PX)
+          -maxOffsetX,
+          maxOffsetX
         );
         const nextOffsetY = clamp(
           currentState.startOffsetY + deltaY,
-          -Math.min(maxOffsetY, DRAG_LIMIT_PX),
-          Math.min(maxOffsetY, DRAG_LIMIT_PX)
+          -maxOffsetY,
+          maxOffsetY
         );
 
         onUpdateColorImageCrop(currentState.index, {
@@ -175,7 +177,9 @@ export default function ColorFormCard({
       return;
     }
 
-    event.preventDefault();
+    if (event.cancelable) {
+      event.preventDefault();
+    }
 
     const position = getPointerPosition(event);
 
@@ -203,7 +207,9 @@ export default function ColorFormCard({
   }
 
   function handleWheelZoom(event, index, image) {
-    event.preventDefault();
+    if (event.cancelable) {
+      event.preventDefault();
+    }
 
     const zoomStep = event.deltaY < 0 ? 0.1 : -0.1;
     const nextZoom = clamp((Number(image.zoom) || 1) + zoomStep, MIN_ZOOM, MAX_ZOOM);
