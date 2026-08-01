@@ -16,14 +16,10 @@ const imageSchema = new mongoose.Schema(
     offsetX: {
       type: Number,
       default: 0,
-      min: [-80, "La position horizontale ne peut pas être inférieure à -80."],
-      max: [80, "La position horizontale ne peut pas dépasser 80."],
     },
     offsetY: {
       type: Number,
       default: 0,
-      min: [-80, "La position verticale ne peut pas être inférieure à -80."],
-      max: [80, "La position verticale ne peut pas dépasser 80."],
     },
     zoom: {
       type: Number,
