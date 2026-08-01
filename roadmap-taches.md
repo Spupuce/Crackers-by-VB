@@ -79,5 +79,5 @@
 🔴 Ajouter un bouton de remise à zéro du cadrage par image.
 🔴 Vérifier le rendu des images principales et des images de couleurs avec les mêmes transformations.
 🟡 Tester les cas suivants : produit avec 1 image, plusieurs images, couleurs avec images, couleurs sans image.
-🔴- Nettoyer les anciens formats encore tolérés (gallery, ancien crop) une fois la migration terminée.
+🟡 Nettoyer les anciens formats encore tolérés (gallery, ancien crop) une fois la migration terminée.
 🔴 Ajouter ensuite la suppression Cloudinary des images retirées, à partir du publicId.
