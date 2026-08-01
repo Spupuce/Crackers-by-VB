@@ -4,6 +4,8 @@ import styles from "../../styles/AdminProductForm.module.css";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
+const MIN_OFFSET = -100;
+const MAX_OFFSET = 100;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -21,8 +23,12 @@ function getSafeImage(image) {
 
   return {
     url: image.url || "",
-    offsetX: Number.isFinite(Number(image.offsetX)) ? Number(image.offsetX) : 0,
-    offsetY: Number.isFinite(Number(image.offsetY)) ? Number(image.offsetY) : 0,
+    offsetX: Number.isFinite(Number(image.offsetX))
+      ? clamp(Number(image.offsetX), MIN_OFFSET, MAX_OFFSET)
+      : 0,
+    offsetY: Number.isFinite(Number(image.offsetY))
+      ? clamp(Number(image.offsetY), MIN_OFFSET, MAX_OFFSET)
+      : 0,
     zoom: Number.isFinite(Number(image.zoom))
       ? clamp(Number(image.zoom), MIN_ZOOM, MAX_ZOOM)
       : 1,
@@ -43,13 +49,27 @@ function getPointerPosition(event) {
   };
 }
 
+function getNormalizedOffset(offset, zoom) {
+  if (zoom <= 1) {
+    return 0;
+  }
+
+  const zoomOverflowRatio = (zoom - 1) / (MAX_ZOOM - 1);
+  const dynamicLimit = clamp(zoomOverflowRatio * 50, 0, 50);
+
+  return clamp(offset, -dynamicLimit, dynamicLimit);
+}
+
 function getPreviewStyle(image) {
   const safeZoom = clamp(Number(image.zoom) || 1, MIN_ZOOM, MAX_ZOOM);
   const offsetX = Number(image.offsetX) || 0;
   const offsetY = Number(image.offsetY) || 0;
 
+  const translateXPercent = getNormalizedOffset(offsetX, safeZoom);
+  const translateYPercent = getNormalizedOffset(offsetY, safeZoom);
+
   return {
-    transform: `translate(${offsetX}px, ${offsetY}px) scale(${safeZoom})`,
+    transform: `translate(${translateXPercent}%, ${translateYPercent}%) scale(${safeZoom})`,
     transformOrigin: "center center",
   };
 }
@@ -100,7 +120,10 @@ export default function ColorFormCard({
   onUpdateColorImageCrop,
 }) {
   const normalizedImages = useMemo(
-    () => (Array.isArray(colorDraft.images) ? colorDraft.images.map(getSafeImage) : []),
+    () =>
+      Array.isArray(colorDraft.images)
+        ? colorDraft.images.map(getSafeImage)
+        : [],
     [colorDraft.images]
   );
 
@@ -161,8 +184,14 @@ export default function ColorFormCard({
         const displayedHeight = imageRect?.height || rect.height;
 
         const zoomFactor = Math.max(1, Number(currentImage.zoom));
-        const maxOffsetX = Math.max(0, ((displayedWidth * zoomFactor) - displayedWidth) / 2);
-        const maxOffsetY = Math.max(0, ((displayedHeight * zoomFactor) - displayedHeight) / 2);
+        const maxOffsetX = Math.max(
+          0,
+          (displayedWidth * zoomFactor - displayedWidth) / 2
+        );
+        const maxOffsetY = Math.max(
+          0,
+          (displayedHeight * zoomFactor - displayedHeight) / 2
+        );
 
         const nextOffsetX = clamp(
           currentState.startOffsetX + deltaX,
@@ -243,7 +272,11 @@ export default function ColorFormCard({
     }
 
     const zoomStep = event.deltaY < 0 ? 0.1 : -0.1;
-    const nextZoom = clamp((Number(image.zoom) || 1) + zoomStep, MIN_ZOOM, MAX_ZOOM);
+    const nextZoom = clamp(
+      (Number(image.zoom) || 1) + zoomStep,
+      MIN_ZOOM,
+      MAX_ZOOM
+    );
 
     onUpdateColorImageCrop(index, {
       zoom: nextZoom,
@@ -462,9 +495,15 @@ export default function ColorFormCard({
                     ref={frameRef}
                     className={`${styles.extraImagePreviewFrame} ${
                       isDragging ? styles.extraImagePreviewFrameDragging : ""
-                    } ${canDrag ? styles.extraImagePreviewFrameMovable : ""}`}
-                    onMouseDown={(event) => handleDragStart(event, index, image)}
-                    onTouchStart={(event) => handleDragStart(event, index, image)}
+                    } ${
+                      canDrag ? styles.extraImagePreviewFrameMovable : ""
+                    }`}
+                    onMouseDown={(event) =>
+                      handleDragStart(event, index, image)
+                    }
+                    onTouchStart={(event) =>
+                      handleDragStart(event, index, image)
+                    }
                     onWheel={(event) => handleWheelZoom(event, index, image)}
                     role="presentation"
                   >
