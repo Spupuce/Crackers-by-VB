@@ -200,6 +200,22 @@ function collectProductPublicIds(productLikeObject) {
   return publicIds;
 }
 
+async function deleteCloudinaryImagesByPublicIds(publicIds) {
+  const normalizedPublicIds = [...new Set((publicIds || []).filter(Boolean))];
+
+  if (normalizedPublicIds.length === 0) {
+    return;
+  }
+
+  await Promise.allSettled(
+    normalizedPublicIds.map((publicId) =>
+      cloudinary.uploader.destroy(publicId, {
+        resource_type: 'image',
+      })
+    )
+  );
+}
+
 async function deleteRemovedCloudinaryImages(previousProduct, nextProductData) {
   const previousPublicIds = new Set(collectProductPublicIds(previousProduct));
   const nextPublicIds = new Set(collectProductPublicIds(nextProductData));
@@ -208,17 +224,7 @@ async function deleteRemovedCloudinaryImages(previousProduct, nextProductData) {
     (publicId) => !nextPublicIds.has(publicId)
   );
 
-  if (publicIdsToDelete.length === 0) {
-    return;
-  }
-
-  await Promise.allSettled(
-    publicIdsToDelete.map((publicId) =>
-      cloudinary.uploader.destroy(publicId, {
-        resource_type: 'image',
-      })
-    )
-  );
+  await deleteCloudinaryImagesByPublicIds(publicIdsToDelete);
 }
 
 export default async function handler(req, res) {
@@ -350,7 +356,11 @@ export default async function handler(req, res) {
         });
       }
 
+      const productData = product.toObject();
+      const publicIdsToDelete = collectProductPublicIds(productData);
+
       await Product.findByIdAndDelete(id);
+      await deleteCloudinaryImagesByPublicIds(publicIdsToDelete);
 
       return res.status(204).end();
     } catch (error) {
