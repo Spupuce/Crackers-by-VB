@@ -11,6 +11,39 @@
   color: inherit;
 }
 
+.imageLink {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.imageLink:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 14px;
+}
+
+.nameLinkButton {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: fit-content;
+  color: inherit;
+}
+
+.nameLinkButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
 .imageWrapper {
   position: relative;
   overflow: hidden;
@@ -112,6 +145,13 @@
 
 .card:hover .hoverOverlay {
   opacity: 1;
+  pointer-events: none;
+}
+
+/* Les vrais éléments interactifs restent cliquables sans bloquer la navigation image */
+.hoverOverlay .favoriteButton,
+.hoverOverlay .addToCartButton,
+.hoverOverlay .cartMessage {
   pointer-events: auto;
 }
 

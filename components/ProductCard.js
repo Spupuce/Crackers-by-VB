@@ -1,6 +1,5 @@
 // components/ProductCard.js
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FiHeart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
@@ -76,6 +75,7 @@ export default function ProductCard({ product }) {
     : Math.max(0, Number(product?.stock || 0));
 
   const remainingAvailable = Math.max(0, effectiveStock - quantityInCart);
+  const productPath = `/boutique/${product.slug}`;
 
   useEffect(() => {
     return () => {
@@ -102,6 +102,29 @@ export default function ProductCard({ product }) {
       setCartMessage('');
       setCartMessageType('');
     }, 1800);
+  }
+
+  function navigateToProduct() {
+    if (!product?.slug) {
+      return;
+    }
+
+    router.push(productPath);
+  }
+
+  function handleImageClick() {
+    navigateToProduct();
+  }
+
+  function handleImageKeyDown(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      navigateToProduct();
+    }
+  }
+
+  function handleNameClick() {
+    navigateToProduct();
   }
 
   async function handleToggleFavorite(event) {
@@ -134,7 +157,7 @@ export default function ProductCard({ product }) {
     }
 
     if (hasColorVariants && !hasSingleAvailableColor) {
-      router.push(`/boutique/${product.slug}`);
+      router.push(productPath);
       return;
     }
 
@@ -166,69 +189,77 @@ export default function ProductCard({ product }) {
 
   return (
     <article className={styles.card}>
-      <Link href={`/boutique/${product.slug}`} passHref>
-        <a className={styles.imageLink}>
-          <div className={styles.imageWrapper}>
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className={styles.image}
-            />
+      <div className={styles.imageWrapper}>
+        <div
+          className={styles.imageLink}
+          role="link"
+          tabIndex={0}
+          aria-label={`Voir le produit ${product.name}`}
+          onClick={handleImageClick}
+          onKeyDown={handleImageKeyDown}
+        >
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className={styles.image}
+          />
 
-            {soldOut ? (
-              <span className={styles.badge}>{status.label}</span>
-            ) : null}
+          {soldOut ? (
+            <span className={styles.badge}>{status.label}</span>
+          ) : null}
+        </div>
 
-            {!soldOut && (
-              <div className={styles.hoverOverlay}>
-                <button
-                  type="button"
-                  className={`${styles.favoriteButton} ${
-                    favorite ? styles.favoriteButtonActive : ''
+        {!soldOut && (
+          <div className={styles.hoverOverlay}>
+            <button
+              type="button"
+              className={`${styles.favoriteButton} ${
+                favorite ? styles.favoriteButtonActive : ''
+              }`}
+              aria-label={
+                favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'
+              }
+              aria-pressed={favorite}
+              onClick={handleToggleFavorite}
+              disabled={!isAuthReady || isSyncingFavorites}
+            >
+              {favorite ? <FaHeart /> : <FiHeart />}
+            </button>
+
+            <div className={styles.cartActionBlock}>
+              <button
+                type="button"
+                className={styles.addToCartButton}
+                onClick={handleAddToCart}
+              >
+                {getButtonLabel()}
+              </button>
+
+              {cartMessage ? (
+                <p
+                  className={`${styles.cartMessage} ${
+                    cartMessageType === 'success'
+                      ? styles.cartMessageSuccess
+                      : styles.cartMessageError
                   }`}
-                  aria-label={
-                    favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'
-                  }
-                  aria-pressed={favorite}
-                  onClick={handleToggleFavorite}
-                  disabled={!isAuthReady || isSyncingFavorites}
                 >
-                  {favorite ? <FaHeart /> : <FiHeart />}
-                </button>
-
-                <div className={styles.cartActionBlock}>
-                  <button
-                    type="button"
-                    className={styles.addToCartButton}
-                    onClick={handleAddToCart}
-                  >
-                    {getButtonLabel()}
-                  </button>
-
-                  {cartMessage ? (
-                    <p
-                      className={`${styles.cartMessage} ${
-                        cartMessageType === 'success'
-                          ? styles.cartMessageSuccess
-                          : styles.cartMessageError
-                      }`}
-                    >
-                      {cartMessage}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-            )}
+                  {cartMessage}
+                </p>
+              ) : null}
+            </div>
           </div>
-        </a>
-      </Link>
+        )}
+      </div>
 
       <div className={styles.content}>
-        <Link href={`/boutique/${product.slug}`} passHref>
-          <a className={styles.nameLink}>
-            <h2 className={styles.name}>{product.name}</h2>
-          </a>
-        </Link>
+        <button
+          type="button"
+          className={styles.nameLinkButton}
+          onClick={handleNameClick}
+          aria-label={`Voir le produit ${product.name}`}
+        >
+          <h2 className={styles.name}>{product.name}</h2>
+        </button>
 
         <p className={styles.category}>{product.category}</p>
 

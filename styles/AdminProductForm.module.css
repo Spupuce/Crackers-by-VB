@@ -372,6 +372,18 @@ select.input:focus {
   box-shadow: var(--shadow-warm-soft);
 }
 
+/* État pour la carte d’image sélectionnée dans la galerie */
+
+.extraImageItemSelected {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-warm-medium);
+  background: linear-gradient(
+    180deg,
+    var(--color-status-primary-bg) 0%,
+    rgba(248, 184, 131, 0.08) 100%
+  );
+}
+
 .extraImageBadgeRow {
   display: flex;
   align-items: center;
@@ -427,7 +439,7 @@ select.input:focus {
   cursor: grabbing;
 }
 
-/* L’image est centrée, object-fit: contain, puis déplacée via transform (translate% + scale) */
+/* L’image est centrée, object-fit: contain, puis déplacée via transform */
 
 .extraImagePreviewContain {
   display: block;
@@ -444,7 +456,7 @@ select.input:focus {
   pointer-events: none;
 }
 
-/* Ancien style de couverture (non utilisé dans la logique de recadrage actuelle, gardé si besoin ailleurs) */
+/* Ancien style “cover” gardé si utilisé ailleurs */
 
 .extraImagePreview {
   width: 100%;

@@ -81,3 +81,7 @@
 🟡 Tester les cas suivants : produit avec 1 image, plusieurs images, couleurs avec images, couleurs sans image.
 🟡 Nettoyer les anciens formats encore tolérés (gallery, ancien crop) une fois la migration terminée.
 ✅ Ajouter ensuite la suppression Cloudinary des images retirées, à partir du publicId.
+
+
+Empecher l'admin de mettre des favoris et des choses dans le panier
+Mettre à jour la photo ne supprime pas les anciennes
