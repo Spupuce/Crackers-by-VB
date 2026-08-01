@@ -2,6 +2,7 @@
 import { connectMongo } from '../../../../lib/mongodb';
 import Product from '../../../../models/Product';
 import RestockRequest from '../../../../models/RestockRequest';
+import cloudinary from '../../../../lib/services/cloudinary';
 import { resolveProductStock } from '../../../../lib/services/stockService';
 import { generateUniqueSlug } from '../../../../lib/services/slugService';
 
@@ -169,6 +170,57 @@ function validateProductPayload(payload) {
   };
 }
 
+function collectImagePublicIds(images) {
+  if (!Array.isArray(images)) {
+    return [];
+  }
+
+  return images
+    .map((image) =>
+      typeof image?.publicId === 'string' ? image.publicId.trim() : ''
+    )
+    .filter(Boolean);
+}
+
+function collectProductPublicIds(productLikeObject) {
+  if (!productLikeObject) {
+    return [];
+  }
+
+  const publicIds = [
+    ...collectImagePublicIds(productLikeObject.images),
+  ];
+
+  if (Array.isArray(productLikeObject.colors)) {
+    productLikeObject.colors.forEach((color) => {
+      publicIds.push(...collectImagePublicIds(color?.images));
+    });
+  }
+
+  return publicIds;
+}
+
+async function deleteRemovedCloudinaryImages(previousProduct, nextProductData) {
+  const previousPublicIds = new Set(collectProductPublicIds(previousProduct));
+  const nextPublicIds = new Set(collectProductPublicIds(nextProductData));
+
+  const publicIdsToDelete = [...previousPublicIds].filter(
+    (publicId) => !nextPublicIds.has(publicId)
+  );
+
+  if (publicIdsToDelete.length === 0) {
+    return;
+  }
+
+  await Promise.allSettled(
+    publicIdsToDelete.map((publicId) =>
+      cloudinary.uploader.destroy(publicId, {
+        resource_type: 'image',
+      })
+    )
+  );
+}
+
 export default async function handler(req, res) {
   await connectMongo();
 
@@ -251,18 +303,27 @@ export default async function handler(req, res) {
         colors: normalizedColors,
       });
 
+      const nextProductData = {
+        imageUrl: validationResult.resolvedMainImage.imageUrl,
+        images: validationResult.resolvedMainImage.images,
+        colors: stockData.colors,
+      };
+
+      const previousProductData = existingProduct.toObject();
+
       existingProduct.name = name.trim();
       existingProduct.slug = slug;
       existingProduct.category = category.trim();
       existingProduct.price = Number(price);
       existingProduct.promoPrice = validationResult.promoPrice;
       existingProduct.description = description?.trim() || '';
-      existingProduct.imageUrl = validationResult.resolvedMainImage.imageUrl;
-      existingProduct.images = validationResult.resolvedMainImage.images;
+      existingProduct.imageUrl = nextProductData.imageUrl;
+      existingProduct.images = nextProductData.images;
       existingProduct.stock = stockData.stock;
-      existingProduct.colors = stockData.colors;
+      existingProduct.colors = nextProductData.colors;
 
       await existingProduct.save();
+      await deleteRemovedCloudinaryImages(previousProductData, nextProductData);
 
       return res.status(200).json(existingProduct);
     } catch (error) {
