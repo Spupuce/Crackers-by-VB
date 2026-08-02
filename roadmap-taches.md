@@ -9,8 +9,9 @@
 
 ## 1. Divers
 
-🔴Empecher l'admin de mettre des favoris et des choses dans le panier (bouton inactif par exemple)
-🔴Dans la gestion de stock mettre à jour la photo doit supprimer les anciennes photos sur cloudinary
+- ✅Empecher l'admin de mettre des favoris et des choses dans le panier (bouton inactif par exemple)
+- 🔴Dans la gestion de stock mettre à jour la photo doit supprimer les anciennes photos sur cloudinary
+- 
 
 ## 2. Administration et suivi transporteur
 

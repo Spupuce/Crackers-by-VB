@@ -567,14 +567,18 @@ export default function ProductForm({
 
       const nextImage = buildDefaultImage(uploadedImageUrl, publicId);
 
-      setImageUrl(uploadedImageUrl);
       setProductImages((prev) => {
         const normalizedPrev = normalizePreviewImages(prev);
+        const previousMainImageUrl = imageUrl;
         const nextImages = [
           nextImage,
-          ...normalizedPrev.filter((image) => image.url !== nextImage.url),
+          ...normalizedPrev.filter(
+            (image) =>
+              image.url !== nextImage.url && image.url !== previousMainImageUrl
+          ),
         ];
 
+        setImageUrl(uploadedImageUrl);
         setFormValues((current) => ({
           ...current,
           imageUrl: uploadedImageUrl,
