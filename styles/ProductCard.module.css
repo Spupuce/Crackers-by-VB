@@ -12,6 +12,8 @@
 }
 
 .imageLink {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
@@ -57,6 +59,7 @@
   aspect-ratio: 1 / 1;
   object-fit: cover;
   display: block;
+  pointer-events: none;
 }
 
 .badge {
@@ -72,6 +75,7 @@
   white-space: nowrap;
   z-index: 2;
   box-shadow: var(--shadow-warm-soft);
+  pointer-events: none;
 }
 
 .content {
@@ -132,12 +136,11 @@
 
 .hoverOverlay {
   position: absolute;
-  inset: 0;
+  inset: 10px;
   z-index: 3;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 10px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -145,10 +148,8 @@
 
 .card:hover .hoverOverlay {
   opacity: 1;
-  pointer-events: none;
 }
 
-/* Les vrais éléments interactifs restent cliquables sans bloquer la navigation image */
 .hoverOverlay .favoriteButton,
 .hoverOverlay .addToCartButton,
 .hoverOverlay .cartMessage {

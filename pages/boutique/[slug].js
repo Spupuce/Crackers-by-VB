@@ -83,6 +83,8 @@ export default function ProductDetailPage({ product }) {
         publicId: normalizedImage.publicId,
         offsetX: normalizedImage.offsetX,
         offsetY: normalizedImage.offsetY,
+        offsetXPct: normalizedImage.offsetXPct,
+        offsetYPct: normalizedImage.offsetYPct,
         zoom: normalizedImage.zoom,
       });
 
@@ -169,7 +171,9 @@ export default function ProductDetailPage({ product }) {
 
   const activeGalleryItem = useMemo(() => {
     if (selectedImageUrl) {
-      return galleryItems.find((item) => item.imageUrl === selectedImageUrl) || null;
+      return (
+        galleryItems.find((item) => item.imageUrl === selectedImageUrl) || null
+      );
     }
 
     if (selectedColorImageUrl) {
@@ -213,7 +217,14 @@ export default function ProductDetailPage({ product }) {
   }
 
   function handleSelectedColorChange(nextColor) {
-    setSelectedColor(nextColor);
+    const normalizedNextColor = normalizeText(nextColor);
+    const normalizedCurrentColor = normalizeText(selectedColor);
+
+    if (normalizedNextColor === normalizedCurrentColor) {
+      return;
+    }
+
+    setSelectedColor(normalizedNextColor);
     setSelectedImageUrl('');
   }
 
@@ -302,8 +313,7 @@ export async function getServerSideProps(context) {
         };
       }
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 
   const fallbackProduct =
     fallbackProducts.find(

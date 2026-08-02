@@ -20,9 +20,28 @@ function getSafeGalleryItem(item) {
       publicId: "",
       offsetX: 0,
       offsetY: 0,
+      offsetXPct: 0,
+      offsetYPct: 0,
       zoom: 1,
     };
   }
+
+  const rawOffsetX = Number(item.offsetX);
+  const rawOffsetY = Number(item.offsetY);
+  const rawOffsetXPct = Number(item.offsetXPct);
+  const rawOffsetYPct = Number(item.offsetYPct);
+
+  const resolvedOffsetXPct = Number.isFinite(rawOffsetXPct)
+    ? clamp(rawOffsetXPct, -50, 50)
+    : Number.isFinite(rawOffsetX)
+    ? clamp(rawOffsetX, -50, 50)
+    : 0;
+
+  const resolvedOffsetYPct = Number.isFinite(rawOffsetYPct)
+    ? clamp(rawOffsetYPct, -50, 50)
+    : Number.isFinite(rawOffsetY)
+    ? clamp(rawOffsetY, -50, 50)
+    : 0;
 
   return {
     type: typeof item.type === "string" ? item.type : "",
@@ -30,19 +49,21 @@ function getSafeGalleryItem(item) {
     label: typeof item.label === "string" ? item.label : "",
     colorName: typeof item.colorName === "string" ? item.colorName : "",
     publicId: typeof item.publicId === "string" ? item.publicId : "",
-    offsetX: Number.isFinite(Number(item.offsetX))
-      ? clamp(Number(item.offsetX), MIN_OFFSET, MAX_OFFSET)
+    offsetX: Number.isFinite(rawOffsetX)
+      ? clamp(rawOffsetX, MIN_OFFSET, MAX_OFFSET)
       : 0,
-    offsetY: Number.isFinite(Number(item.offsetY))
-      ? clamp(Number(item.offsetY), MIN_OFFSET, MAX_OFFSET)
+    offsetY: Number.isFinite(rawOffsetY)
+      ? clamp(rawOffsetY, MIN_OFFSET, MAX_OFFSET)
       : 0,
+    offsetXPct: resolvedOffsetXPct,
+    offsetYPct: resolvedOffsetYPct,
     zoom: Number.isFinite(Number(item.zoom))
       ? clamp(Number(item.zoom), MIN_ZOOM, MAX_ZOOM)
       : 1,
   };
 }
 
-function getNormalizedOffset(offset, zoom) {
+function getNormalizedOffset(offsetPct, zoom) {
   if (zoom <= 1) {
     return 0;
   }
@@ -50,13 +71,19 @@ function getNormalizedOffset(offset, zoom) {
   const zoomOverflowRatio = (zoom - 1) / (MAX_ZOOM - 1);
   const dynamicLimit = clamp(zoomOverflowRatio * 50, 0, 50);
 
-  return clamp(offset, -dynamicLimit, dynamicLimit);
+  return clamp(offsetPct, -dynamicLimit, dynamicLimit);
 }
 
 function getPreviewStyle(item) {
   const safeItem = getSafeGalleryItem(item);
-  const translateXPercent = getNormalizedOffset(safeItem.offsetX, safeItem.zoom);
-  const translateYPercent = getNormalizedOffset(safeItem.offsetY, safeItem.zoom);
+  const translateXPercent = getNormalizedOffset(
+    safeItem.offsetXPct,
+    safeItem.zoom
+  );
+  const translateYPercent = getNormalizedOffset(
+    safeItem.offsetYPct,
+    safeItem.zoom
+  );
 
   return {
     transform: `translate(${translateXPercent}%, ${translateYPercent}%) scale(${safeItem.zoom})`,
