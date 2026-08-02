@@ -45,7 +45,7 @@ export default function ProductPurchasePanel({
   const [notifyError, setNotifyError] = useState('');
   const [notifyAlreadyExists, setNotifyAlreadyExists] = useState(false);
 
-  const { user, isAuthenticated, isAuthReady } = useAuth();
+  const { user, isAuthenticated, isAuthReady, isAdmin } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
   const { items, addToCart, openCart } = useCart();
   const favorite = isFavorite(product.slug);
@@ -184,6 +184,15 @@ export default function ProductPurchasePanel({
     ? 'Couleur épuisée'
     : 'En stock';
 
+  const isAddToCartDisabled =
+    isAdmin ||
+    soldOut ||
+    remainingAvailable <= 0 ||
+    requiresColorSelection ||
+    selectedColorSoldOut;
+
+  const isFavoriteDisabled = !isAuthReady || isSyncingFavorites || isAdmin;
+
   useEffect(() => {
     if (quantity > Math.max(remainingAvailable, 1)) {
       setQuantity(Math.max(1, remainingAvailable || 1));
@@ -203,7 +212,7 @@ export default function ProductPurchasePanel({
   };
 
   const handleToggleFavorite = async () => {
-    if (!isAuthReady) {
+    if (!isAuthReady || isAdmin) {
       return;
     }
 
@@ -313,6 +322,7 @@ export default function ProductPurchasePanel({
 
   function handleAddToCart() {
     if (
+      isAdmin ||
       !product ||
       soldOut ||
       remainingAvailable <= 0 ||
@@ -344,6 +354,38 @@ export default function ProductPurchasePanel({
     setLastAddedQuantity(quantityToAdd);
     setJustAdded(true);
     openCart();
+  }
+
+  function getAddToCartLabel() {
+    if (isAdmin) {
+      return 'Indisponible en mode admin';
+    }
+
+    if (soldOut) {
+      return 'Article indisponible';
+    }
+
+    if (requiresColorSelection) {
+      return 'Choisir une couleur';
+    }
+
+    if (selectedColorSoldOut) {
+      return 'Couleur indisponible';
+    }
+
+    if (remainingAvailable <= 0) {
+      return 'Stock déjà au maximum';
+    }
+
+    return 'Ajouter au panier';
+  }
+
+  function getFavoriteLabel() {
+    if (isAdmin) {
+      return 'Favoris indisponibles en mode admin';
+    }
+
+    return favorite ? 'Retirer des favoris' : 'Ajouter aux favoris';
   }
 
   return (
@@ -553,26 +595,11 @@ export default function ProductPurchasePanel({
         <button
           type="button"
           className={styles.addToCartButton}
-          disabled={
-            soldOut ||
-            remainingAvailable <= 0 ||
-            requiresColorSelection ||
-            selectedColorSoldOut
-          }
+          disabled={isAddToCartDisabled}
           onClick={handleAddToCart}
         >
           <FiShoppingCart />
-          <span>
-            {soldOut
-              ? 'Article indisponible'
-              : requiresColorSelection
-              ? 'Choisir une couleur'
-              : selectedColorSoldOut
-              ? 'Couleur indisponible'
-              : remainingAvailable <= 0
-              ? 'Stock déjà au maximum'
-              : 'Ajouter au panier'}
-          </span>
+          <span>{getAddToCartLabel()}</span>
         </button>
 
         <button
@@ -582,12 +609,11 @@ export default function ProductPurchasePanel({
           }`}
           onClick={handleToggleFavorite}
           aria-pressed={favorite}
-          disabled={!isAuthReady || isSyncingFavorites}
+          aria-label={getFavoriteLabel()}
+          disabled={isFavoriteDisabled}
         >
           {favorite ? <FaHeart /> : <FiHeart />}
-          <span>
-            {favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-          </span>
+          <span>{getFavoriteLabel()}</span>
         </button>
       </div>
     </div>

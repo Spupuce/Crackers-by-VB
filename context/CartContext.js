@@ -1,5 +1,4 @@
 // context/CartContext.js
-
 import {
   createContext,
   useCallback,
@@ -118,7 +117,7 @@ function buildCartSyncSignature(cartItems) {
 }
 
 export function CartProvider({ children }) {
-  const { user, isAuthenticated, isAuthReady } = useAuth();
+  const { user, isAuthenticated, isAuthReady, isAdmin } = useAuth();
 
   const [items, setItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -127,6 +126,7 @@ export function CartProvider({ children }) {
   const hasInitializedAuthCartRef = useRef(false);
   const isLoadingServerCartRef = useRef(false);
   const isClearingServerCartRef = useRef(false);
+  const hasClearedAdminCartRef = useRef(false);
   const previousIsAuthenticatedRef = useRef(false);
   const lastSyncedSignatureRef = useRef('[]');
 
@@ -176,6 +176,7 @@ export function CartProvider({ children }) {
       hasInitializedAuthCartRef.current = false;
       isLoadingServerCartRef.current = false;
       isClearingServerCartRef.current = false;
+      hasClearedAdminCartRef.current = false;
       lastSyncedSignatureRef.current = '[]';
 
       if (wasAuthenticated) {
@@ -184,6 +185,54 @@ export function CartProvider({ children }) {
 
       return;
     }
+
+    if (isAdmin) {
+      hasInitializedAuthCartRef.current = true;
+      isLoadingServerCartRef.current = false;
+      lastSyncedSignatureRef.current = '[]';
+      setItems([]);
+
+      if (hasClearedAdminCartRef.current) {
+        return;
+      }
+
+      hasClearedAdminCartRef.current = true;
+
+      async function clearAdminServerCart() {
+        try {
+          isClearingServerCartRef.current = true;
+
+          const response = await fetch('/api/cart', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ items: [] }),
+          });
+
+          const data = await response.json().catch(() => null);
+
+          if (!response.ok) {
+            throw new Error(
+              data?.message || 'Impossible de vider le panier administrateur.'
+            );
+          }
+
+          const resolvedItems = sanitizeStoredCartItems(data?.items);
+          lastSyncedSignatureRef.current = buildCartSyncSignature(resolvedItems);
+          setItems(resolvedItems);
+        } catch (error) {
+          console.error(error);
+        } finally {
+          isClearingServerCartRef.current = false;
+        }
+      }
+
+      clearAdminServerCart();
+      return;
+    }
+
+    hasClearedAdminCartRef.current = false;
 
     if (hasInitializedAuthCartRef.current) {
       return;
@@ -223,10 +272,10 @@ export function CartProvider({ children }) {
     }
 
     loadServerCart();
-  }, [isAuthenticated, isAuthReady, hasHydratedCart, user?.id]);
+  }, [isAuthenticated, isAuthReady, hasHydratedCart, isAdmin, user?.id]);
 
   useEffect(() => {
-    if (!isAuthReady || !hasHydratedCart || !isAuthenticated) {
+    if (!isAuthReady || !hasHydratedCart || !isAuthenticated || isAdmin) {
       return;
     }
 
@@ -291,7 +340,7 @@ export function CartProvider({ children }) {
     return () => {
       isCancelled = true;
     };
-  }, [items, isAuthenticated, isAuthReady, hasHydratedCart]);
+  }, [items, isAuthenticated, isAuthReady, hasHydratedCart, isAdmin]);
 
   const openCart = useCallback(() => {
     setIsCartOpen(true);
@@ -306,6 +355,10 @@ export function CartProvider({ children }) {
   }, []);
 
   const addToCart = useCallback((product, quantity = 1) => {
+    if (isAdmin) {
+      return;
+    }
+
     const normalizedProduct = normalizeCartItem(product);
     const qty = Number(quantity) || 1;
 
@@ -354,7 +407,7 @@ export function CartProvider({ children }) {
 
       return nextItems;
     });
-  }, []);
+  }, [isAdmin]);
 
   const removeFromCart = useCallback((cartItemKey) => {
     if (!cartItemKey || typeof cartItemKey !== 'string') return;

@@ -27,7 +27,7 @@ export default function ProductCard({ product }) {
   const activePrice = getActiveProductPrice(product);
   const basePrice = getProductBasePrice(product);
 
-  const { isAuthenticated, isAuthReady } = useAuth();
+  const { isAuthenticated, isAuthReady, isAdmin } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
   const { items, addToCart } = useCart();
   const favorite = isFavorite(product.slug);
@@ -76,6 +76,8 @@ export default function ProductCard({ product }) {
 
   const remainingAvailable = Math.max(0, effectiveStock - quantityInCart);
   const productPath = `/boutique/${product.slug}`;
+  const isFavoriteDisabled = !isAuthReady || isSyncingFavorites || isAdmin;
+  const isAddToCartDisabled = isAdmin;
 
   useEffect(() => {
     return () => {
@@ -131,7 +133,7 @@ export default function ProductCard({ product }) {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!isAuthReady) {
+    if (!isAuthReady || isAdmin) {
       return;
     }
 
@@ -152,7 +154,7 @@ export default function ProductCard({ product }) {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!product || soldOut) {
+    if (isAdmin || !product || soldOut) {
       return;
     }
 
@@ -180,11 +182,23 @@ export default function ProductCard({ product }) {
   }
 
   function getButtonLabel() {
+    if (isAdmin) {
+      return 'Indisponible en mode admin';
+    }
+
     if (hasColorVariants && !hasSingleAvailableColor) {
       return 'Choisir une couleur';
     }
 
     return 'Ajouter au panier';
+  }
+
+  function getFavoriteAriaLabel() {
+    if (isAdmin) {
+      return 'Favoris indisponibles en mode admin';
+    }
+
+    return favorite ? 'Retirer des favoris' : 'Ajouter aux favoris';
   }
 
   return (
@@ -216,12 +230,10 @@ export default function ProductCard({ product }) {
               className={`${styles.favoriteButton} ${
                 favorite ? styles.favoriteButtonActive : ''
               }`}
-              aria-label={
-                favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'
-              }
+              aria-label={getFavoriteAriaLabel()}
               aria-pressed={favorite}
               onClick={handleToggleFavorite}
-              disabled={!isAuthReady || isSyncingFavorites}
+              disabled={isFavoriteDisabled}
             >
               {favorite ? <FaHeart /> : <FiHeart />}
             </button>
@@ -231,6 +243,7 @@ export default function ProductCard({ product }) {
                 type="button"
                 className={styles.addToCartButton}
                 onClick={handleAddToCart}
+                disabled={isAddToCartDisabled}
               >
                 {getButtonLabel()}
               </button>

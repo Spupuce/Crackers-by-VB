@@ -7,6 +7,11 @@
 
 ---
 
+## 1. Divers
+
+🔴Empecher l'admin de mettre des favoris et des choses dans le panier (bouton inactif par exemple)
+🔴Dans la gestion de stock mettre à jour la photo doit supprimer les anciennes photos sur cloudinary
+
 ## 2. Administration et suivi transporteur
 
 - 🟡 Interroger l’API transporteur au clic, mettre à jour automatiquement `delivered` et renseigner `shipping.deliveredAt`.
@@ -66,22 +71,3 @@
                     - les quantités des produits concernés n’ont pas été décrémentées une deuxième fois.
                 5. Vérifier l’email de confirmation
                 - Si l’email de confirmation est actif, vérifier qu’aucun email supplémentaire n’a été renvoyé lors du rejeu webhook (ou accepter un log signalant que l’email n’est pas renvoyé en double).
-
-
-✅ Corriger la galerie boutique pour afficher toutes les images enregistrées.
-✅ Rendre les miniatures supplémentaires cliquables sur la fiche produit.
-✅ Vérifier que le clic sur une miniature met bien à jour l’image principale sans casser la couleur sélectionnée.
-✅ Uniformiser le format de données image entre admin et boutique (url, publicId, offsetX, offsetY, zoom).
-✅ Aligner le rendu visuel de l’aperçu admin avec le rendu final côté client.
-🟡 Reprendre la logique de cadrage pour que le zoom et le déplacement utilisent les mêmes règles partout.
-🟡 Corriger les limites de déplacement pour pouvoir scroller correctement en largeur et en hauteur quand l’image est zoomée.
-🔴 Remplacer la logique de drag actuelle par une gestion plus fiable souris + tactile.
-🔴 Ajouter un bouton de remise à zéro du cadrage par image.
-🔴 Vérifier le rendu des images principales et des images de couleurs avec les mêmes transformations.
-🟡 Tester les cas suivants : produit avec 1 image, plusieurs images, couleurs avec images, couleurs sans image.
-🟡 Nettoyer les anciens formats encore tolérés (gallery, ancien crop) une fois la migration terminée.
-✅ Ajouter ensuite la suppression Cloudinary des images retirées, à partir du publicId.
-
-
-Empecher l'admin de mettre des favoris et des choses dans le panier
-Mettre à jour la photo ne supprime pas les anciennes
