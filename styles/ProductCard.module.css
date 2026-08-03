@@ -53,13 +53,28 @@
   background-color: var(--color-gray-50);
 }
 
-/* cadre carré pour les visuels de la boutique */
-.image {
+.imageFrame {
+  position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  object-fit: cover;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-gray-50);
+}
+
+/* cadre carré pour les visuels de la boutique */
+.image {
   display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center center;
+  transition: transform 0.18s ease;
+  will-change: transform;
   pointer-events: none;
+  user-select: none;
 }
 
 .badge {

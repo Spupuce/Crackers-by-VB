@@ -5,7 +5,9 @@ import { FiHeart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
 import {
   getActiveProductPrice,
+  getMainProductImage,
   getProductBasePrice,
+  getProductImageTransformStyle,
   getProductStatus,
   hasValidPromoPrice,
   isSoldOut,
@@ -26,6 +28,8 @@ export default function ProductCard({ product }) {
   const hasPromo = hasValidPromoPrice(product);
   const activePrice = getActiveProductPrice(product);
   const basePrice = getProductBasePrice(product);
+  const mainProductImage = getMainProductImage(product);
+  const mainProductImageStyle = getProductImageTransformStyle(mainProductImage);
 
   const { isAuthenticated, isAuthReady, isAdmin } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
@@ -212,11 +216,15 @@ export default function ProductCard({ product }) {
           onClick={handleImageClick}
           onKeyDown={handleImageKeyDown}
         >
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className={styles.image}
-          />
+          <div className={styles.imageFrame}>
+            <img
+              src={mainProductImage.url || product.imageUrl}
+              alt={product.name}
+              className={styles.image}
+              style={mainProductImageStyle}
+              draggable={false}
+            />
+          </div>
 
           {soldOut ? (
             <span className={styles.badge}>{status.label}</span>
