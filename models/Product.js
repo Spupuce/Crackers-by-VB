@@ -21,6 +21,18 @@ const imageSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    offsetXPct: {
+      type: Number,
+      default: 0,
+      min: [-50, "Le décalage horizontal (%) ne peut pas être inférieur à -50."],
+      max: [50, "Le décalage horizontal (%) ne peut pas dépasser 50."],
+    },
+    offsetYPct: {
+      type: Number,
+      default: 0,
+      min: [-50, "Le décalage vertical (%) ne peut pas être inférieur à -50."],
+      max: [50, "Le décalage vertical (%) ne peut pas dépasser 50."],
+    },
     zoom: {
       type: Number,
       default: 1,
