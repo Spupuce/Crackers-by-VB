@@ -7,6 +7,8 @@ import { generateUniqueSlug } from '../../../../lib/services/slugService';
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
+const MIN_OFFSET_PCT = -50;
+const MAX_OFFSET_PCT = 50;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -55,6 +57,8 @@ function normalizeImageEntry(image) {
       publicId: '',
       offsetX: 0,
       offsetY: 0,
+      offsetXPct: 0,
+      offsetYPct: 0,
       zoom: 1,
     };
   }
@@ -74,6 +78,8 @@ function normalizeImageEntry(image) {
 
   const offsetX = Number(image.offsetX);
   const offsetY = Number(image.offsetY);
+  const offsetXPct = Number(image.offsetXPct);
+  const offsetYPct = Number(image.offsetYPct);
   const zoom = Number(image.zoom);
 
   return {
@@ -81,6 +87,12 @@ function normalizeImageEntry(image) {
     publicId,
     offsetX: Number.isFinite(offsetX) ? offsetX : 0,
     offsetY: Number.isFinite(offsetY) ? offsetY : 0,
+    offsetXPct: Number.isFinite(offsetXPct)
+      ? clamp(offsetXPct, MIN_OFFSET_PCT, MAX_OFFSET_PCT)
+      : 0,
+    offsetYPct: Number.isFinite(offsetYPct)
+      ? clamp(offsetYPct, MIN_OFFSET_PCT, MAX_OFFSET_PCT)
+      : 0,
     zoom: Number.isFinite(zoom) ? clamp(zoom, MIN_ZOOM, MAX_ZOOM) : 1,
   };
 }
@@ -90,9 +102,7 @@ function normalizeImages(images) {
     return [];
   }
 
-  return images
-    .map(normalizeImageEntry)
-    .filter(Boolean);
+  return images.map(normalizeImageEntry).filter(Boolean);
 }
 
 function normalizeColors(colors) {
@@ -263,8 +273,11 @@ export default async function handler(req, res) {
         category,
         price,
         promoPrice,
+        description,
         imageUrl,
         images,
+        stock,
+        colors,
       });
 
       if (validationResult.errors.length > 0) {
