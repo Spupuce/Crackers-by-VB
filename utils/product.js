@@ -47,6 +47,17 @@ function hasFiniteNumber(value) {
   return Number.isFinite(Number(value));
 }
 
+function getNormalizedOffset(offset, zoom) {
+  if (zoom <= 1) {
+    return 0;
+  }
+
+  const zoomOverflowRatio = (zoom - 1) / (3 - 1);
+  const dynamicLimit = clamp(zoomOverflowRatio * 50, 0, 50);
+
+  return clamp(offset, -dynamicLimit, dynamicLimit);
+}
+
 export function getSafeProductImage(image) {
   if (!image || typeof image !== 'object') {
     return {
@@ -66,10 +77,10 @@ export function getSafeProductImage(image) {
     offsetX: hasFiniteNumber(image.offsetX) ? Number(image.offsetX) : 0,
     offsetY: hasFiniteNumber(image.offsetY) ? Number(image.offsetY) : 0,
     offsetXPct: hasFiniteNumber(image.offsetXPct)
-      ? clamp(Number(image.offsetXPct), -50, 50)
+      ? Number(image.offsetXPct)
       : 0,
     offsetYPct: hasFiniteNumber(image.offsetYPct)
-      ? clamp(Number(image.offsetYPct), -50, 50)
+      ? Number(image.offsetYPct)
       : 0,
     zoom: hasFiniteNumber(image.zoom)
       ? clamp(Number(image.zoom), 1, 3)
@@ -107,24 +118,10 @@ export function getMainProductImage(product) {
 
 export function getProductImageTransformStyle(image) {
   const safeImage = getSafeProductImage(image);
+  const safeZoom = clamp(Number(safeImage.zoom) || 1, 1, 3);
 
-  const hasPercentOffsets =
-    hasFiniteNumber(image?.offsetXPct) || hasFiniteNumber(image?.offsetYPct);
-
-  const translateXPercent = hasPercentOffsets
-    ? clamp(safeImage.offsetXPct, -18, 18)
-    : clamp(safeImage.offsetX / 4, -18, 18);
-
-  const translateYPercent = hasPercentOffsets
-    ? clamp(safeImage.offsetYPct, -18, 18)
-    : clamp(safeImage.offsetY / 4, -18, 18);
-
-  const needsSafetyZoom =
-    Math.abs(translateXPercent) > 0 || Math.abs(translateYPercent) > 0;
-
-  const safeZoom = needsSafetyZoom
-    ? Math.max(1.12, Math.min(safeImage.zoom, 1.35))
-    : 1;
+  const translateXPercent = getNormalizedOffset(safeImage.offsetX, safeZoom);
+  const translateYPercent = getNormalizedOffset(safeImage.offsetY, safeZoom);
 
   return {
     transform: `translate(${translateXPercent}%, ${translateYPercent}%) scale(${safeZoom})`,

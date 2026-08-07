@@ -4,7 +4,9 @@ import { FiEdit2, FiTrash2, FiArchive, FiMail } from 'react-icons/fi';
 import styles from '../styles/AdminStock.module.css';
 import {
   getActiveProductPrice,
+  getMainProductImage,
   getProductBasePrice,
+  getProductImageTransformStyle,
   hasValidPromoPrice,
   isSoldOut,
 } from '../utils/product';
@@ -46,6 +48,8 @@ export default function AdminProductRow({
   const hasPromo = hasValidPromoPrice(product);
   const basePrice = getProductBasePrice(product);
   const activePrice = getActiveProductPrice(product);
+  const mainImage = getMainProductImage(product);
+  const imageTransformStyle = getProductImageTransformStyle(mainImage);
 
   const [isNotifyingRestock, setIsNotifyingRestock] = useState(false);
   const [restockFeedback, setRestockFeedback] = useState('');
@@ -246,11 +250,14 @@ export default function AdminProductRow({
   return (
     <div className={styles.row}>
       <div className={styles.left}>
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          className={styles.image}
-        />
+        <div className={styles.imageFrame}>
+          <img
+            src={mainImage.url || product.imageUrl}
+            alt={product.name}
+            className={styles.image}
+            style={imageTransformStyle}
+          />
+        </div>
 
         <div className={styles.content}>
           <h3 className={styles.name}>{product.name}</h3>
