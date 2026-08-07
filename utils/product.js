@@ -43,6 +43,10 @@ function normalizeImageUrl(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function hasFiniteNumber(value) {
+  return Number.isFinite(Number(value));
+}
+
 export function getSafeProductImage(image) {
   if (!image || typeof image !== 'object') {
     return {
@@ -50,6 +54,8 @@ export function getSafeProductImage(image) {
       publicId: '',
       offsetX: 0,
       offsetY: 0,
+      offsetXPct: 0,
+      offsetYPct: 0,
       zoom: 1,
     };
   }
@@ -57,13 +63,15 @@ export function getSafeProductImage(image) {
   return {
     url: normalizeImageUrl(image.url),
     publicId: typeof image.publicId === 'string' ? image.publicId.trim() : '',
-    offsetX: Number.isFinite(Number(image.offsetX))
-      ? Number(image.offsetX)
+    offsetX: hasFiniteNumber(image.offsetX) ? Number(image.offsetX) : 0,
+    offsetY: hasFiniteNumber(image.offsetY) ? Number(image.offsetY) : 0,
+    offsetXPct: hasFiniteNumber(image.offsetXPct)
+      ? clamp(Number(image.offsetXPct), -50, 50)
       : 0,
-    offsetY: Number.isFinite(Number(image.offsetY))
-      ? Number(image.offsetY)
+    offsetYPct: hasFiniteNumber(image.offsetYPct)
+      ? clamp(Number(image.offsetYPct), -50, 50)
       : 0,
-    zoom: Number.isFinite(Number(image.zoom))
+    zoom: hasFiniteNumber(image.zoom)
       ? clamp(Number(image.zoom), 1, 3)
       : 1,
   };
@@ -91,6 +99,8 @@ export function getMainProductImage(product) {
     publicId: '',
     offsetX: 0,
     offsetY: 0,
+    offsetXPct: 0,
+    offsetYPct: 0,
     zoom: 1,
   });
 }
@@ -98,8 +108,16 @@ export function getMainProductImage(product) {
 export function getProductImageTransformStyle(image) {
   const safeImage = getSafeProductImage(image);
 
-  const translateXPercent = clamp(safeImage.offsetX / 4, -18, 18);
-  const translateYPercent = clamp(safeImage.offsetY / 4, -18, 18);
+  const hasPercentOffsets =
+    hasFiniteNumber(image?.offsetXPct) || hasFiniteNumber(image?.offsetYPct);
+
+  const translateXPercent = hasPercentOffsets
+    ? clamp(safeImage.offsetXPct, -18, 18)
+    : clamp(safeImage.offsetX / 4, -18, 18);
+
+  const translateYPercent = hasPercentOffsets
+    ? clamp(safeImage.offsetYPct, -18, 18)
+    : clamp(safeImage.offsetY / 4, -18, 18);
 
   const needsSafetyZoom =
     Math.abs(translateXPercent) > 0 || Math.abs(translateYPercent) > 0;
