@@ -250,14 +250,12 @@ export default function AdminProductRow({
   return (
     <div className={styles.row}>
       <div className={styles.left}>
-        <div className={styles.imageFrame}>
-          <img
-            src={mainImage.url || product.imageUrl}
-            alt={product.name}
-            className={styles.image}
-            style={imageTransformStyle}
-          />
-        </div>
+        <img
+          src={mainImage.url || product.imageUrl}
+          alt={product.name}
+          className={styles.image}
+          style={imageTransformStyle}
+        />
 
         <div className={styles.content}>
           <h3 className={styles.name}>{product.name}</h3>
@@ -304,7 +302,7 @@ export default function AdminProductRow({
                           : Boolean(matchingColor && matchingColor.stock > 0);
 
                         const label = entry.isWithoutColor
-                          ? `Produit sans couleur`
+                          ? 'Produit sans couleur'
                           : `Couleur : ${entry.colorLabel}`;
 
                         return (
@@ -325,11 +323,7 @@ export default function AdminProductRow({
                               disabled={isNotifyingRestock || !canNotify}
                             >
                               <FiMail />
-                              {isNotifyingRestock
-                                ? 'Envoi...'
-                                : entry.isWithoutColor
-                                ? 'Notifier'
-                                : `Notifier`}
+                              {isNotifyingRestock ? 'Envoi...' : 'Notifier'}
                             </button>
                           </li>
                         );
