@@ -26,10 +26,7 @@ function getTotalStock(product) {
   if (!product) return 0;
 
   if (Array.isArray(product.colors) && product.colors.length > 0) {
-    return product.colors.reduce(
-      (sum, color) => sum + getColorStock(color),
-      0
-    );
+    return product.colors.reduce((sum, color) => sum + getColorStock(color), 0);
   }
 
   return getSafeStock(product.stock);
@@ -47,6 +44,40 @@ function hasFiniteNumber(value) {
   return Number.isFinite(Number(value));
 }
 
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
+const MIN_OFFSET = -100;
+const MAX_OFFSET = 100;
+
+function getNormalizedOffset(offset, zoom) {
+  if (zoom <= 1) {
+    return 0;
+  }
+
+  const zoomOverflowRatio = (zoom - 1) / (MAX_ZOOM - 1);
+  const dynamicLimit = clamp(zoomOverflowRatio * 50, 0, 50);
+
+  return clamp(offset, -dynamicLimit, dynamicLimit);
+}
+
+function resolveOffsetPercent(percentValue, pixelValue) {
+  const hasPercent = hasFiniteNumber(percentValue);
+  const hasPixel = hasFiniteNumber(pixelValue);
+
+  const safePercent = hasPercent ? clamp(Number(percentValue), -50, 50) : 0;
+  const safePixel = hasPixel ? clamp(Number(pixelValue), MIN_OFFSET, MAX_OFFSET) : 0;
+
+  if (!hasPercent && hasPixel) {
+    return safePixel;
+  }
+
+  if (hasPercent && safePercent === 0 && hasPixel && safePixel !== 0) {
+    return safePixel;
+  }
+
+  return safePercent;
+}
+
 export function getSafeProductImage(image) {
   if (!image || typeof image !== 'object') {
     return {
@@ -60,19 +91,26 @@ export function getSafeProductImage(image) {
     };
   }
 
+  const offsetX = hasFiniteNumber(image.offsetX)
+    ? clamp(Number(image.offsetX), MIN_OFFSET, MAX_OFFSET)
+    : 0;
+
+  const offsetY = hasFiniteNumber(image.offsetY)
+    ? clamp(Number(image.offsetY), MIN_OFFSET, MAX_OFFSET)
+    : 0;
+
+  const offsetXPct = resolveOffsetPercent(image.offsetXPct, offsetX);
+  const offsetYPct = resolveOffsetPercent(image.offsetYPct, offsetY);
+
   return {
     url: normalizeImageUrl(image.url),
     publicId: typeof image.publicId === 'string' ? image.publicId.trim() : '',
-    offsetX: hasFiniteNumber(image.offsetX) ? Number(image.offsetX) : 0,
-    offsetY: hasFiniteNumber(image.offsetY) ? Number(image.offsetY) : 0,
-    offsetXPct: hasFiniteNumber(image.offsetXPct)
-      ? clamp(Number(image.offsetXPct), -50, 50)
-      : 0,
-    offsetYPct: hasFiniteNumber(image.offsetYPct)
-      ? clamp(Number(image.offsetYPct), -50, 50)
-      : 0,
+    offsetX,
+    offsetY,
+    offsetXPct,
+    offsetYPct,
     zoom: hasFiniteNumber(image.zoom)
-      ? clamp(Number(image.zoom), 1, 3)
+      ? clamp(Number(image.zoom), MIN_ZOOM, MAX_ZOOM)
       : 1,
   };
 }
@@ -108,26 +146,17 @@ export function getMainProductImage(product) {
 export function getProductImageTransformStyle(image) {
   const safeImage = getSafeProductImage(image);
 
-  const hasPercentOffsets =
-    hasFiniteNumber(image?.offsetXPct) || hasFiniteNumber(image?.offsetYPct);
-
-  const translateXPercent = hasPercentOffsets
-    ? clamp(safeImage.offsetXPct, -18, 18)
-    : clamp(safeImage.offsetX / 4, -18, 18);
-
-  const translateYPercent = hasPercentOffsets
-    ? clamp(safeImage.offsetYPct, -18, 18)
-    : clamp(safeImage.offsetY / 4, -18, 18);
-
-  const needsSafetyZoom =
-    Math.abs(translateXPercent) > 0 || Math.abs(translateYPercent) > 0;
-
-  const safeZoom = needsSafetyZoom
-    ? Math.max(1.12, Math.min(safeImage.zoom, 1.35))
-    : 1;
+  const translateXPercent = getNormalizedOffset(
+    safeImage.offsetXPct,
+    safeImage.zoom
+  );
+  const translateYPercent = getNormalizedOffset(
+    safeImage.offsetYPct,
+    safeImage.zoom
+  );
 
   return {
-    transform: `translate(${translateXPercent}%, ${translateYPercent}%) scale(${safeZoom})`,
+    transform: `translate(${translateXPercent}%, ${translateYPercent}%) scale(${safeImage.zoom})`,
     transformOrigin: 'center center',
   };
 }

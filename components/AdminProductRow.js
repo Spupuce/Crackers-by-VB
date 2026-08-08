@@ -1,12 +1,12 @@
 // components/AdminProductRow.js
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FiEdit2, FiTrash2, FiArchive, FiMail } from 'react-icons/fi';
 import styles from '../styles/AdminStock.module.css';
-import ProductImageFrame from './product/ProductImageFrame';
 import {
   getActiveProductPrice,
   getMainProductImage,
   getProductBasePrice,
+  getProductImageTransformStyle,
   hasValidPromoPrice,
   isSoldOut,
 } from '../utils/product';
@@ -49,6 +49,7 @@ export default function AdminProductRow({
   const basePrice = getProductBasePrice(product);
   const activePrice = getActiveProductPrice(product);
   const mainImage = getMainProductImage(product);
+  const imageTransformStyle = getProductImageTransformStyle(mainImage);
 
   const [isNotifyingRestock, setIsNotifyingRestock] = useState(false);
   const [restockFeedback, setRestockFeedback] = useState('');
@@ -108,6 +109,23 @@ export default function AdminProductRow({
 
     return grouped;
   }, [product.pendingRequests]);
+
+  useEffect(() => {
+    console.error(
+      'ADMIN_PRODUCT_ROW_RENDER',
+      JSON.stringify(
+        {
+          productId: product?._id,
+          productName: product?.name,
+          imageUrl: product?.imageUrl,
+          mainImage,
+          imageTransformStyle,
+        },
+        null,
+        2
+      )
+    );
+  }, [product, mainImage, imageTransformStyle]);
 
   const handleEdit = () => {
     if (typeof onEdit === 'function') {
@@ -189,7 +207,9 @@ export default function AdminProductRow({
 
       try {
         data = rawText ? JSON.parse(rawText) : null;
-      } catch {}
+      } catch {
+        // JSON invalide ou vide, on garde rawText pour debug
+      }
 
       console.log('NOTIFY_RESTOCK_RESPONSE_DEBUG:', {
         status: response.status,
@@ -247,16 +267,12 @@ export default function AdminProductRow({
   return (
     <div className={styles.row}>
       <div className={styles.left}>
-        <div className={styles.imageFrame}>
-          <ProductImageFrame
-            image={mainImage}
-            src={product.imageUrl}
-            alt={product.name}
-            frameClassName={styles.sharedImageFrame}
-            viewportClassName={styles.sharedImageViewport}
-            imageClassName={styles.sharedImage}
-          />
-        </div>
+        <img
+          src={mainImage.url || product.imageUrl}
+          alt={product.name}
+          className={styles.image}
+          style={imageTransformStyle}
+        />
 
         <div className={styles.content}>
           <h3 className={styles.name}>{product.name}</h3>
