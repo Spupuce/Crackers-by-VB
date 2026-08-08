@@ -7,7 +7,6 @@ import {
   getActiveProductPrice,
   getMainProductImage,
   getProductBasePrice,
-  getProductImageTransformStyle,
   getProductStatus,
   hasValidPromoPrice,
   isSoldOut,
@@ -15,6 +14,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext';
+import ProductImageFrame from './product/ProductImageFrame';
 import styles from '../styles/ProductCard.module.css';
 
 function normalizeColorName(value) {
@@ -29,7 +29,6 @@ export default function ProductCard({ product }) {
   const activePrice = getActiveProductPrice(product);
   const basePrice = getProductBasePrice(product);
   const mainProductImage = getMainProductImage(product);
-  const mainProductImageStyle = getProductImageTransformStyle(mainProductImage);
 
   const { isAuthenticated, isAuthReady, isAdmin } = useAuth();
   const { isFavorite, toggleFavorite, isSyncingFavorites } = useFavorites();
@@ -217,18 +216,17 @@ export default function ProductCard({ product }) {
           onKeyDown={handleImageKeyDown}
         >
           <div className={styles.imageFrame}>
-            <img
-              src={mainProductImage.url || product.imageUrl}
+            <ProductImageFrame
+              image={mainProductImage}
+              src={product.imageUrl}
               alt={product.name}
-              className={styles.image}
-              style={mainProductImageStyle}
-              draggable={false}
+              frameClassName={styles.sharedImageFrame}
+              viewportClassName={styles.sharedImageViewport}
+              imageClassName={styles.sharedImage}
             />
           </div>
 
-          {soldOut ? (
-            <span className={styles.badge}>{status.label}</span>
-          ) : null}
+          {soldOut ? <span className={styles.badge}>{status.label}</span> : null}
         </div>
 
         {!soldOut && (
@@ -288,23 +286,15 @@ export default function ProductCard({ product }) {
           <div className={styles.priceBlock}>
             {hasPromo ? (
               <>
-                <span className={styles.priceOld}>
-                  {basePrice.toFixed(2)} €
-                </span>
-                <span className={styles.pricePromo}>
-                  {activePrice.toFixed(2)} €
-                </span>
+                <span className={styles.priceOld}>{basePrice.toFixed(2)} €</span>
+                <span className={styles.pricePromo}>{activePrice.toFixed(2)} €</span>
               </>
             ) : (
-              <span className={styles.price}>
-                {basePrice.toFixed(2)} €
-              </span>
+              <span className={styles.price}>{basePrice.toFixed(2)} €</span>
             )}
           </div>
 
-          {!soldOut ? (
-            <span className={styles.stock}>{status.label}</span>
-          ) : null}
+          {!soldOut ? <span className={styles.stock}>{status.label}</span> : null}
         </div>
       </div>
     </article>

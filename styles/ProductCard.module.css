@@ -1,5 +1,4 @@
 /* styles/ProductCard.module.css */
-
 .card {
   display: flex;
   flex-direction: column;
@@ -64,17 +63,21 @@
   background-color: var(--color-gray-50);
 }
 
-/* cadre carré pour les visuels de la boutique */
-.image {
-  display: block;
+.sharedImageFrame {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transform-origin: center center;
-  transition: transform 0.18s ease;
-  will-change: transform;
-  pointer-events: none;
-  user-select: none;
+  background-color: var(--color-gray-50);
+}
+
+.sharedImageViewport {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-gray-50);
+}
+
+.sharedImage {
+  width: 100%;
+  height: 100%;
 }
 
 .badge {

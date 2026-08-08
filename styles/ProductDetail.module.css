@@ -56,15 +56,21 @@
   padding: 0;
 }
 
-.mainImagePreviewWrapper {
+.mainImagePreviewFrame {
   width: 100%;
   height: 100%;
-  overflow: hidden;
   background-color: var(--color-gray-100);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+}
+
+.mainImagePreviewViewport {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-gray-100);
+}
+
+.mainImagePreviewImage {
+  width: 100%;
+  height: 100%;
 }
 
 .mainImage {
@@ -72,21 +78,6 @@
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.mainImageTransformed {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  object-position: center;
-  transform-origin: center center;
-  transition: transform 0.18s ease;
-  will-change: transform;
-  user-select: none;
-  pointer-events: none;
 }
 
 .thumbnailRow {
@@ -118,6 +109,29 @@
 .thumbnailButtonActive {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px var(--color-status-primary-bg);
+}
+
+.thumbnailImageWrapper {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: var(--color-gray-100);
+}
+
+.thumbnailPreviewFrame {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-gray-100);
+}
+
+.thumbnailPreviewViewport {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-gray-100);
+}
+
+.thumbnailPreviewImage {
+  width: 100%;
+  height: 100%;
 }
 
 .thumbnailImage {

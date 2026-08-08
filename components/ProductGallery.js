@@ -1,14 +1,6 @@
 // components/ProductGallery.js
+import ProductImageFrame from './product/ProductImageFrame';
 import styles from "../styles/ProductDetail.module.css";
-
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 3;
-const MIN_OFFSET = -100;
-const MAX_OFFSET = 100;
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
 
 function getSafeGalleryItem(item) {
   if (!item || typeof item !== "object") {
@@ -26,68 +18,17 @@ function getSafeGalleryItem(item) {
     };
   }
 
-  const rawOffsetX = Number(item.offsetX);
-  const rawOffsetY = Number(item.offsetY);
-  const rawOffsetXPct = Number(item.offsetXPct);
-  const rawOffsetYPct = Number(item.offsetYPct);
-
-  const resolvedOffsetXPct = Number.isFinite(rawOffsetXPct)
-    ? clamp(rawOffsetXPct, -50, 50)
-    : Number.isFinite(rawOffsetX)
-    ? clamp(rawOffsetX, -50, 50)
-    : 0;
-
-  const resolvedOffsetYPct = Number.isFinite(rawOffsetYPct)
-    ? clamp(rawOffsetYPct, -50, 50)
-    : Number.isFinite(rawOffsetY)
-    ? clamp(rawOffsetY, -50, 50)
-    : 0;
-
   return {
     type: typeof item.type === "string" ? item.type : "",
     imageUrl: typeof item.imageUrl === "string" ? item.imageUrl : "",
     label: typeof item.label === "string" ? item.label : "",
     colorName: typeof item.colorName === "string" ? item.colorName : "",
     publicId: typeof item.publicId === "string" ? item.publicId : "",
-    offsetX: Number.isFinite(rawOffsetX)
-      ? clamp(rawOffsetX, MIN_OFFSET, MAX_OFFSET)
-      : 0,
-    offsetY: Number.isFinite(rawOffsetY)
-      ? clamp(rawOffsetY, MIN_OFFSET, MAX_OFFSET)
-      : 0,
-    offsetXPct: resolvedOffsetXPct,
-    offsetYPct: resolvedOffsetYPct,
-    zoom: Number.isFinite(Number(item.zoom))
-      ? clamp(Number(item.zoom), MIN_ZOOM, MAX_ZOOM)
-      : 1,
-  };
-}
-
-function getNormalizedOffset(offsetPct, zoom) {
-  if (zoom <= 1) {
-    return 0;
-  }
-
-  const zoomOverflowRatio = (zoom - 1) / (MAX_ZOOM - 1);
-  const dynamicLimit = clamp(zoomOverflowRatio * 50, 0, 50);
-
-  return clamp(offsetPct, -dynamicLimit, dynamicLimit);
-}
-
-function getPreviewStyle(item) {
-  const safeItem = getSafeGalleryItem(item);
-  const translateXPercent = getNormalizedOffset(
-    safeItem.offsetXPct,
-    safeItem.zoom
-  );
-  const translateYPercent = getNormalizedOffset(
-    safeItem.offsetYPct,
-    safeItem.zoom
-  );
-
-  return {
-    transform: `translate(${translateXPercent}%, ${translateYPercent}%) scale(${safeItem.zoom})`,
-    transformOrigin: "center center",
+    offsetX: Number(item.offsetX) || 0,
+    offsetY: Number(item.offsetY) || 0,
+    offsetXPct: Number(item.offsetXPct) || 0,
+    offsetYPct: Number(item.offsetYPct) || 0,
+    zoom: Number(item.zoom) || 1,
   };
 }
 
@@ -126,15 +67,21 @@ export default function ProductGallery({
         )}
 
         <div className={styles.mainImageViewport}>
-          <div className={styles.mainImagePreviewWrapper}>
-            <img
-              src={activeItem.imageUrl}
-              alt={productName}
-              className={styles.mainImageTransformed}
-              style={getPreviewStyle(activeItem)}
-              draggable={false}
-            />
-          </div>
+          <ProductImageFrame
+            image={{
+              url: activeItem.imageUrl,
+              offsetX: activeItem.offsetX,
+              offsetY: activeItem.offsetY,
+              offsetXPct: activeItem.offsetXPct,
+              offsetYPct: activeItem.offsetYPct,
+              zoom: activeItem.zoom,
+            }}
+            src={activeItem.imageUrl}
+            alt={productName}
+            frameClassName={styles.mainImagePreviewFrame}
+            viewportClassName={styles.mainImagePreviewViewport}
+            imageClassName={styles.mainImagePreviewImage}
+          />
         </div>
       </div>
 
@@ -155,12 +102,20 @@ export default function ProductGallery({
               } de ${productName}`}
             >
               <div className={styles.thumbnailImageWrapper}>
-                <img
+                <ProductImageFrame
+                  image={{
+                    url: item.imageUrl,
+                    offsetX: item.offsetX,
+                    offsetY: item.offsetY,
+                    offsetXPct: item.offsetXPct,
+                    offsetYPct: item.offsetYPct,
+                    zoom: item.zoom,
+                  }}
                   src={item.imageUrl}
                   alt={`${productName} miniature ${index + 1}`}
-                  className={styles.thumbnailImage}
-                  style={getPreviewStyle(item)}
-                  draggable={false}
+                  frameClassName={styles.thumbnailPreviewFrame}
+                  viewportClassName={styles.thumbnailPreviewViewport}
+                  imageClassName={styles.thumbnailPreviewImage}
                 />
               </div>
             </button>
