@@ -1,5 +1,5 @@
 // components/AdminProductRow.js
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FiEdit2, FiTrash2, FiArchive, FiMail } from 'react-icons/fi';
 import styles from '../styles/AdminStock.module.css';
 import {
@@ -110,23 +110,6 @@ export default function AdminProductRow({
     return grouped;
   }, [product.pendingRequests]);
 
-  useEffect(() => {
-    console.error(
-      'ADMIN_PRODUCT_ROW_RENDER',
-      JSON.stringify(
-        {
-          productId: product?._id,
-          productName: product?.name,
-          imageUrl: product?.imageUrl,
-          mainImage,
-          imageTransformStyle,
-        },
-        null,
-        2
-      )
-    );
-  }, [product, mainImage, imageTransformStyle]);
-
   const handleEdit = () => {
     if (typeof onEdit === 'function') {
       onEdit(product);
@@ -208,16 +191,8 @@ export default function AdminProductRow({
       try {
         data = rawText ? JSON.parse(rawText) : null;
       } catch {
-        // JSON invalide ou vide, on garde rawText pour debug
+        //
       }
-
-      console.log('NOTIFY_RESTOCK_RESPONSE_DEBUG:', {
-        status: response.status,
-        ok: response.ok,
-        url: response.url,
-        data,
-        rawText,
-      });
 
       if (!response.ok) {
         setRestockFeedback(
@@ -255,9 +230,6 @@ export default function AdminProductRow({
         });
       }
     } catch (error) {
-      console.error('NOTIFY_RESTOCK_FETCH_ERROR:', {
-        message: error?.message || String(error),
-      });
       setRestockFeedback("Erreur lors de l'envoi des notifications.");
     } finally {
       setIsNotifyingRestock(false);
@@ -267,12 +239,14 @@ export default function AdminProductRow({
   return (
     <div className={styles.row}>
       <div className={styles.left}>
-        <img
-          src={mainImage.url || product.imageUrl}
-          alt={product.name}
-          className={styles.image}
-          style={imageTransformStyle}
-        />
+        <div className={styles.imageFrame}>
+          <img
+            src={mainImage.url || product.imageUrl}
+            alt={product.name}
+            className={styles.image}
+            style={imageTransformStyle}
+          />
+        </div>
 
         <div className={styles.content}>
           <h3 className={styles.name}>{product.name}</h3>
