@@ -1,3 +1,6 @@
+# Lancer le projet 
+yarn dev
+
 # Liste de tâches du projet
 
 ## Légende des statuts

@@ -372,8 +372,6 @@ select.input:focus {
   box-shadow: var(--shadow-warm-soft);
 }
 
-/* État pour la carte d’image sélectionnée dans la galerie */
-
 .extraImageItemSelected {
   border-color: var(--color-primary-light);
   box-shadow: var(--shadow-warm-medium);
@@ -416,7 +414,7 @@ select.input:focus {
   border: 1px solid var(--color-gray-200);
 }
 
-/* Cadre de recadrage : la logique JS applique translate% + scale() */
+/* Le cadre de réglage montre l'image entière au zoom initial. */
 
 .extraImagePreviewFrame {
   position: relative;
@@ -443,7 +441,7 @@ select.input:focus {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   transform-origin: center center;
   transition: transform 0.18s ease;
@@ -454,8 +452,6 @@ select.input:focus {
   pointer-events: none;
 }
 
-/* Ancien style “cover” gardé si utilisé ailleurs */
-
 .extraImagePreview {
   width: 100%;
   height: 100%;
@@ -463,8 +459,6 @@ select.input:focus {
   transform-origin: center center;
   transition: transform 0.2s ease, object-position 0.2s ease;
 }
-
-/* Bandeau d’aide au cadrage */
 
 .imageDragOverlay {
   position: absolute;
@@ -491,8 +485,6 @@ select.input:focus {
   text-align: center;
   backdrop-filter: blur(4px);
 }
-
-/* Zone des contrôles de zoom/cadrage */
 
 .cropControls {
   display: flex;
@@ -667,13 +659,13 @@ select.input:focus {
 
 .colorPreviewEdit {
   background-color: var(--color-primary);
-  box-shadow: var(--shadow-warm-medium);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .colorPreviewEdit:hover {
   background-color: var(--color-primary-dark);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-warm-strong);
+  box-shadow: var(--shadow-warm-medium);
 }
 
 .colorPreviewArchive {
