@@ -1,11 +1,14 @@
+// components/FeaturedProducts.js
 import Link from 'next/link';
 import {
   getActiveProductPrice,
+  getMainProductImage,
   getProductBasePrice,
   getProductStatus,
   hasValidPromoPrice,
   isSoldOut,
 } from '../utils/product';
+import ProductImageFrame from './product/ProductImageFrame';
 import styles from '../styles/FeaturedProducts.module.css';
 
 export default function FeaturedProducts({ products = [] }) {
@@ -30,6 +33,7 @@ export default function FeaturedProducts({ products = [] }) {
             const hasPromo = hasValidPromoPrice(product);
             const activePrice = getActiveProductPrice(product);
             const basePrice = getProductBasePrice(product);
+            const mainImage = getMainProductImage(product);
 
             return (
               <article
@@ -39,10 +43,10 @@ export default function FeaturedProducts({ products = [] }) {
                 <Link href={`/boutique/${product.slug}`} passHref>
                   <a className={styles.cardLink}>
                     <div className={styles.imageWrapper}>
-                      <img
+                      <ProductImageFrame
+                        image={mainImage}
                         src={product.imageUrl}
                         alt={product.name}
-                        className={styles.image}
                       />
                       {soldOut ? (
                         <span className={styles.badge}>{status.label}</span>
