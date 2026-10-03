@@ -614,14 +614,30 @@
 }
 
 .dangerButton {
-  border: none;
-  background-color: var(--color-danger-button);
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-error);
+  border-radius: 8px;
+  background-color: var(--color-error);
   color: var(--color-white);
   padding: 0 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-warm-soft);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
 }
 
-.dangerButton:hover:not(:disabled) {
-  background-color: var(--color-danger-button-hover);
+.dangerButton:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-warm-soft);
 }
 
 .deleteForm {
