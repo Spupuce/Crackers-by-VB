@@ -6,40 +6,50 @@ import cloudinary from '../../../../lib/services/cloudinary';
 import { resolveProductStock } from '../../../../lib/services/stockService';
 import { generateUniqueSlug } from '../../../../lib/services/slugService';
 
+
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
 const MIN_OFFSET_PCT = -50;
 const MAX_OFFSET_PCT = 50;
 
+
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
+
 
 function normalizePromoPrice(value) {
   if (value === undefined || value === null || value === '') {
     return null;
   }
 
+
   const normalizedValue = Number(value);
+
 
   if (Number.isNaN(normalizedValue)) {
     return Number.NaN;
   }
 
+
   return normalizedValue;
 }
+
 
 function normalizeImageEntry(image) {
   if (!image) {
     return null;
   }
 
+
   if (typeof image === 'string') {
     const trimmedUrl = image.trim();
+
 
     if (!trimmedUrl) {
       return null;
     }
+
 
     return {
       url: trimmedUrl,
@@ -52,24 +62,30 @@ function normalizeImageEntry(image) {
     };
   }
 
+
   if (typeof image !== 'object') {
     return null;
   }
 
+
   const url = typeof image.url === 'string' ? image.url.trim() : '';
+
 
   if (!url) {
     return null;
   }
 
+
   const publicId =
     typeof image.publicId === 'string' ? image.publicId.trim() : '';
+
 
   const offsetX = Number(image.offsetX);
   const offsetY = Number(image.offsetY);
   const offsetXPct = Number(image.offsetXPct);
   const offsetYPct = Number(image.offsetYPct);
   const zoom = Number(image.zoom);
+
 
   return {
     url,
@@ -86,20 +102,24 @@ function normalizeImageEntry(image) {
   };
 }
 
+
 function normalizeImages(images) {
   if (!Array.isArray(images)) {
     return [];
   }
+
 
   return images
     .map(normalizeImageEntry)
     .filter(Boolean);
 }
 
+
 function normalizeColors(colors) {
   if (!Array.isArray(colors)) {
     return [];
   }
+
 
   return colors.map((color) => {
     const normalizedImages = normalizeImages(color?.images);
@@ -107,6 +127,7 @@ function normalizeColors(colors) {
       typeof color?.imageUrl === 'string' ? color.imageUrl.trim() : '';
     const resolvedImageUrl =
       fallbackImageUrl || normalizedImages[0]?.url || '';
+
 
     return {
       ...color,
@@ -118,16 +139,19 @@ function normalizeColors(colors) {
   });
 }
 
+
 function resolveMainImage({ imageUrl, images }) {
   const trimmedImageUrl = typeof imageUrl === 'string' ? imageUrl.trim() : '';
   const normalizedImages = normalizeImages(images);
   const resolvedImageUrl = trimmedImageUrl || normalizedImages[0]?.url || '';
+
 
   return {
     imageUrl: resolvedImageUrl,
     images: normalizedImages,
   };
 }
+
 
 function validateProductPayload(payload) {
   const errors = [];
@@ -138,13 +162,16 @@ function validateProductPayload(payload) {
     images: payload.images,
   });
 
+
   if (!payload.name || !payload.name.trim()) {
     errors.push('Le nom du produit est obligatoire.');
   }
 
+
   if (!payload.category || !payload.category.trim()) {
     errors.push('La catégorie est obligatoire.');
   }
+
 
   if (
     payload.price === undefined ||
@@ -155,13 +182,16 @@ function validateProductPayload(payload) {
     errors.push('Le prix du produit est invalide.');
   }
 
+
   if (Number.isNaN(normalizedPromoPrice)) {
     errors.push('Le prix promo est invalide.');
   }
 
+
   if (normalizedPromoPrice !== null && normalizedPromoPrice < 0) {
     errors.push('Le prix promo ne peut pas être négatif.');
   }
+
 
   if (
     normalizedPromoPrice !== null &&
@@ -171,9 +201,11 @@ function validateProductPayload(payload) {
     errors.push('Le prix promo doit être inférieur au prix normal.');
   }
 
+
   if (!resolvedMainImage.imageUrl) {
     errors.push('L’image principale du produit est obligatoire.');
   }
+
 
   return {
     errors,
@@ -182,10 +214,12 @@ function validateProductPayload(payload) {
   };
 }
 
+
 function collectImagePublicIds(images) {
   if (!Array.isArray(images)) {
     return [];
   }
+
 
   return images
     .map((image) =>
@@ -194,12 +228,15 @@ function collectImagePublicIds(images) {
     .filter(Boolean);
 }
 
+
 function collectProductPublicIds(productLikeObject) {
   if (!productLikeObject) {
     return [];
   }
 
+
   const publicIds = [...collectImagePublicIds(productLikeObject.images)];
+
 
   if (Array.isArray(productLikeObject.colors)) {
     productLikeObject.colors.forEach((color) => {
@@ -207,44 +244,94 @@ function collectProductPublicIds(productLikeObject) {
     });
   }
 
+
   return publicIds;
 }
+
 
 async function deleteCloudinaryImagesByPublicIds(publicIds) {
   const normalizedPublicIds = [...new Set((publicIds || []).filter(Boolean))];
 
+
   if (normalizedPublicIds.length === 0) {
+    console.log('[Cloudinary cleanup] Aucun publicId à supprimer.');
     return;
   }
 
-  await Promise.allSettled(
-    normalizedPublicIds.map((publicId) =>
-      cloudinary.uploader.destroy(publicId, {
+
+  console.log('[Cloudinary cleanup] Suppression demandée pour :', normalizedPublicIds);
+
+
+  const results = await Promise.allSettled(
+    normalizedPublicIds.map(async (publicId) => {
+      const result = await cloudinary.uploader.destroy(publicId, {
         resource_type: 'image',
-      })
-    )
+      });
+
+
+      return {
+        publicId,
+        result,
+      };
+    })
   );
+
+
+  results.forEach((result, index) => {
+    const publicId = normalizedPublicIds[index];
+
+
+    if (result.status === 'fulfilled') {
+      console.log('[Cloudinary cleanup] Résultat suppression :', {
+        publicId: result.value.publicId,
+        result: result.value.result,
+      });
+      return;
+    }
+
+
+    console.error('[Cloudinary cleanup] Erreur suppression :', {
+      publicId,
+      error: result.reason?.message || result.reason,
+    });
+  });
 }
+
 
 async function deleteRemovedCloudinaryImages(previousProduct, nextProductData) {
   const previousPublicIds = new Set(collectProductPublicIds(previousProduct));
   const nextPublicIds = new Set(collectProductPublicIds(nextProductData));
 
+
   const publicIdsToDelete = [...previousPublicIds].filter(
     (publicId) => !nextPublicIds.has(publicId)
   );
 
+
+  console.log('[Cloudinary cleanup] PublicId avant sauvegarde :', [
+    ...previousPublicIds,
+  ]);
+  console.log('[Cloudinary cleanup] PublicId après sauvegarde :', [
+    ...nextPublicIds,
+  ]);
+  console.log('[Cloudinary cleanup] PublicId retirés détectés :', publicIdsToDelete);
+
+
   await deleteCloudinaryImagesByPublicIds(publicIdsToDelete);
 }
+
 
 export default async function handler(req, res) {
   await connectMongo();
 
+
   const { id } = req.query;
+
 
   if (req.method === 'GET') {
     try {
       const product = await Product.findById(id);
+
 
       if (!product) {
         return res.status(404).json({
@@ -252,10 +339,12 @@ export default async function handler(req, res) {
         });
       }
 
+
       const pendingRequestsCount = await RestockRequest.countDocuments({
         product: product._id,
         notifiedAt: null,
       });
+
 
       return res.status(200).json({
         ...product.toObject(),
@@ -267,6 +356,7 @@ export default async function handler(req, res) {
       });
     }
   }
+
 
   if (req.method === 'PUT') {
     try {
@@ -282,7 +372,9 @@ export default async function handler(req, res) {
         colors,
       } = req.body;
 
+
       const normalizedColors = normalizeColors(colors);
+
 
       const validationResult = validateProductPayload({
         name,
@@ -293,6 +385,7 @@ export default async function handler(req, res) {
         images,
       });
 
+
       if (validationResult.errors.length > 0) {
         return res.status(400).json({
           message: 'Le formulaire produit contient des erreurs.',
@@ -300,7 +393,9 @@ export default async function handler(req, res) {
         });
       }
 
+
       const existingProduct = await Product.findById(id);
+
 
       if (!existingProduct) {
         return res.status(404).json({
@@ -308,16 +403,19 @@ export default async function handler(req, res) {
         });
       }
 
+
       const slug = await generateUniqueSlug({
         model: Product,
         value: name,
         currentId: id,
       });
 
+
       const stockData = resolveProductStock({
         stock,
         colors: normalizedColors,
       });
+
 
       const nextProductData = {
         imageUrl: validationResult.resolvedMainImage.imageUrl,
@@ -325,7 +423,9 @@ export default async function handler(req, res) {
         colors: stockData.colors,
       };
 
+
       const previousProductData = existingProduct.toObject();
+
 
       existingProduct.name = name.trim();
       existingProduct.slug = slug;
@@ -338,8 +438,10 @@ export default async function handler(req, res) {
       existingProduct.stock = stockData.stock;
       existingProduct.colors = nextProductData.colors;
 
+
       await existingProduct.save();
       await deleteRemovedCloudinaryImages(previousProductData, nextProductData);
+
 
       return res.status(200).json(existingProduct);
     } catch (error) {
@@ -349,15 +451,18 @@ export default async function handler(req, res) {
     }
   }
 
+
   if (req.method === 'DELETE') {
     try {
       const product = await Product.findById(id);
+
 
       if (!product) {
         return res.status(404).json({
           message: 'Produit introuvable.',
         });
       }
+
 
       if (!product.isArchived) {
         return res.status(403).json({
@@ -366,11 +471,14 @@ export default async function handler(req, res) {
         });
       }
 
+
       const productData = product.toObject();
       const publicIdsToDelete = collectProductPublicIds(productData);
 
+
       await Product.findByIdAndDelete(id);
       await deleteCloudinaryImagesByPublicIds(publicIdsToDelete);
+
 
       return res.status(204).end();
     } catch (error) {
@@ -379,6 +487,7 @@ export default async function handler(req, res) {
       });
     }
   }
+
 
   return res.status(405).json({
     message: 'Méthode non autorisée.',
