@@ -254,47 +254,17 @@ async function deleteCloudinaryImagesByPublicIds(publicIds) {
 
 
   if (normalizedPublicIds.length === 0) {
-    console.log('[Cloudinary cleanup] Aucun publicId à supprimer.');
     return;
   }
 
 
-  console.log('[Cloudinary cleanup] Suppression demandée pour :', normalizedPublicIds);
-
-
-  const results = await Promise.allSettled(
-    normalizedPublicIds.map(async (publicId) => {
-      const result = await cloudinary.uploader.destroy(publicId, {
+  await Promise.allSettled(
+    normalizedPublicIds.map((publicId) =>
+      cloudinary.uploader.destroy(publicId, {
         resource_type: 'image',
-      });
-
-
-      return {
-        publicId,
-        result,
-      };
-    })
+      })
+    )
   );
-
-
-  results.forEach((result, index) => {
-    const publicId = normalizedPublicIds[index];
-
-
-    if (result.status === 'fulfilled') {
-      console.log('[Cloudinary cleanup] Résultat suppression :', {
-        publicId: result.value.publicId,
-        result: result.value.result,
-      });
-      return;
-    }
-
-
-    console.error('[Cloudinary cleanup] Erreur suppression :', {
-      publicId,
-      error: result.reason?.message || result.reason,
-    });
-  });
 }
 
 
@@ -306,15 +276,6 @@ async function deleteRemovedCloudinaryImages(previousProduct, nextProductData) {
   const publicIdsToDelete = [...previousPublicIds].filter(
     (publicId) => !nextPublicIds.has(publicId)
   );
-
-
-  console.log('[Cloudinary cleanup] PublicId avant sauvegarde :', [
-    ...previousPublicIds,
-  ]);
-  console.log('[Cloudinary cleanup] PublicId après sauvegarde :', [
-    ...nextPublicIds,
-  ]);
-  console.log('[Cloudinary cleanup] PublicId retirés détectés :', publicIdsToDelete);
 
 
   await deleteCloudinaryImagesByPublicIds(publicIdsToDelete);
