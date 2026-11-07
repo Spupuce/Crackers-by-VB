@@ -14,14 +14,19 @@ import {
   serializeProductSnapshot,
 } from "../utils/productForm";
 
+
 const MIN_OFFSET = -80;
 const MAX_OFFSET = 80;
+const MIN_OFFSET_PCT = -50;
+const MAX_OFFSET_PCT = 50;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
+
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
+
 
 function buildDefaultImage(url, publicId = "") {
   return {
@@ -29,35 +34,47 @@ function buildDefaultImage(url, publicId = "") {
     publicId,
     offsetX: 0,
     offsetY: 0,
+    offsetXPct: 0,
+    offsetYPct: 0,
     zoom: 1,
   };
 }
+
 
 function normalizePreviewImage(image) {
   if (!image || typeof image !== "object") {
     return null;
   }
 
+
   const url = typeof image.url === "string" ? image.url.trim() : "";
+
 
   if (!url) {
     return null;
   }
 
+
   const publicId =
     typeof image.publicId === "string" ? image.publicId.trim() : "";
 
+
   const offsetX = Number(image.offsetX);
   const offsetY = Number(image.offsetY);
+  const offsetXPct = Number(image.offsetXPct);
+  const offsetYPct = Number(image.offsetYPct);
   const zoom = Number(image.zoom);
   const cropX = Number(image.cropX);
   const cropY = Number(image.cropY);
 
+
   const hasOffsetCoordinates =
     Number.isFinite(offsetX) || Number.isFinite(offsetY);
 
+
   const fallbackOffsetX = Number.isFinite(cropX) ? (cropX - 50) * 1.6 : 0;
   const fallbackOffsetY = Number.isFinite(cropY) ? (cropY - 50) * 1.6 : 0;
+
 
   return {
     url,
@@ -72,14 +89,22 @@ function normalizePreviewImage(image) {
       : hasOffsetCoordinates
       ? 0
       : clamp(fallbackOffsetY, MIN_OFFSET, MAX_OFFSET),
+    offsetXPct: Number.isFinite(offsetXPct)
+      ? clamp(offsetXPct, MIN_OFFSET_PCT, MAX_OFFSET_PCT)
+      : 0,
+    offsetYPct: Number.isFinite(offsetYPct)
+      ? clamp(offsetYPct, MIN_OFFSET_PCT, MAX_OFFSET_PCT)
+      : 0,
     zoom: Number.isFinite(zoom) ? clamp(zoom, MIN_ZOOM, MAX_ZOOM) : 1,
   };
 }
+
 
 function normalizePreviewImages(images) {
   if (!Array.isArray(images)) {
     return [];
   }
+
 
   return images
     .map((image) => {
@@ -87,14 +112,17 @@ function normalizePreviewImages(images) {
         return null;
       }
 
+
       if (typeof image === "string") {
         return normalizePreviewImage(buildDefaultImage(image.trim()));
       }
+
 
       return normalizePreviewImage(image);
     })
     .filter(Boolean);
 }
+
 
 export default function ProductForm({
   mode = "create",
@@ -108,12 +136,14 @@ export default function ProductForm({
   const [editingColorIndex, setEditingColorIndex] = useState(null);
   const [submitAction, setSubmitAction] = useState("save");
 
+
   const [formValues, setFormValues] = useState(
     buildInitialFormValues(initialValues)
   );
   const [stockInputValue, setStockInputValue] = useState(
     initialValues?.stock ?? ""
   );
+
 
   const [colors, setColors] = useState(
     initialValues?.colors && Array.isArray(initialValues.colors)
@@ -124,12 +154,14 @@ export default function ProductForm({
       : []
   );
 
+
   const initialColorsSnapshotRef = useRef(
     sanitizeColors(initialValues?.colors).map((color) => ({
       ...color,
       images: normalizePreviewImages(color.images),
     }))
   );
+
 
   const initialProductSnapshotRef = useRef(
     serializeProductSnapshot({
@@ -143,10 +175,12 @@ export default function ProductForm({
     })
   );
 
+
   const mainImageInputRef = useRef(null);
   const extraImageInputRef = useRef(null);
   const colorImageInputRef = useRef(null);
   const extraColorImageInputRef = useRef(null);
+
 
   const [mainImageFileName, setMainImageFileName] = useState(
     "Aucun fichier choisi"
@@ -157,6 +191,7 @@ export default function ProductForm({
   );
   const [extraColorImageFileName, setExtraColorImageFileName] = useState("");
 
+
   const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl || "");
   const [productImages, setProductImages] = useState(
     normalizePreviewImages(initialValues?.images)
@@ -164,8 +199,10 @@ export default function ProductForm({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState("");
 
+
   const [isUploadingColorImage, setIsUploadingColorImage] = useState(false);
   const [colorImageUploadError, setColorImageUploadError] = useState("");
+
 
   useEffect(() => {
     const normalizedInitialColors =
@@ -176,7 +213,9 @@ export default function ProductForm({
           }))
         : [];
 
+
     const nextFormValues = buildInitialFormValues(initialValues);
+
 
     setColors(normalizedInitialColors);
     setFormValues(nextFormValues);
@@ -200,37 +239,46 @@ export default function ProductForm({
     setColorImageFileName("Aucun fichier choisi");
     setExtraColorImageFileName("");
 
+
     if (mainImageInputRef.current) {
       mainImageInputRef.current.value = "";
     }
+
 
     if (extraImageInputRef.current) {
       extraImageInputRef.current.value = "";
     }
 
+
     if (colorImageInputRef.current) {
       colorImageInputRef.current.value = "";
     }
+
 
     if (extraColorImageInputRef.current) {
       extraColorImageInputRef.current.value = "";
     }
   }, [initialValues]);
 
+
   const activeColors = useMemo(
     () => colors.filter((color) => !color.isArchived),
     [colors]
   );
+
 
   const archivedColors = useMemo(
     () => colors.filter((color) => color.isArchived),
     [colors]
   );
 
+
   const hasColors = activeColors.length > 0;
+
 
   const visualStock = useMemo(() => {
     if (!hasColors) return "";
+
 
     return activeColors.reduce((total, color) => {
       const quantity = Number(color.quantity) || 0;
@@ -238,18 +286,23 @@ export default function ProductForm({
     }, 0);
   }, [activeColors, hasColors]);
 
+
   const currentStock = useMemo(() => {
     if (hasColors) {
       return Number(visualStock) || 0;
     }
 
+
     return Number(stockInputValue) || 0;
   }, [hasColors, visualStock, stockInputValue]);
+
 
   const canShowNotifyButton =
     mode === "edit" && hasPendingRestockRequests && currentStock > 0;
 
+
   const isEditingColor = editingColorIndex !== null;
+
 
   const hasColorDraftChanges = useMemo(() => {
     return Boolean(
@@ -259,6 +312,7 @@ export default function ProductForm({
         (Array.isArray(colorDraft.images) && colorDraft.images.length > 0)
     );
   }, [colorDraft]);
+
 
   const hasUnsavedChanges = useMemo(() => {
     const currentSnapshot = serializeProductSnapshot({
@@ -271,6 +325,7 @@ export default function ProductForm({
         images: normalizePreviewImages(color.images),
       })),
     });
+
 
     return (
       currentSnapshot !== initialProductSnapshotRef.current || hasColorDraftChanges
@@ -286,11 +341,13 @@ export default function ProductForm({
     hasColorDraftChanges,
   ]);
 
+
   useEffect(() => {
     if (typeof onUnsavedChangesChange === "function") {
       onUnsavedChangesChange(hasUnsavedChanges);
     }
   }, [hasUnsavedChanges, onUnsavedChangesChange]);
+
 
   useEffect(() => {
     const handleBeforeUnload = (event) => {
@@ -298,16 +355,20 @@ export default function ProductForm({
         return;
       }
 
+
       event.preventDefault();
       event.returnValue = "";
     };
 
+
     window.addEventListener("beforeunload", handleBeforeUnload);
+
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [hasUnsavedChanges]);
+
 
   function resetColorForm() {
     setColorDraft(createEmptyColorDraft());
@@ -318,14 +379,17 @@ export default function ProductForm({
     setColorImageFileName("Aucun fichier choisi");
     setExtraColorImageFileName("");
 
+
     if (colorImageInputRef.current) {
       colorImageInputRef.current.value = "";
     }
+
 
     if (extraColorImageInputRef.current) {
       extraColorImageInputRef.current.value = "";
     }
   }
+
 
   function handleFieldChange(field, value) {
     setFormValues((prev) => ({
@@ -334,12 +398,14 @@ export default function ProductForm({
     }));
   }
 
+
   function handleColorDraftChange(field, value) {
     setColorDraft((prev) => ({
       ...prev,
       [field]: value,
     }));
   }
+
 
   function updateColorDraftImages(nextImages, nextMainImageUrl = null) {
     const normalizedImages = normalizePreviewImages(nextImages);
@@ -348,6 +414,7 @@ export default function ProductForm({
         ? nextMainImageUrl
         : normalizedImages[0]?.url || "";
 
+
     setColorDraft((prev) => ({
       ...prev,
       imageUrl: resolvedMainImageUrl,
@@ -355,15 +422,18 @@ export default function ProductForm({
     }));
   }
 
+
   function handleValidateColor() {
     const normalizedName = colorDraft.name.trim();
     const normalizedQuantity = Math.max(0, Number(colorDraft.quantity) || 0);
     const normalizedImageUrl = colorDraft.imageUrl.trim();
     const normalizedImages = normalizePreviewImages(colorDraft.images);
 
+
     if (!normalizedName) {
       return;
     }
+
 
     const normalizedColor = {
       name: normalizedName,
@@ -373,6 +443,7 @@ export default function ProductForm({
       isArchived: false,
       archivedAt: null,
     };
+
 
     if (isEditingColor) {
       setColors((prev) =>
@@ -391,8 +462,10 @@ export default function ProductForm({
       setColors((prev) => [...prev, normalizedColor]);
     }
 
+
     resetColorForm();
   }
+
 
   function handleCancelColor() {
     if (hasColorDraftChanges) {
@@ -400,13 +473,16 @@ export default function ProductForm({
         "Les modifications de cette couleur ne sont pas enregistrées. Voulez-vous vraiment annuler ?"
       );
 
+
       if (!shouldCancel) {
         return;
       }
     }
 
+
     resetColorForm();
   }
+
 
   function handleArchiveColor(indexToArchive) {
     setColors((prev) =>
@@ -421,15 +497,18 @@ export default function ProductForm({
       )
     );
 
+
     if (editingColorIndex === indexToArchive) {
       resetColorForm();
       return;
     }
 
+
     if (editingColorIndex !== null && editingColorIndex > indexToArchive) {
       setEditingColorIndex((prev) => prev - 1);
     }
   }
+
 
   function handleUnarchiveColor(indexToRestore) {
     setColors((prev) =>
@@ -445,18 +524,22 @@ export default function ProductForm({
     );
   }
 
+
   function handleRemoveArchivedColor(indexToRemove) {
     setColors((prev) => prev.filter((_, index) => index !== indexToRemove));
+
 
     if (editingColorIndex === indexToRemove) {
       resetColorForm();
       return;
     }
 
+
     if (editingColorIndex !== null && editingColorIndex > indexToRemove) {
       setEditingColorIndex((prev) => prev - 1);
     }
   }
+
 
   function handleShowColorForm() {
     if (showColorForm && hasColorDraftChanges) {
@@ -464,10 +547,12 @@ export default function ProductForm({
         "Une couleur est en cours de modification et n’est pas enregistrée. Voulez-vous l’abandonner ?"
       );
 
+
       if (!shouldReset) {
         return;
       }
     }
+
 
     setEditingColorIndex(null);
     setColorDraft(createEmptyColorDraft());
@@ -476,31 +561,38 @@ export default function ProductForm({
     setColorImageFileName("Aucun fichier choisi");
     setExtraColorImageFileName("");
 
+
     if (colorImageInputRef.current) {
       colorImageInputRef.current.value = "";
     }
+
 
     if (extraColorImageInputRef.current) {
       extraColorImageInputRef.current.value = "";
     }
   }
 
+
   function handleEditColor(index) {
     const colorToEdit = colors[index];
+
 
     if (!colorToEdit) {
       return;
     }
+
 
     if (showColorForm && hasColorDraftChanges) {
       const shouldReplace = window.confirm(
         "Une couleur en cours de modification n’est pas enregistrée. Voulez-vous l’abandonner ?"
       );
 
+
       if (!shouldReplace) {
         return;
       }
     }
+
 
     setEditingColorIndex(index);
     setColorDraft({
@@ -514,33 +606,41 @@ export default function ProductForm({
     setColorImageFileName("Aucun fichier choisi");
     setExtraColorImageFileName("");
 
+
     if (colorImageInputRef.current) {
       colorImageInputRef.current.value = "";
     }
+
 
     if (extraColorImageInputRef.current) {
       extraColorImageInputRef.current.value = "";
     }
   }
 
+
   async function uploadImageFile(file, errorMessage) {
     const formData = new FormData();
     formData.append("image", file);
+
 
     const response = await fetch("/api/admin/upload-image", {
       method: "POST",
       body: formData,
     });
 
+
     if (!response.ok) {
       throw new Error(errorMessage);
     }
 
+
     const data = await response.json();
+
 
     if (!data?.imageUrl) {
       throw new Error("Aucune URL d’image retournée par le serveur.");
     }
+
 
     return {
       imageUrl: data.imageUrl,
@@ -548,16 +648,20 @@ export default function ProductForm({
     };
   }
 
+
   async function handleMainImageUpload(event) {
     const file = event.target.files?.[0];
     setMainImageFileName(getFileLabel(file));
+
 
     if (!file) {
       return;
     }
 
+
     setImageUploadError("");
     setIsUploadingImage(true);
+
 
     try {
       const { imageUrl: uploadedImageUrl, publicId } = await uploadImageFile(
@@ -565,7 +669,9 @@ export default function ProductForm({
         "Échec du téléversement de l’image."
       );
 
+
       const nextImage = buildDefaultImage(uploadedImageUrl, publicId);
+
 
       setProductImages((prev) => {
         const normalizedPrev = normalizePreviewImages(prev);
@@ -578,11 +684,13 @@ export default function ProductForm({
           ),
         ];
 
+
         setImageUrl(uploadedImageUrl);
         setFormValues((current) => ({
           ...current,
           imageUrl: uploadedImageUrl,
         }));
+
 
         return nextImages;
       });
@@ -593,16 +701,20 @@ export default function ProductForm({
     }
   }
 
+
   async function handleExtraProductImageUpload(event) {
     const file = event.target.files?.[0];
     setExtraImageFileName(getFileLabel(file));
+
 
     if (!file) {
       return;
     }
 
+
     setIsUploadingImage(true);
     setImageUploadError("");
+
 
     try {
       const { imageUrl: uploadedImageUrl, publicId } = await uploadImageFile(
@@ -610,7 +722,9 @@ export default function ProductForm({
         "Échec du téléversement de l’image."
       );
 
+
       const newImage = buildDefaultImage(uploadedImageUrl, publicId);
+
 
       setProductImages((prev) => {
         const normalizedPrev = normalizePreviewImages(prev);
@@ -626,28 +740,34 @@ export default function ProductForm({
     } finally {
       setIsUploadingImage(false);
 
+
       if (event.target) {
         event.target.value = "";
       }
     }
   }
 
+
   async function handleColorImageUpload(event) {
     const file = event.target.files?.[0];
     setColorImageFileName(getFileLabel(file));
+
 
     if (!file) {
       return;
     }
 
+
     setColorImageUploadError("");
     setIsUploadingColorImage(true);
+
 
     try {
       const { imageUrl: uploadedImageUrl, publicId } = await uploadImageFile(
         file,
         "Échec du téléversement de la photo couleur."
       );
+
 
       updateColorDraftImages(
         [buildDefaultImage(uploadedImageUrl, publicId)],
@@ -663,16 +783,20 @@ export default function ProductForm({
     }
   }
 
+
   async function handleExtraColorImageUpload(event) {
     const file = event.target.files?.[0];
     setExtraColorImageFileName(getFileLabel(file));
+
 
     if (!file) {
       return;
     }
 
+
     setColorImageUploadError("");
     setIsUploadingColorImage(true);
+
 
     try {
       const { imageUrl: uploadedImageUrl, publicId } = await uploadImageFile(
@@ -680,7 +804,9 @@ export default function ProductForm({
         "Échec du téléversement de la photo couleur."
       );
 
+
       const newImage = buildDefaultImage(uploadedImageUrl, publicId);
+
 
       updateColorDraftImages([
         ...normalizePreviewImages(colorDraft.images).filter(
@@ -696,20 +822,24 @@ export default function ProductForm({
     } finally {
       setIsUploadingColorImage(false);
 
+
       if (event.target) {
         event.target.value = "";
       }
     }
   }
 
+
   function handleSetMainProductImage(indexToPromote) {
     setProductImages((prev) => {
       const normalizedPrev = normalizePreviewImages(prev);
       const selectedImage = normalizedPrev[indexToPromote];
 
+
       if (!selectedImage) {
         return normalizedPrev;
       }
+
 
       setImageUrl(selectedImage.url);
       setFormValues((current) => ({
@@ -717,9 +847,11 @@ export default function ProductForm({
         imageUrl: selectedImage.url,
       }));
 
+
       return normalizedPrev;
     });
   }
+
 
   function handleUpdateProductImageCrop(indexToUpdate, updates) {
     setProductImages((prev) =>
@@ -734,6 +866,7 @@ export default function ProductForm({
     );
   }
 
+
   function handleRemoveProductImage(indexToRemove) {
     setProductImages((prev) => {
       const normalizedPrev = normalizePreviewImages(prev);
@@ -746,6 +879,7 @@ export default function ProductForm({
         ? nextImages[0]?.url || ""
         : imageUrl;
 
+
       if (removedWasMain) {
         setImageUrl(nextMainImageUrl);
         setFormValues((current) => ({
@@ -754,21 +888,26 @@ export default function ProductForm({
         }));
       }
 
+
       return nextImages;
     });
   }
+
 
   function handleSetMainColorImage(indexToPromote) {
     const selectedImage = normalizePreviewImages(colorDraft.images)[
       indexToPromote
     ];
 
+
     if (!selectedImage) {
       return;
     }
 
+
     updateColorDraftImages(colorDraft.images, selectedImage.url);
   }
+
 
   function handleUpdateColorImageCrop(indexToUpdate, updates) {
     updateColorDraftImages(
@@ -784,6 +923,7 @@ export default function ProductForm({
     );
   }
 
+
   function handleRemoveColorImage(indexToRemove) {
     const currentImages = normalizePreviewImages(colorDraft.images);
     const nextImages = currentImages.filter(
@@ -795,11 +935,14 @@ export default function ProductForm({
       ? nextImages[0]?.url || ""
       : colorDraft.imageUrl;
 
+
     updateColorDraftImages(nextImages, nextMainImageUrl);
   }
 
+
   function handleFormSubmit(event) {
     event.preventDefault();
+
 
     if (showColorForm) {
       window.alert(
@@ -808,12 +951,15 @@ export default function ProductForm({
       return;
     }
 
+
     const promoPriceValue = formValues.promoPrice?.toString().trim() || "";
+
 
     const normalizedPayloadColors = colors.map((color) => ({
       ...color,
       images: normalizePreviewImages(color.images),
     }));
+
 
     const payload = {
       name: formValues.name?.toString().trim() || "",
@@ -827,7 +973,9 @@ export default function ProductForm({
       colors: normalizedPayloadColors,
     };
 
+
     const initialColorsSnapshot = initialColorsSnapshotRef.current;
+
 
     const restockedColors =
       mode === "edit"
@@ -835,9 +983,11 @@ export default function ProductForm({
             .filter((color) => {
               const normalizedName = normalizeColorName(color.name);
 
+
               if (!normalizedName) {
                 return false;
               }
+
 
               const newQty = Math.max(0, Number(color.quantity) || 0);
               const previousColor = initialColorsSnapshot.find(
@@ -849,14 +999,17 @@ export default function ProductForm({
                   ? Math.max(0, Number(previousColor.quantity) || 0)
                   : 0;
 
+
               return oldQty === 0 && newQty > 0;
             })
             .map((color) => color.name.trim())
         : [];
 
+
     if (typeof onSubmit === "function") {
       onSubmit(payload, { mode, submitAction, restockedColors });
     }
+
 
     initialProductSnapshotRef.current = serializeProductSnapshot({
       ...formValues,
@@ -866,10 +1019,12 @@ export default function ProductForm({
       colors: normalizedPayloadColors,
     });
 
+
     if (typeof onUnsavedChangesChange === "function") {
       onUnsavedChangesChange(false);
     }
   }
+
 
   return (
     <section className={styles.wrapper}>
@@ -891,6 +1046,7 @@ export default function ProductForm({
               required
             />
           </div>
+
 
           <div className={styles.field}>
             <label htmlFor="category" className={styles.label}>
@@ -916,6 +1072,7 @@ export default function ProductForm({
           </div>
         </div>
 
+
         <div className={styles.row}>
           <div className={styles.field}>
             <label htmlFor="price" className={styles.label}>
@@ -936,6 +1093,7 @@ export default function ProductForm({
             />
           </div>
 
+
           <div className={styles.field}>
             <label htmlFor="promoPrice" className={styles.label}>
               Prix promo (€)
@@ -955,6 +1113,7 @@ export default function ProductForm({
             />
           </div>
         </div>
+
 
         <div className={styles.field}>
           <label htmlFor="stock" className={styles.label}>
@@ -986,6 +1145,7 @@ export default function ProductForm({
           />
         </div>
 
+
         <ProductImagesSection
           mainImageInputRef={mainImageInputRef}
           extraImageInputRef={extraImageInputRef}
@@ -1008,6 +1168,7 @@ export default function ProductForm({
           onUpdateProductImageCrop={handleUpdateProductImageCrop}
         />
 
+
         <div className={styles.field}>
           <label htmlFor="description" className={styles.label}>
             Description
@@ -1024,10 +1185,13 @@ export default function ProductForm({
           />
         </div>
 
+
         <div className={styles.separator} />
+
 
         <div className={styles.colorsHeader}>
           <h2 className={styles.colorsTitle}>Couleurs disponibles</h2>
+
 
           <button
             type="button"
@@ -1037,6 +1201,7 @@ export default function ProductForm({
             + Ajouter une couleur
           </button>
         </div>
+
 
         <ColorFormCard
           showColorForm={showColorForm}
@@ -1062,6 +1227,7 @@ export default function ProductForm({
           onUpdateColorImageCrop={handleUpdateColorImageCrop}
         />
 
+
         <ColorPreviewList
           colors={colors}
           activeColors={activeColors}
@@ -1072,12 +1238,14 @@ export default function ProductForm({
           onRemoveArchivedColor={handleRemoveArchivedColor}
         />
 
+
         {canShowNotifyButton && (
           <p className={styles.stockHint}>
             Des demandes de réassort sont en attente. La notification pourra être
             déclenchée après la mise à jour du produit.
           </p>
         )}
+
 
         <div className={styles.submitArea}>
           {showColorForm ? (
@@ -1086,6 +1254,7 @@ export default function ProductForm({
               produit.
             </p>
           ) : null}
+
 
           {mode === "edit" ? (
             <button

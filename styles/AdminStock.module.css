@@ -8,10 +8,12 @@
   color: var(--color-text);
 }
 
+
 .container {
   max-width: 1150px;
   margin: 0 auto;
 }
+
 
 .topBar {
   display: flex;
@@ -23,11 +25,13 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+
 .topBarActions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
 
 .welcome {
   margin: 0;
@@ -36,6 +40,7 @@
   line-height: 1.6;
   color: var(--color-text-soft);
 }
+
 
 .addButton {
   display: inline-flex;
@@ -57,16 +62,19 @@
     transform 0.15s ease;
 }
 
+
 .addButton:hover {
   background-color: var(--color-primary-dark);
   box-shadow: var(--shadow-warm-strong);
   transform: translateY(-1px);
 }
 
+
 .addButton:active {
   transform: translateY(0);
   box-shadow: var(--shadow-warm-soft);
 }
+
 
 .panel {
   overflow: hidden;
@@ -76,9 +84,11 @@
   box-shadow: var(--shadow-warm-medium);
 }
 
+
 .panel + .panel {
   margin-top: 20px;
 }
+
 
 .panelHeader {
   padding: 22px 22px 18px;
@@ -90,6 +100,7 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+
 .panelTitle {
   margin: 0;
   font-size: 1.45rem;
@@ -98,10 +109,12 @@
   color: var(--color-text);
 }
 
+
 .list {
   display: flex;
   flex-direction: column;
 }
+
 
 .row {
   display: flex;
@@ -111,9 +124,11 @@
   padding: 22px;
 }
 
+
 .row + .row {
   border-top: 1px solid var(--color-border);
 }
+
 
 .left {
   display: flex;
@@ -121,6 +136,7 @@
   min-width: 0;
   flex: 1;
 }
+
 
 .imageFrame {
   width: 104px;
@@ -134,19 +150,22 @@
   box-shadow: var(--shadow-warm-soft);
 }
 
+
 .image {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   transform-origin: center center;
 }
+
 
 .content {
   min-width: 0;
   flex: 1;
 }
+
 
 .name {
   margin: 0 0 6px;
@@ -156,11 +175,13 @@
   line-height: 1.3;
 }
 
+
 .category {
   margin: 0 0 6px;
   font-size: 0.9rem;
   color: var(--color-text-soft);
 }
+
 
 .description {
   margin: 0 0 8px;
@@ -169,12 +190,14 @@
   line-height: 1.6;
 }
 
+
 .variants {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
 }
+
 
 .variantTag {
   display: inline-flex;
@@ -189,6 +212,7 @@
   border: 1px solid var(--color-primary-light);
 }
 
+
 .right {
   min-width: 210px;
   display: flex;
@@ -197,12 +221,14 @@
   gap: 12px;
 }
 
+
 .priceBlock {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
 }
+
 
 .price {
   margin: 0;
@@ -211,6 +237,7 @@
   font-weight: 700;
   color: var(--color-secondary);
 }
+
 
 .priceOld {
   margin: 0;
@@ -221,6 +248,7 @@
   text-decoration: line-through;
 }
 
+
 .pricePromo {
   margin: 0;
   font-size: 1.7rem;
@@ -229,12 +257,14 @@
   color: var(--color-secondary);
 }
 
+
 .badges {
   display: flex;
   flex-direction: column;
   gap: 7px;
   align-items: flex-end;
 }
+
 
 .badgeLowStock,
 .badgeSoldOut,
@@ -250,20 +280,24 @@
   text-align: center;
 }
 
+
 .badgeLowStock {
   background-color: var(--color-status-primary-bg);
   color: var(--color-status-primary-text);
 }
+
 
 .badgeSoldOut {
   background-color: var(--color-error-highlight);
   color: var(--color-error);
 }
 
+
 .badgeStock {
   background-color: var(--color-status-neutral-bg);
   color: var(--color-gray-700);
 }
+
 
 .actions {
   display: flex;
@@ -272,6 +306,7 @@
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
 
 .iconButton,
 .archiveButton,
@@ -292,10 +327,12 @@
     box-shadow 0.2s ease;
 }
 
+
 .iconButton {
   background-color: var(--color-primary);
   box-shadow: var(--shadow-warm-medium);
 }
+
 
 .iconButton:hover {
   background-color: var(--color-primary-dark);
@@ -303,10 +340,12 @@
   box-shadow: var(--shadow-warm-strong);
 }
 
+
 .archiveButton {
   background-color: var(--color-gray-700);
   box-shadow: var(--shadow-warm-medium);
 }
+
 
 .archiveButton:hover {
   background-color: var(--color-gray-900);
@@ -314,16 +353,19 @@
   box-shadow: var(--shadow-warm-strong);
 }
 
+
 .deleteButton {
   background-color: var(--color-gray-700);
   box-shadow: var(--shadow-warm-medium);
 }
+
 
 .deleteButton:hover {
   background-color: var(--color-gray-900);
   transform: translateY(-1px);
   box-shadow: var(--shadow-warm-strong);
 }
+
 
 .unarchiveButton {
   min-height: 38px;
@@ -345,11 +387,13 @@
   box-shadow: var(--shadow-warm-medium);
 }
 
+
 .unarchiveButton:hover {
   background-color: var(--color-primary-dark);
   transform: translateY(-1px);
   box-shadow: var(--shadow-warm-strong);
 }
+
 
 .infoBox {
   margin-top: 20px;
@@ -363,6 +407,7 @@
   box-shadow: var(--shadow-warm-soft);
 }
 
+
 .infoBoxContent {
   display: flex;
   align-items: center;
@@ -370,6 +415,7 @@
   gap: 16px;
   flex-wrap: wrap;
 }
+
 
 .inlineInfoButton {
   min-height: 38px;
@@ -384,15 +430,18 @@
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
 
+
 .inlineInfoButton:hover {
   background-color: var(--color-primary);
   color: var(--color-white);
   transform: translateY(-1px);
 }
 
+
 .restockBlock {
   margin-top: 10px;
 }
+
 
 .restockLine {
   display: flex;
@@ -400,6 +449,7 @@
   align-items: center;
   gap: 10px;
 }
+
 
 .restockInfo {
   font-size: 0.85rem;
@@ -413,11 +463,13 @@
   border: 1px solid rgba(248, 184, 131, 0.22);
 }
 
+
 .restockInfoIcon {
   display: inline-flex;
   align-items: center;
   font-size: 0.95rem;
 }
+
 
 .restockToggleButton {
   border: none;
@@ -430,9 +482,11 @@
   text-underline-offset: 2px;
 }
 
+
 .restockToggleButton:hover {
   color: var(--color-primary);
 }
+
 
 .restockDetails {
   margin-top: 6px;
@@ -441,6 +495,7 @@
   background-color: rgba(248, 184, 131, 0.06);
   border: 1px dashed rgba(248, 184, 131, 0.32);
 }
+
 
 .restockList {
   list-style: none;
@@ -451,6 +506,7 @@
   gap: 6px;
 }
 
+
 .restockItem {
   display: flex;
   align-items: center;
@@ -458,10 +514,12 @@
   gap: 12px;
 }
 
+
 .restockItemLabel {
   font-size: 0.82rem;
   color: var(--color-text-soft);
 }
+
 
 .restockEmptyDetails {
   display: flex;
@@ -470,6 +528,7 @@
   font-size: 0.82rem;
   color: var(--color-text-soft);
 }
+
 
 .restockNotifyButton {
   height: 30px;
@@ -494,10 +553,12 @@
     box-shadow 0.2s ease;
 }
 
+
 .restockNotifyButton svg {
   flex-shrink: 0;
   font-size: 0.9rem;
 }
+
 
 .restockNotifyButton:hover:enabled {
   background-color: var(--color-primary-dark);
@@ -505,11 +566,13 @@
   box-shadow: var(--shadow-warm-medium);
 }
 
+
 .restockNotifyButton:disabled {
   opacity: 0.7;
   cursor: default;
   box-shadow: none;
 }
+
 
 .restockFeedback {
   margin: 8px 0 0;
@@ -518,10 +581,12 @@
   line-height: 1.5;
 }
 
+
 @media (max-width: 900px) {
   .page {
     padding: 34px 16px 56px;
   }
+
 
   .topBar {
     flex-direction: column;
@@ -531,11 +596,13 @@
     margin-bottom: 22px;
   }
 
+
   .row {
     flex-direction: column;
     gap: 18px;
     padding: 18px;
   }
+
 
   .right {
     width: 100%;
@@ -543,68 +610,83 @@
     align-items: flex-start;
   }
 
+
   .priceBlock,
   .badges {
     align-items: flex-start;
   }
+
 
   .actions {
     justify-content: flex-start;
   }
 }
 
+
 @media (max-width: 640px) {
   .panelHeader {
     padding: 18px 16px 14px;
   }
 
+
   .panelTitle {
     font-size: 1.22rem;
   }
+
 
   .row {
     padding: 16px;
   }
 
+
   .left {
     flex-direction: column;
   }
+
 
   .imageFrame {
     width: 92px;
     height: 92px;
   }
 
+
   .price,
   .pricePromo {
     font-size: 1.45rem;
   }
 
+
   .addButton {
     width: 100%;
   }
 
+
   .welcome {
     font-size: 0.95rem;
   }
+
 
   .infoBox {
     padding: 14px 16px;
   }
 }
 
+
 @media (max-width: 520px) {
   .page {
     padding: 28px 14px 48px;
   }
 
+
   .container {
     max-width: 100%;
   }
 
+
   .actions {
     width: 100%;
   }
+
 
   .iconButton,
   .archiveButton,
@@ -613,14 +695,17 @@
     height: 40px;
   }
 
+
   .unarchiveButton {
     flex: 1;
   }
+
 
   .restockItem {
     flex-direction: column;
     align-items: flex-start;
   }
+
 
   .restockNotifyButton {
     width: 100%;

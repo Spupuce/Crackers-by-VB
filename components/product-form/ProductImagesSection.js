@@ -1,15 +1,19 @@
 // components/product-form/ProductImagesSection.js
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../../styles/AdminProductForm.module.css";
+import { getProductImageTransformStyle } from "../../utils/product";
+
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
 const MIN_OFFSET = -100;
 const MAX_OFFSET = 100;
 
+
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
+
 
 function getSafeImage(image) {
   if (!image || typeof image !== "object") {
@@ -23,6 +27,7 @@ function getSafeImage(image) {
       zoom: 1,
     };
   }
+
 
   return {
     url: image.url || "",
@@ -45,6 +50,7 @@ function getSafeImage(image) {
   };
 }
 
+
 function getPointerPosition(event) {
   if (event.touches?.length) {
     return {
@@ -53,36 +59,13 @@ function getPointerPosition(event) {
     };
   }
 
+
   return {
     x: event.clientX,
     y: event.clientY,
   };
 }
 
-function getNormalizedOffset(offset, zoom) {
-  if (zoom <= 1) {
-    return 0;
-  }
-
-  const zoomOverflowRatio = (zoom - 1) / (MAX_ZOOM - 1);
-  const dynamicLimit = clamp(zoomOverflowRatio * 50, 0, 50);
-
-  return clamp(offset, -dynamicLimit, dynamicLimit);
-}
-
-function getPreviewStyle(image) {
-  const safeZoom = clamp(Number(image.zoom) || 1, MIN_ZOOM, MAX_ZOOM);
-  const offsetX = Number(image.offsetX) || 0;
-  const offsetY = Number(image.offsetY) || 0;
-
-  const translateXPercent = getNormalizedOffset(offsetX, safeZoom);
-  const translateYPercent = getNormalizedOffset(offsetY, safeZoom);
-
-  return {
-    transform: `translate(${translateXPercent}%, ${translateYPercent}%) scale(${safeZoom})`,
-    transformOrigin: "center center",
-  };
-}
 
 export default function ProductImagesSection({
   extraImageInputRef,
@@ -102,6 +85,7 @@ export default function ProductImagesSection({
     [productImages]
   );
 
+
   const [dragState, setDragState] = useState({
     index: null,
     startPointerX: 0,
@@ -110,8 +94,10 @@ export default function ProductImagesSection({
     startOffsetY: 0,
   });
 
+
   const previewRefs = useRef({});
   const imageRefs = useRef({});
+
 
   useEffect(() => {
     function handlePointerUp() {
@@ -119,6 +105,7 @@ export default function ProductImagesSection({
         if (currentState.index === null) {
           return currentState;
         }
+
 
         return {
           index: null,
@@ -130,33 +117,41 @@ export default function ProductImagesSection({
       });
     }
 
+
     function handlePointerMove(event) {
       setDragState((currentState) => {
         if (currentState.index === null) {
           return currentState;
         }
 
+
         const frame = previewRefs.current[currentState.index];
         const currentImage = normalizedImages[currentState.index];
+
 
         if (!frame || !currentImage || Number(currentImage.zoom) <= 1) {
           return currentState;
         }
 
+
         if (event.cancelable) {
           event.preventDefault();
         }
+
 
         const position = getPointerPosition(event);
         const rect = frame.getBoundingClientRect();
         const imageNode = imageRefs.current[currentState.index];
         const imageRect = imageNode?.getBoundingClientRect();
 
+
         const deltaX = position.x - currentState.startPointerX;
         const deltaY = position.y - currentState.startPointerY;
 
+
         const displayedWidth = imageRect?.width || rect.width;
         const displayedHeight = imageRect?.height || rect.height;
+
 
         const zoomFactor = Math.max(1, Number(currentImage.zoom));
         const maxOffsetX = Math.max(
@@ -167,6 +162,7 @@ export default function ProductImagesSection({
           0,
           (displayedHeight * zoomFactor - displayedHeight) / 2
         );
+
 
         const nextOffsetX = clamp(
           currentState.startOffsetX + deltaX,
@@ -179,10 +175,12 @@ export default function ProductImagesSection({
           maxOffsetY
         );
 
+
         const offsetXPct =
           displayedWidth > 0 ? (nextOffsetX / displayedWidth) * 100 : 0;
         const offsetYPct =
           displayedHeight > 0 ? (nextOffsetY / displayedHeight) * 100 : 0;
+
 
         onUpdateProductImageCrop(currentState.index, {
           offsetX: nextOffsetX,
@@ -191,15 +189,18 @@ export default function ProductImagesSection({
           offsetYPct,
         });
 
+
         return currentState;
       });
     }
+
 
     window.addEventListener("mousemove", handlePointerMove);
     window.addEventListener("mouseup", handlePointerUp);
     window.addEventListener("touchmove", handlePointerMove, { passive: false });
     window.addEventListener("touchend", handlePointerUp);
     window.addEventListener("touchcancel", handlePointerUp);
+
 
     return () => {
       window.removeEventListener("mousemove", handlePointerMove);
@@ -210,16 +211,20 @@ export default function ProductImagesSection({
     };
   }, [normalizedImages, onUpdateProductImageCrop]);
 
+
   function handleDragStart(event, index, image) {
     if (Number(image.zoom) <= 1) {
       return;
     }
 
+
     if (event.cancelable) {
       event.preventDefault();
     }
 
+
     const position = getPointerPosition(event);
+
 
     setDragState({
       index,
@@ -230,8 +235,10 @@ export default function ProductImagesSection({
     });
   }
 
+
   function handleZoomChange(index, value) {
     const nextZoom = clamp(Number(value), MIN_ZOOM, MAX_ZOOM);
+
 
     if (nextZoom <= 1) {
       onUpdateProductImageCrop(index, {
@@ -244,15 +251,18 @@ export default function ProductImagesSection({
       return;
     }
 
+
     onUpdateProductImageCrop(index, {
       zoom: nextZoom,
     });
   }
 
+
   function handleWheelZoom(event, index, image) {
     if (event.cancelable) {
       event.preventDefault();
     }
+
 
     const zoomStep = event.deltaY < 0 ? 0.1 : -0.1;
     const nextZoom = clamp(
@@ -261,6 +271,7 @@ export default function ProductImagesSection({
       MAX_ZOOM
     );
 
+
     if (nextZoom <= 1) {
       onUpdateProductImageCrop(index, {
         zoom: nextZoom,
@@ -272,20 +283,24 @@ export default function ProductImagesSection({
       return;
     }
 
+
     onUpdateProductImageCrop(index, {
       zoom: nextZoom,
     });
   }
 
+
   return (
     <div className={styles.field}>
       <label className={styles.label}>Galerie du produit</label>
+
 
       <div className={styles.imageFieldRow}>
         <div className={styles.imageUploadColumn}>
           <label htmlFor="productExtraImageFile" className={styles.smallLabel}>
             Ajouter une photo à la galerie
           </label>
+
 
           <input
             ref={extraImageInputRef}
@@ -296,6 +311,7 @@ export default function ProductImagesSection({
             className={styles.hiddenFileInput}
             onChange={onExtraProductImageUpload}
           />
+
 
           <div className={styles.fileControl}>
             <button
@@ -313,16 +329,19 @@ export default function ProductImagesSection({
             </span>
           </div>
 
+
           {isUploadingImage && (
             <p className={styles.stockHint}>
               Téléversement de l’image en cours...
             </p>
           )}
 
+
           {imageUploadError && (
             <p className={styles.errorText}>{imageUploadError}</p>
           )}
         </div>
+
 
         <div className={styles.imageUrlColumn}>
           {normalizedImages.length === 0 ? (
@@ -336,13 +355,16 @@ export default function ProductImagesSection({
                 const isDragging = dragState.index === index;
                 const canDrag = Number(image.zoom) > 1;
 
+
                 const frameRef = (node) => {
                   previewRefs.current[index] = node;
                 };
 
+
                 const imageRef = (node) => {
                   imageRefs.current[index] = node;
                 };
+
 
                 return (
                   <div
@@ -360,6 +382,7 @@ export default function ProductImagesSection({
                         {isMainImage ? "Image principale" : `Image ${index + 1}`}
                       </span>
 
+
                       {!isMainImage && (
                         <button
                           type="button"
@@ -370,6 +393,7 @@ export default function ProductImagesSection({
                         </button>
                       )}
                     </div>
+
 
                     <div
                       ref={frameRef}
@@ -390,9 +414,10 @@ export default function ProductImagesSection({
                         src={image.url}
                         alt={`Photo produit ${index + 1}`}
                         className={styles.extraImagePreviewContain}
-                        style={getPreviewStyle(image)}
+                        style={getProductImageTransformStyle(image)}
                         draggable={false}
                       />
+
 
                       <div className={styles.imageDragOverlay}>
                         <span className={styles.imageDragOverlayText}>
@@ -402,6 +427,7 @@ export default function ProductImagesSection({
                         </span>
                       </div>
                     </div>
+
 
                     <div className={styles.cropControls}>
                       <label className={styles.cropControl}>
@@ -418,6 +444,7 @@ export default function ProductImagesSection({
                         />
                       </label>
 
+
                       <div className={styles.imageCardHintRow}>
                         <p className={styles.stockHint}>
                           Ajuste le zoom et le cadrage, puis enregistre le
@@ -425,6 +452,7 @@ export default function ProductImagesSection({
                         </p>
                       </div>
                     </div>
+
 
                     <div className={styles.extraImageActions}>
                       <button
