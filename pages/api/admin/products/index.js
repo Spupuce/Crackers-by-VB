@@ -1,9 +1,10 @@
 // pages/api/admin/products/index.js
-import { connectMongo } from '../../../../lib/mongodb';
-import Product from '../../../../models/Product';
-import RestockRequest from '../../../../models/RestockRequest';
-import { resolveProductStock } from '../../../../lib/services/stockService';
-import { generateUniqueSlug } from '../../../../lib/services/slugService';
+import { connectMongo } from "../../../../lib/mongodb";
+import { requireAdminSession } from "../../../../lib/session";
+import Product from "../../../../models/Product";
+import RestockRequest from "../../../../models/RestockRequest";
+import { resolveProductStock } from "../../../../lib/services/stockService";
+import { generateUniqueSlug } from "../../../../lib/services/slugService";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
@@ -16,18 +17,18 @@ function clamp(value, min, max) {
 
 function buildStatusFilter(status) {
   switch (status) {
-    case 'active':
+    case "active":
       return { isArchived: false };
-    case 'archived':
+    case "archived":
       return { isArchived: true };
-    case 'all':
+    case "all":
     default:
       return {};
   }
 }
 
 function normalizePromoPrice(value) {
-  if (value === undefined || value === null || value === '') {
+  if (value === undefined || value === null || value === "") {
     return null;
   }
 
@@ -45,7 +46,7 @@ function normalizeImageEntry(image) {
     return null;
   }
 
-  if (typeof image === 'string') {
+  if (typeof image === "string") {
     const trimmedUrl = image.trim();
 
     if (!trimmedUrl) {
@@ -54,7 +55,7 @@ function normalizeImageEntry(image) {
 
     return {
       url: trimmedUrl,
-      publicId: '',
+      publicId: "",
       offsetX: 0,
       offsetY: 0,
       offsetXPct: 0,
@@ -63,18 +64,18 @@ function normalizeImageEntry(image) {
     };
   }
 
-  if (typeof image !== 'object') {
+  if (typeof image !== "object") {
     return null;
   }
 
-  const url = typeof image.url === 'string' ? image.url.trim() : '';
+  const url = typeof image.url === "string" ? image.url.trim() : "";
 
   if (!url) {
     return null;
   }
 
   const publicId =
-    typeof image.publicId === 'string' ? image.publicId.trim() : '';
+    typeof image.publicId === "string" ? image.publicId.trim() : "";
 
   const offsetX = Number(image.offsetX);
   const offsetY = Number(image.offsetY);
@@ -113,13 +114,12 @@ function normalizeColors(colors) {
   return colors.map((color) => {
     const normalizedImages = normalizeImages(color?.images);
     const fallbackImageUrl =
-      typeof color?.imageUrl === 'string' ? color.imageUrl.trim() : '';
-    const resolvedImageUrl =
-      fallbackImageUrl || normalizedImages[0]?.url || '';
+      typeof color?.imageUrl === "string" ? color.imageUrl.trim() : "";
+    const resolvedImageUrl = fallbackImageUrl || normalizedImages[0]?.url || "";
 
     return {
       ...color,
-      name: typeof color?.name === 'string' ? color.name.trim() : '',
+      name: typeof color?.name === "string" ? color.name.trim() : "",
       quantity: Number(color?.quantity) || 0,
       imageUrl: resolvedImageUrl,
       images: normalizedImages,
@@ -128,9 +128,9 @@ function normalizeColors(colors) {
 }
 
 function resolveMainImage({ imageUrl, images }) {
-  const trimmedImageUrl = typeof imageUrl === 'string' ? imageUrl.trim() : '';
+  const trimmedImageUrl = typeof imageUrl === "string" ? imageUrl.trim() : "";
   const normalizedImages = normalizeImages(images);
-  const resolvedImageUrl = trimmedImageUrl || normalizedImages[0]?.url || '';
+  const resolvedImageUrl = trimmedImageUrl || normalizedImages[0]?.url || "";
 
   return {
     imageUrl: resolvedImageUrl,
@@ -148,11 +148,11 @@ function validateProductPayload(payload) {
   });
 
   if (!payload.name || !payload.name.trim()) {
-    errors.push('Le nom du produit est obligatoire.');
+    errors.push("Le nom du produit est obligatoire.");
   }
 
   if (!payload.category || !payload.category.trim()) {
-    errors.push('La catégorie est obligatoire.');
+    errors.push("La catégorie est obligatoire.");
   }
 
   if (
@@ -161,15 +161,15 @@ function validateProductPayload(payload) {
     Number.isNaN(numericPrice) ||
     numericPrice < 0
   ) {
-    errors.push('Le prix du produit est invalide.');
+    errors.push("Le prix du produit est invalide.");
   }
 
   if (Number.isNaN(normalizedPromoPrice)) {
-    errors.push('Le prix promo est invalide.');
+    errors.push("Le prix promo est invalide.");
   }
 
   if (normalizedPromoPrice !== null && normalizedPromoPrice < 0) {
-    errors.push('Le prix promo ne peut pas être négatif.');
+    errors.push("Le prix promo ne peut pas être négatif.");
   }
 
   if (
@@ -177,11 +177,11 @@ function validateProductPayload(payload) {
     !Number.isNaN(numericPrice) &&
     normalizedPromoPrice >= numericPrice
   ) {
-    errors.push('Le prix promo doit être inférieur au prix normal.');
+    errors.push("Le prix promo doit être inférieur au prix normal.");
   }
 
   if (!resolvedMainImage.imageUrl) {
-    errors.push('L’image principale du produit est obligatoire.');
+    errors.push("L’image principale du produit est obligatoire.");
   }
 
   return {
@@ -192,16 +192,35 @@ function validateProductPayload(payload) {
 }
 
 export default async function handler(req, res) {
-  await connectMongo();
+  try {
+    const adminSession = requireAdminSession(req);
 
-  if (req.method === 'GET') {
+    if (!adminSession) {
+      return res.status(401).json({
+        ok: false,
+        message: "Accès administrateur requis.",
+      });
+    }
+
+    await connectMongo();
+  } catch (error) {
+    console.error("ADMIN_PRODUCTS_ACCESS_ERROR", error);
+
+    return res.status(500).json({
+      ok: false,
+      message: "Impossible de traiter la demande administrateur.",
+    });
+  }
+
+  if (req.method === "GET") {
     try {
-      const { status = 'active' } = req.query;
-      const allowedStatuses = ['active', 'archived', 'all'];
+      const { status = "active" } = req.query;
+      const allowedStatuses = ["active", "archived", "all"];
 
       if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
-          message: 'Le paramètre status doit être égal à active, archived ou all.',
+          message:
+            "Le paramètre status doit être égal à active, archived ou all.",
         });
       }
 
@@ -212,7 +231,7 @@ export default async function handler(req, res) {
       const pendingRequests = await RestockRequest.find({
         notifiedAt: null,
       })
-        .select('product email color createdAt')
+        .select("product email color createdAt")
         .lean();
 
       const pendingRequestsMap = pendingRequests.reduce((acc, request) => {
@@ -225,7 +244,7 @@ export default async function handler(req, res) {
         acc.get(productId).push({
           _id: request._id,
           email: request.email,
-          color: request.color || '',
+          color: request.color || "",
           createdAt: request.createdAt,
         });
 
@@ -247,12 +266,12 @@ export default async function handler(req, res) {
       return res.status(200).json(enrichedProducts);
     } catch (error) {
       return res.status(500).json({
-        message: 'Erreur lors de la récupération des produits admin.',
+        message: "Erreur lors de la récupération des produits admin.",
       });
     }
   }
 
-  if (req.method === 'POST') {
+  if (req.method === "POST") {
     try {
       const {
         name,
@@ -282,7 +301,7 @@ export default async function handler(req, res) {
 
       if (validationResult.errors.length > 0) {
         return res.status(400).json({
-          message: 'Le formulaire produit contient des erreurs.',
+          message: "Le formulaire produit contient des erreurs.",
           errors: validationResult.errors,
         });
       }
@@ -303,7 +322,7 @@ export default async function handler(req, res) {
         category: category.trim(),
         price: Number(price),
         promoPrice: validationResult.promoPrice,
-        description: description?.trim() || '',
+        description: description?.trim() || "",
         imageUrl: validationResult.resolvedMainImage.imageUrl,
         images: validationResult.resolvedMainImage.images,
         stock: stockData.stock,
@@ -316,12 +335,12 @@ export default async function handler(req, res) {
       return res.status(201).json(product);
     } catch (error) {
       return res.status(500).json({
-        message: 'Erreur lors de la création du produit.',
+        message: "Erreur lors de la création du produit.",
       });
     }
   }
 
   return res.status(405).json({
-    message: 'Méthode non autorisée.',
+    message: "Méthode non autorisée.",
   });
 }
