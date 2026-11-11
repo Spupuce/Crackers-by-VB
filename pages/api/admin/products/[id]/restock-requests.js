@@ -1,11 +1,30 @@
 // pages/api/admin/products/[id]/restock-requests.js
-
 import { connectMongo } from '../../../../../lib/mongodb';
+import { requireAdminSession } from '../../../../../lib/session';
 import Product from '../../../../../models/Product';
 import RestockRequest from '../../../../../models/RestockRequest';
 
 export default async function handler(req, res) {
-  await connectMongo();
+  try {
+    const adminSession = requireAdminSession(req);
+
+    if (!adminSession) {
+      return res.status(401).json({
+        ok: false,
+        message: 'Accès administrateur requis.',
+      });
+    }
+
+    await connectMongo();
+  } catch (error) {
+    console.error('ADMIN_PRODUCT_RESTOCK_REQUESTS_ACCESS_ERROR', error);
+
+    return res.status(500).json({
+      ok: false,
+      message: 'Impossible de traiter la demande administrateur.',
+    });
+  }
+
   const { id } = req.query;
 
   if (req.method === 'GET') {
