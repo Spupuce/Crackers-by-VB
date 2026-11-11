@@ -1,5 +1,6 @@
 // pages/api/admin/products/[id]/notify-restock.js
 import { connectMongo } from '../../../../../lib/mongodb';
+import { requireAdminSession } from '../../../../../lib/session';
 import Product from '../../../../../models/Product';
 import RestockRequest from '../../../../../models/RestockRequest';
 import nodemailer from 'nodemailer';
@@ -98,11 +99,20 @@ function isAcceptedResult(info, email) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Méthode non autorisée.' });
-  }
-
   try {
+    const adminSession = requireAdminSession(req);
+
+    if (!adminSession) {
+      return res.status(401).json({
+        ok: false,
+        message: 'Accès administrateur requis.',
+      });
+    }
+
+    if (req.method !== 'POST') {
+      return res.status(405).json({ message: 'Méthode non autorisée.' });
+    }
+
     await connectMongo();
 
     const { id } = req.query;
