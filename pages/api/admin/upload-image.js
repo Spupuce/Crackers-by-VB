@@ -1,7 +1,8 @@
 // pages/api/admin/upload-image.js
-import fs from 'fs';
-import formidable from 'formidable';
-import cloudinary from '../../../lib/services/cloudinary';
+import fs from "fs";
+import formidable from "formidable";
+import cloudinary from "../../../lib/services/cloudinary";
+import { requireAdminSession } from "../../../lib/session";
 
 export const config = {
   api: {
@@ -44,19 +45,28 @@ function getUploadedFile(files) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({
-      message: 'Méthode non autorisée.',
-    });
-  }
-
   try {
+    const adminSession = requireAdminSession(req);
+
+    if (!adminSession) {
+      return res.status(401).json({
+        ok: false,
+        message: "Accès administrateur requis.",
+      });
+    }
+
+    if (req.method !== "POST") {
+      return res.status(405).json({
+        message: "Méthode non autorisée.",
+      });
+    }
+
     const { files } = await parseForm(req);
     const uploadedFile = getUploadedFile(files);
 
     if (!uploadedFile) {
       return res.status(400).json({
-        message: 'Aucune image n’a été envoyée.',
+        message: "Aucune image n’a été envoyée.",
       });
     }
 
@@ -64,13 +74,13 @@ export default async function handler(req, res) {
 
     if (!filePath) {
       return res.status(400).json({
-        message: 'Le fichier reçu est invalide.',
+        message: "Le fichier reçu est invalide.",
       });
     }
 
     const uploadResult = await cloudinary.uploader.upload(filePath, {
-      folder: 'crackers-by-vb/products',
-      resource_type: 'image',
+      folder: "crackers-by-vb/products",
+      resource_type: "image",
     });
 
     if (fs.existsSync(filePath)) {
@@ -78,7 +88,7 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
-      message: 'Image téléversée avec succès.',
+      message: "Image téléversée avec succès.",
       imageUrl: uploadResult.secure_url,
       publicId: uploadResult.public_id,
       width: uploadResult.width,
@@ -87,7 +97,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     return res.status(500).json({
-      message: 'Erreur lors du téléversement de l’image.',
+      message: "Erreur lors du téléversement de l’image.",
     });
   }
 }
