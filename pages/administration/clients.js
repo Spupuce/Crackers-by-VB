@@ -1,8 +1,8 @@
 // pages/administration/clients.js
 
-import { useEffect, useMemo, useState } from 'react';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
+import { useEffect, useMemo, useState } from "react";
+import Head from "next/head";
+import { useRouter } from "next/router";
 import {
   FiArrowLeft,
   FiEye,
@@ -10,14 +10,14 @@ import {
   FiPhone,
   FiUser,
   FiMapPin,
-} from 'react-icons/fi';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import { useAuth } from '../../context/AuthContext';
-import styles from '../../styles/AdminClients.module.css';
+} from "react-icons/fi";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import { useAuth } from "../../context/AuthContext";
+import styles from "../../styles/AdminClients.module.css";
 
 const DEFAULT_ORDER_IMAGE =
-  'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=300&q=80';
+  "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=300&q=80";
 
 function formatPrice(value) {
   return `${Number(value || 0).toFixed(2)} €`;
@@ -28,38 +28,38 @@ function getClientFullName(client) {
 }
 
 function getStatusLabel(status) {
-  if (status === 'pending') return 'En attente';
-  if (status === 'preparing') return 'En préparation';
-  if (status === 'shipped') return 'Expédiée';
-  if (status === 'delivered') return 'Livrée';
-  if (status === 'cancelled') return 'Annulée';
-  return status || 'Inconnu';
+  if (status === "pending") return "En attente";
+  if (status === "preparing") return "En préparation";
+  if (status === "shipped") return "Expédiée";
+  if (status === "delivered") return "Livrée";
+  if (status === "cancelled") return "Annulée";
+  return status || "Inconnu";
 }
 
 function getStatusClass(status) {
-  if (status === 'pending') return styles.statusPending;
-  if (status === 'preparing') return styles.statusPreparing;
-  if (status === 'shipped') return styles.statusShipped;
-  if (status === 'delivered') return styles.statusDelivered;
-  if (status === 'cancelled') return styles.statusCancelled || '';
-  return '';
+  if (status === "pending") return styles.statusPending;
+  if (status === "preparing") return styles.statusPreparing;
+  if (status === "shipped") return styles.statusShipped;
+  if (status === "delivered") return styles.statusDelivered;
+  if (status === "cancelled") return styles.statusCancelled || "";
+  return "";
 }
 
 function formatPlacedAtLabel(date) {
   if (!date) {
-    return 'Commande enregistrée';
+    return "Commande enregistrée";
   }
 
   const parsed = new Date(date);
 
   if (Number.isNaN(parsed.getTime())) {
-    return 'Commande enregistrée';
+    return "Commande enregistrée";
   }
 
-  return `Passée le ${parsed.toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+  return `Passée le ${parsed.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   })}`;
 }
 
@@ -74,7 +74,7 @@ function buildFallbackOrderDetails(order) {
     placedAtLabel: formatPlacedAtLabel(order.date),
     status: order.status,
     items: Array.from({ length: itemCount }, (_, index) => ({
-      name: itemCount > 1 ? `Article ${index + 1}` : 'Article commandé',
+      name: itemCount > 1 ? `Article ${index + 1}` : "Article commandé",
       quantity: 1,
       unitPrice,
       lineTotal: unitPrice,
@@ -83,8 +83,8 @@ function buildFallbackOrderDetails(order) {
     subtotal,
     shippingAmount,
     total: subtotal + shippingAmount,
-    paymentMethod: order.paymentMethod || 'Mode de paiement à confirmer',
-    shippingMethod: order.shippingMethod || 'Livraison',
+    paymentMethod: order.paymentMethod || "Mode de paiement à confirmer",
+    shippingMethod: order.shippingMethod || "Livraison",
   };
 }
 
@@ -92,7 +92,7 @@ function normalizeAdminOrderForClient(order) {
   const createdAt = order.createdAt || order.date || order.placedAt || null;
   const items = Array.isArray(order.items)
     ? order.items.map((item) => ({
-        name: item.name || item.productName || 'Article',
+        name: item.name || item.productName || "Article",
         quantity: Number(item.quantity || 0) || 1,
         unitPrice: Number(item.unitPrice || item.price || 0),
         lineTotal:
@@ -109,26 +109,27 @@ function normalizeAdminOrderForClient(order) {
 
   const subtotal = Number(order.subtotalAmount || order.subtotal || 0);
   const shippingAmount = Number(order.shippingAmount || 0);
-  const total =
-    Number(order.totalAmount || order.total || subtotal + shippingAmount);
+  const total = Number(
+    order.totalAmount || order.total || subtotal + shippingAmount,
+  );
 
   const paymentMethod =
-    order.paymentMethodLabel ||
-    order.paymentMethod ||
-    'Carte bancaire';
+    order.paymentMethodLabel || order.paymentMethod || "Carte bancaire";
 
   const shippingMethodLabel =
     order.shippingMethod ||
     order.shipping?.method ||
-    (order.shipping?.carrier ? 'Livraison' : 'Livraison');
+    (order.shipping?.carrier ? "Livraison" : "Livraison");
+
+  const rawId = order._id?.toString?.() || order._id || "";
+  const id = order.orderNumber || rawId;
 
   return {
-    id: order.orderNumber || order._id?.toString?.() || order._id || '',
-    rawId: order._id?.toString?.() || order._id || '',
-    date: createdAt
-      ? new Date(createdAt).toLocaleDateString('fr-FR')
-      : '',
-    status: order.status || 'pending',
+    id,
+    rawId,
+    selectionId: rawId || id,
+    date: createdAt ? new Date(createdAt).toLocaleDateString("fr-FR") : "",
+    status: order.status || "pending",
     itemsCount,
     total,
     paymentMethod,
@@ -142,29 +143,40 @@ function normalizeAdminOrderForClient(order) {
 
 function buildClientsFromOrders(apiOrders) {
   const clientsMap = new Map();
+  const anonymizedOrders = [];
 
   apiOrders.forEach((apiOrder) => {
+    const isAnonymized = Boolean(
+      apiOrder.isUserDeleted || apiOrder.anonymizedAt,
+    );
+
+    if (isAnonymized) {
+      anonymizedOrders.push(normalizeAdminOrderForClient(apiOrder));
+      return;
+    }
+
     const customer = apiOrder.customer || {};
-    const email = (customer.email || '').trim().toLowerCase();
+    const email = (customer.email || "").trim().toLowerCase();
 
     if (!email) {
       return;
     }
 
-    const firstName = customer.firstName || '';
-    const lastName = customer.lastName || '';
-    const phone = customer.phone || '';
+    const firstName = customer.firstName || "";
+    const lastName = customer.lastName || "";
+    const phone = customer.phone || "";
     const shippingAddress = apiOrder.shippingAddress || {};
     const addressParts = [
-      shippingAddress.addressLine1 || '',
-      shippingAddress.addressLine2 || '',
-      `${shippingAddress.postalCode || ''} ${shippingAddress.city || ''}`.trim(),
-      shippingAddress.country || '',
+      shippingAddress.addressLine1 || "",
+      shippingAddress.addressLine2 || "",
+      `${shippingAddress.postalCode || ""} ${
+        shippingAddress.city || ""
+      }`.trim(),
+      shippingAddress.country || "",
     ].filter(Boolean);
-    const address = addressParts.join(', ');
+    const address = addressParts.join(", ");
 
     const orderForClient = normalizeAdminOrderForClient(apiOrder);
-
     const existing = clientsMap.get(email);
 
     if (existing) {
@@ -172,8 +184,8 @@ function buildClientsFromOrders(apiOrders) {
       existing.ordersCount += 1;
       existing.totalSpent += orderForClient.total;
     } else {
-      const initials = `${(firstName || 'C')[0] || 'C'}${
-        (lastName || 'L')[0] || ''
+      const initials = `${(firstName || "C")[0] || "C"}${
+        (lastName || "L")[0] || ""
       }`.toUpperCase();
 
       clientsMap.set(email, {
@@ -191,8 +203,54 @@ function buildClientsFromOrders(apiOrders) {
     }
   });
 
-  return Array.from(clientsMap.values()).sort((a, b) =>
-    getClientFullName(a).localeCompare(getClientFullName(b), 'fr')
+  const clients = Array.from(clientsMap.values()).sort((a, b) =>
+    getClientFullName(a).localeCompare(getClientFullName(b), "fr"),
+  );
+
+  return { clients, anonymizedOrders };
+}
+
+function OrderHistoryList({ orders, onSelectOrder }) {
+  return (
+    <div className={styles.clientOrdersList}>
+      {orders.map((order) => (
+        <article key={order.selectionId} className={styles.clientOrderRow}>
+          <div className={styles.clientOrderMain}>
+            <p className={styles.clientOrderId}>{order.id}</p>
+            <p className={styles.clientOrderMeta}>Date : {order.date || "—"}</p>
+            <p className={styles.clientOrderMeta}>
+              {order.itemsCount} {order.itemsCount > 1 ? "articles" : "article"}
+            </p>
+          </div>
+
+          <div className={styles.clientOrderRight}>
+            <div className={styles.clientOrderPriceBlock}>
+              <p className={styles.clientOrderTotal}>
+                {formatPrice(order.total)}
+              </p>
+              <p className={styles.clientOrderPayment}>{order.paymentMethod}</p>
+            </div>
+
+            <span
+              className={`${styles.statusBadge} ${getStatusClass(
+                order.status,
+              )}`}
+            >
+              {getStatusLabel(order.status)}
+            </span>
+
+            <button
+              type="button"
+              className={styles.viewOrderButton}
+              onClick={() => onSelectOrder(order.selectionId)}
+              aria-label={`Voir la commande ${order.id}`}
+            >
+              <FiEye aria-hidden="true" />
+            </button>
+          </div>
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -201,21 +259,26 @@ export default function AdminClientsPage() {
   const { isAuthenticated, isAdmin, isAuthReady } = useAuth();
 
   const [clients, setClients] = useState([]);
-  const [selectedClientId, setSelectedClientId] = useState('');
-  const [selectedOrderId, setSelectedOrderId] = useState('');
+  const [anonymizedOrders, setAnonymizedOrders] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState("");
   const [isLoadingClients, setIsLoadingClients] = useState(true);
-  const [clientsError, setClientsError] = useState('');
+  const [clientsError, setClientsError] = useState("");
 
   const selectedClient =
     clients.find((client) => client.id === selectedClientId) || null;
 
   const selectedOrderSummary = useMemo(() => {
-    if (!selectedClient || !selectedOrderId) return null;
+    if (!selectedOrderId) {
+      return null;
+    }
+
+    const orders = selectedClient ? selectedClient.orders : anonymizedOrders;
+
     return (
-      selectedClient.orders.find((order) => order.id === selectedOrderId) ||
-      null
+      orders.find((order) => order.selectionId === selectedOrderId) || null
     );
-  }, [selectedClient, selectedOrderId]);
+  }, [selectedClient, anonymizedOrders, selectedOrderId]);
 
   const selectedOrderDetails = useMemo(() => {
     if (!selectedOrderSummary) {
@@ -242,15 +305,19 @@ export default function AdminClientsPage() {
     return buildFallbackOrderDetails(selectedOrderSummary);
   }, [selectedOrderSummary]);
 
+  const anonymizedTotal = anonymizedOrders.reduce(
+    (sum, order) => sum + order.total,
+    0,
+  );
+
   const totalClients = clients.length;
-  const totalOrders = clients.reduce(
-    (sum, client) => sum + (client.ordersCount || 0),
-    0
-  );
-  const totalRevenue = clients.reduce(
-    (sum, client) => sum + (client.totalSpent || 0),
-    0
-  );
+  const totalOrders =
+    clients.reduce((sum, client) => sum + (client.ordersCount || 0), 0) +
+    anonymizedOrders.length;
+
+  const totalRevenue =
+    clients.reduce((sum, client) => sum + (client.totalSpent || 0), 0) +
+    anonymizedTotal;
 
   useEffect(() => {
     if (!isAuthReady) {
@@ -258,12 +325,12 @@ export default function AdminClientsPage() {
     }
 
     if (!isAuthenticated) {
-      router.replace('/connexion?redirect=/administration/clients');
+      router.replace("/connexion?redirect=/administration/clients");
       return;
     }
 
     if (!isAdmin) {
-      router.replace('/');
+      router.replace("/");
     }
   }, [isAuthReady, isAuthenticated, isAdmin, router]);
 
@@ -274,26 +341,28 @@ export default function AdminClientsPage() {
       }
 
       setIsLoadingClients(true);
-      setClientsError('');
+      setClientsError("");
 
       try {
-        const response = await fetch('/api/admin/orders');
+        const response = await fetch("/api/admin/orders");
         const data = await response.json().catch(() => null);
 
         if (!response.ok) {
           throw new Error(
-            data?.message || 'Impossible de récupérer les commandes clients.'
+            data?.message || "Impossible de récupérer les commandes clients.",
           );
         }
 
         const apiOrders = Array.isArray(data?.orders) ? data.orders : [];
-        const nextClients = buildClientsFromOrders(apiOrders);
+        const nextData = buildClientsFromOrders(apiOrders);
 
-        setClients(nextClients);
+        setClients(nextData.clients);
+        setAnonymizedOrders(nextData.anonymizedOrders);
       } catch (error) {
         setClients([]);
+        setAnonymizedOrders([]);
         setClientsError(
-          error?.message || 'Impossible de charger les fiches clients.'
+          error?.message || "Impossible de charger les fiches clients.",
         );
       } finally {
         setIsLoadingClients(false);
@@ -303,7 +372,7 @@ export default function AdminClientsPage() {
     loadClientsFromOrders();
   }, [isAuthReady, isAuthenticated, isAdmin]);
 
-  if (!isAuthReady) {
+  if (!isAuthReady || !isAuthenticated || !isAdmin) {
     return (
       <>
         <Head>
@@ -314,7 +383,11 @@ export default function AdminClientsPage() {
 
         <main className={styles.page}>
           <div className={styles.loadingContainer}>
-            <div className={styles.loadingBox}>Vérification de la session...</div>
+            <div className={styles.loadingBox}>
+              {!isAuthReady
+                ? "Vérification de la session..."
+                : "Redirection en cours..."}
+            </div>
           </div>
         </main>
 
@@ -323,33 +396,16 @@ export default function AdminClientsPage() {
     );
   }
 
-  if (!isAuthenticated || !isAdmin) {
-    return (
-      <>
-        <Head>
-          <title>Fiches clients - Administration | Crackers by VB</title>
-        </Head>
+  if (selectedOrderDetails && selectedOrderSummary) {
+    const orderContextLabel = selectedClient
+      ? getClientFullName(selectedClient)
+      : "Compte supprimé";
 
-        <Header />
-
-        <main className={styles.page}>
-          <div className={styles.loadingContainer}>
-            <div className={styles.loadingBox}>Redirection en cours...</div>
-          </div>
-        </main>
-
-        <Footer />
-      </>
-    );
-  }
-
-  if (selectedOrderDetails && selectedClient && selectedOrderSummary) {
     return (
       <>
         <Head>
           <title>
-            {selectedOrderSummary.id} - {getClientFullName(selectedClient)} |
-            Administration
+            {selectedOrderSummary.id} - {orderContextLabel} | Administration
           </title>
         </Head>
 
@@ -360,11 +416,15 @@ export default function AdminClientsPage() {
             <button
               type="button"
               className={styles.backLink}
-              onClick={() => setSelectedOrderId('')}
+              onClick={() => setSelectedOrderId("")}
             >
               <FiArrowLeft aria-hidden="true" />
               <span>
-                Retour aux commandes de {getClientFullName(selectedClient)}
+                {selectedClient
+                  ? `Retour aux commandes de ${getClientFullName(
+                      selectedClient,
+                    )}`
+                  : "Retour aux fiches clients et commandes de comptes supprimés"}
               </span>
             </button>
 
@@ -377,11 +437,17 @@ export default function AdminClientsPage() {
                   <p className={styles.orderDetailSubtitle}>
                     {selectedOrderDetails.placedAtLabel}
                   </p>
+                  {!selectedClient ? (
+                    <p className={styles.orderDetailSubtitle}>
+                      Compte supprimé — commande conservée sous forme
+                      anonymisée.
+                    </p>
+                  ) : null}
                 </div>
 
                 <span
                   className={`${styles.statusBadge} ${getStatusClass(
-                    selectedOrderSummary.status
+                    selectedOrderSummary.status,
                   )}`}
                 >
                   {getStatusLabel(selectedOrderSummary.status)}
@@ -481,8 +547,8 @@ export default function AdminClientsPage() {
               type="button"
               className={styles.backLink}
               onClick={() => {
-                setSelectedClientId('');
-                setSelectedOrderId('');
+                setSelectedClientId("");
+                setSelectedOrderId("");
               }}
             >
               <FiArrowLeft aria-hidden="true" />
@@ -503,16 +569,18 @@ export default function AdminClientsPage() {
 
                     <div className={styles.clientDetailMeta}>
                       <p>
-                        <FiMail aria-hidden="true" />{' '}
+                        <FiMail aria-hidden="true" />{" "}
                         <span>{selectedClient.email}</span>
                       </p>
                       <p>
-                        <FiPhone aria-hidden="true" />{' '}
-                        <span>{selectedClient.phone || '—'}</span>
+                        <FiPhone aria-hidden="true" />{" "}
+                        <span>{selectedClient.phone || "—"}</span>
                       </p>
                       <p>
-                        <FiMapPin aria-hidden="true" />{' '}
-                        <span>{selectedClient.address || 'Adresse inconnue'}</span>
+                        <FiMapPin aria-hidden="true" />{" "}
+                        <span>
+                          {selectedClient.address || "Adresse inconnue"}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -539,55 +607,14 @@ export default function AdminClientsPage() {
               </header>
 
               <section className={styles.clientHistorySection}>
-                <h2 className={styles.sectionTitle}>Historique des commandes</h2>
+                <h2 className={styles.sectionTitle}>
+                  Historique des commandes
+                </h2>
 
-                <div className={styles.clientOrdersList}>
-                  {selectedClient.orders.map((order) => (
-                    <article
-                      key={order.id}
-                      className={styles.clientOrderRow}
-                    >
-                      <div className={styles.clientOrderMain}>
-                        <p className={styles.clientOrderId}>{order.id}</p>
-                        <p className={styles.clientOrderMeta}>
-                          Date : {order.date || '—'}
-                        </p>
-                        <p className={styles.clientOrderMeta}>
-                          {order.itemsCount}{' '}
-                          {order.itemsCount > 1 ? 'articles' : 'article'}
-                        </p>
-                      </div>
-
-                      <div className={styles.clientOrderRight}>
-                        <div className={styles.clientOrderPriceBlock}>
-                          <p className={styles.clientOrderTotal}>
-                            {formatPrice(order.total)}
-                          </p>
-                          <p className={styles.clientOrderPayment}>
-                            {order.paymentMethod}
-                          </p>
-                        </div>
-
-                        <span
-                          className={`${styles.statusBadge} ${getStatusClass(
-                            order.status
-                          )}`}
-                        >
-                          {getStatusLabel(order.status)}
-                        </span>
-
-                        <button
-                          type="button"
-                          className={styles.viewOrderButton}
-                          onClick={() => setSelectedOrderId(order.id)}
-                          aria-label={`Voir la commande ${order.id}`}
-                        >
-                          <FiEye aria-hidden="true" />
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                <OrderHistoryList
+                  orders={selectedClient.orders}
+                  onSelectOrder={setSelectedOrderId}
+                />
               </section>
             </section>
           </div>
@@ -624,7 +651,11 @@ export default function AdminClientsPage() {
                 <div className={styles.kpiContent}>
                   <p className={styles.kpiLabel}>Total clients</p>
                   <p className={styles.kpiValue}>
-                    {isLoadingClients ? '...' : totalClients}
+                    {isLoadingClients ? "..." : totalClients}
+                  </p>
+                  <p className={styles.kpiLabel}>
+                    Clients identifiés dans les commandes, hors comptes
+                    supprimés.
                   </p>
                 </div>
               </article>
@@ -636,7 +667,7 @@ export default function AdminClientsPage() {
                 <div className={styles.kpiContent}>
                   <p className={styles.kpiLabel}>Total commandes</p>
                   <p className={styles.kpiValue}>
-                    {isLoadingClients ? '...' : totalOrders}
+                    {isLoadingClients ? "..." : totalOrders}
                   </p>
                 </div>
               </article>
@@ -648,7 +679,7 @@ export default function AdminClientsPage() {
                 <div className={styles.kpiContent}>
                   <p className={styles.kpiLabel}>Chiffre d&apos;affaires</p>
                   <p className={styles.kpiValue}>
-                    {isLoadingClients ? '...' : formatPrice(totalRevenue)}
+                    {isLoadingClients ? "..." : formatPrice(totalRevenue)}
                   </p>
                 </div>
               </article>
@@ -674,7 +705,8 @@ export default function AdminClientsPage() {
                   {clients.length === 0 ? (
                     <div className={styles.loadingContainer}>
                       <div className={styles.loadingBox}>
-                        Aucune cliente enregistrée pour le moment.
+                        Aucun client identifié dans les commandes non
+                        anonymisées pour le moment.
                       </div>
                     </div>
                   ) : (
@@ -682,7 +714,10 @@ export default function AdminClientsPage() {
                       <article
                         key={client.id}
                         className={styles.clientCard}
-                        onClick={() => setSelectedClientId(client.id)}
+                        onClick={() => {
+                          setSelectedOrderId("");
+                          setSelectedClientId(client.id);
+                        }}
                       >
                         <div className={styles.clientCardMain}>
                           <div className={styles.avatar}>
@@ -699,7 +734,7 @@ export default function AdminClientsPage() {
                             </p>
                             <p className={styles.clientContact}>
                               <FiPhone aria-hidden="true" />
-                              <span>{client.phone || '—'}</span>
+                              <span>{client.phone || "—"}</span>
                             </p>
                           </div>
                         </div>
@@ -722,6 +757,57 @@ export default function AdminClientsPage() {
                 </div>
               ) : null}
             </section>
+
+            {!isLoadingClients &&
+            !clientsError &&
+            anonymizedOrders.length > 0 ? (
+              <section
+                className={styles.clientDetail}
+                aria-labelledby="anonymized-orders-title"
+              >
+                <header className={styles.clientDetailHeader}>
+                  <div className={styles.clientDetailInfo}>
+                    <h2
+                      id="anonymized-orders-title"
+                      className={styles.clientDetailName}
+                    >
+                      Commandes de comptes supprimés
+                    </h2>
+                    <p className={styles.orderDetailSubtitle}>
+                      Ces commandes anonymisées restent incluses dans les totaux
+                      des commandes et des montants, mais pas dans le compteur
+                      clients.
+                    </p>
+                  </div>
+
+                  <div className={styles.clientDetailStats}>
+                    <div className={styles.clientDetailStat}>
+                      <span className={styles.clientDetailStatLabel}>
+                        Montant cumulé
+                      </span>
+                      <span className={styles.clientDetailStatValue}>
+                        {formatPrice(anonymizedTotal)}
+                      </span>
+                    </div>
+                    <div className={styles.clientDetailStat}>
+                      <span className={styles.clientDetailStatLabel}>
+                        Commandes
+                      </span>
+                      <span className={styles.clientDetailStatValue}>
+                        {anonymizedOrders.length}
+                      </span>
+                    </div>
+                  </div>
+                </header>
+
+                <div className={styles.clientHistorySection}>
+                  <OrderHistoryList
+                    orders={anonymizedOrders}
+                    onSelectOrder={setSelectedOrderId}
+                  />
+                </div>
+              </section>
+            ) : null}
           </section>
         </div>
       </main>
