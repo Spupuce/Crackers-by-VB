@@ -320,6 +320,14 @@ export default function AdminClientsPage() {
     anonymizedTotal;
 
   useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, [selectedClientId, selectedOrderId]);
+
+  useEffect(() => {
     if (!isAuthReady) {
       return;
     }
