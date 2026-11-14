@@ -1,6 +1,6 @@
 // pages/mon-compte.js
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { FiLock, FiPackage } from 'react-icons/fi';
@@ -36,6 +36,7 @@ function buildInitialPasswordForm() {
 export default function MonComptePage() {
   const router = useRouter();
   const { user, isAuthenticated, isAuthReady, logout, updateUser } = useAuth();
+  const isRedirectingHomeRef = useRef(false);
 
   const [formValues, setFormValues] = useState(buildInitialForm(user));
   const [passwordValues, setPasswordValues] = useState(
@@ -66,6 +67,9 @@ export default function MonComptePage() {
 
   useEffect(() => {
     if (isAuthReady && !isAuthenticated) {
+      if (isRedirectingHomeRef.current) {
+        return;
+      }
       setOrders([]);
       setSelectedOrder(null);
       setIsLoadingOrders(false);
@@ -249,6 +253,7 @@ export default function MonComptePage() {
       });
     } catch (error) {
     } finally {
+      isRedirectingHomeRef.current = true;
       setOrders([]);
       setSelectedOrder(null);
       setOrdersErrorMessage('');
@@ -474,6 +479,8 @@ export default function MonComptePage() {
         );
         return;
       }
+
+      isRedirectingHomeRef.current = true;
 
       setOrders([]);
       setSelectedOrder(null);
