@@ -49,6 +49,11 @@ async function anonymizeUserOrders(user) {
 
       order.notes = '';
 
+      if (order.statusEmail) {
+        order.statusEmail.recipient = '';
+        order.statusEmail.messageId = '';
+      }
+
       await order.save();
     })
   );

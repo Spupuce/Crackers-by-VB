@@ -43,6 +43,22 @@ function normalizeStatusLabel(statusLabel) {
   return '';
 }
 
+async function findOrderForEmail(orderId) {
+  const orderByNumber = await Order.findOne({
+    orderNumber: orderId,
+  });
+
+  if (orderByNumber) {
+    return orderByNumber;
+  }
+
+  if (!/^[a-fA-F0-9]{24}$/.test(orderId)) {
+    return null;
+  }
+
+  return Order.findById(orderId);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Méthode non autorisée.' });
@@ -57,7 +73,6 @@ export default async function handler(req, res) {
   try {
     const {
       testEmail,
-      customerEmail,
       recipientType,
       orderId,
       customerName,
@@ -69,12 +84,40 @@ export default async function handler(req, res) {
 
     const normalizedCustomMessage = normalizeCustomMessage(customMessage);
 
-    if (!orderId || typeof orderId !== 'string') {
+    if (
+      !orderId ||
+      typeof orderId !== 'string' ||
+      !orderId.trim()
+    ) {
       return res.status(400).json({ message: 'Commande invalide.' });
     }
 
-    const finalRecipient =
-      recipientType === 'customer' ? customerEmail : testEmail;
+    const normalizedOrderId = orderId.trim();
+    const isCustomerEmail = recipientType === 'customer';
+
+    let order = null;
+    let finalRecipient = testEmail;
+
+    if (isCustomerEmail) {
+      await connectMongo();
+
+      order = await findOrderForEmail(normalizedOrderId);
+
+      if (!order) {
+        return res.status(404).json({
+          message: 'Commande introuvable.',
+        });
+      }
+
+      if (order.isUserDeleted || order.anonymizedAt) {
+        return res.status(409).json({
+          message:
+            'Envoi impossible : le compte associé à cette commande a été supprimé et ses coordonnées ont été anonymisées.',
+        });
+      }
+
+      finalRecipient = order.customer?.email || '';
+    }
 
     if (!isValidEmail(finalRecipient)) {
       return res.status(400).json({
@@ -82,12 +125,12 @@ export default async function handler(req, res) {
       });
     }
 
-    const subject = `Votre commande ${orderId} - ${statusLabel}`;
+    const subject = `Votre commande ${normalizedOrderId} - ${statusLabel}`;
 
     const text = normalizedCustomMessage
       ? buildCustomEmailText(normalizedCustomMessage)
       : buildOrderStatusEmailText({
-          orderId,
+          orderId: normalizedOrderId,
           customerName,
           statusLabel,
           trackingNumber,
@@ -97,7 +140,7 @@ export default async function handler(req, res) {
     const html = normalizedCustomMessage
       ? buildCustomEmailHtml(normalizedCustomMessage)
       : buildOrderStatusEmailHtml({
-          orderId,
+          orderId: normalizedOrderId,
           customerName,
           statusLabel,
           trackingNumber,
@@ -111,31 +154,36 @@ export default async function handler(req, res) {
       html,
     });
 
-    if (recipientType === 'customer') {
-      await connectMongo();
-
+    if (isCustomerEmail && order) {
       const normalizedStatus = normalizeStatusLabel(statusLabel);
-      const order = await Order.findOne({
-        $or: [{ orderNumber: orderId }, { _id: orderId }],
-      });
 
-      if (order) {
-        order.statusEmail = {
-          sent: true,
-          sentAt: new Date(),
-          sentForStatus: normalizedStatus,
-          recipient: finalRecipient,
-          messageId: info?.messageId || '',
-        };
-
-        await order.save();
-      }
+      await Order.updateOne(
+        {
+          _id: order._id,
+          isUserDeleted: { $ne: true },
+          anonymizedAt: null,
+        },
+        {
+          $set: {
+            statusEmail: {
+              sent: true,
+              sentAt: new Date(),
+              sentForStatus: normalizedStatus,
+              recipient: finalRecipient,
+              messageId: info?.messageId || '',
+            },
+          },
+        },
+        {
+          runValidators: true,
+        }
+      );
     }
 
     console.log('ORDER_STATUS_MAIL_RESULT:', {
       adminUserId: session.userId,
-      orderId,
-      recipientType: recipientType === 'customer' ? 'customer' : 'test',
+      orderId: normalizedOrderId,
+      recipientType: isCustomerEmail ? 'customer' : 'test',
       recipient: finalRecipient,
       usedCustomMessage: Boolean(normalizedCustomMessage),
       messageId: info?.messageId || null,
