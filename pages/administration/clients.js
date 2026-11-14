@@ -10,6 +10,7 @@ import {
   FiPhone,
   FiUser,
   FiMapPin,
+  FiUserX,
 } from "react-icons/fi";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -18,6 +19,8 @@ import styles from "../../styles/AdminClients.module.css";
 
 const DEFAULT_ORDER_IMAGE =
   "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=300&q=80";
+
+const DELETED_ACCOUNT_CLIENT_ID = "__anonymized_deleted_accounts__";
 
 function formatPrice(value) {
   return `${Number(value || 0).toFixed(2)} €`;
@@ -265,20 +268,48 @@ export default function AdminClientsPage() {
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [clientsError, setClientsError] = useState("");
 
-  const selectedClient =
-    clients.find((client) => client.id === selectedClientId) || null;
+  const anonymizedTotal = useMemo(() => {
+    return anonymizedOrders.reduce((sum, order) => sum + order.total, 0);
+  }, [anonymizedOrders]);
 
-  const selectedOrderSummary = useMemo(() => {
-    if (!selectedOrderId) {
+  const deletedAccountsVirtualClient = useMemo(() => {
+    if (anonymizedOrders.length === 0) {
       return null;
     }
 
-    const orders = selectedClient ? selectedClient.orders : anonymizedOrders;
+    return {
+      id: DELETED_ACCOUNT_CLIENT_ID,
+      initials: "CS",
+      firstName: "Comptes",
+      lastName: "supprimés",
+      email: "Anonymisé",
+      phone: "—",
+      address: "Commandes d'utilisateurs supprimés conservées",
+      ordersCount: anonymizedOrders.length,
+      totalSpent: anonymizedTotal,
+      orders: anonymizedOrders,
+      isDeletedAccountGroup: true,
+    };
+  }, [anonymizedOrders, anonymizedTotal]);
+
+  const selectedClient = useMemo(() => {
+    if (selectedClientId === DELETED_ACCOUNT_CLIENT_ID) {
+      return deletedAccountsVirtualClient;
+    }
+    return clients.find((client) => client.id === selectedClientId) || null;
+  }, [clients, selectedClientId, deletedAccountsVirtualClient]);
+
+  const selectedOrderSummary = useMemo(() => {
+    if (!selectedOrderId || !selectedClient) {
+      return null;
+    }
 
     return (
-      orders.find((order) => order.selectionId === selectedOrderId) || null
+      selectedClient.orders.find(
+        (order) => order.selectionId === selectedOrderId,
+      ) || null
     );
-  }, [selectedClient, anonymizedOrders, selectedOrderId]);
+  }, [selectedClient, selectedOrderId]);
 
   const selectedOrderDetails = useMemo(() => {
     if (!selectedOrderSummary) {
@@ -304,11 +335,6 @@ export default function AdminClientsPage() {
 
     return buildFallbackOrderDetails(selectedOrderSummary);
   }, [selectedOrderSummary]);
-
-  const anonymizedTotal = anonymizedOrders.reduce(
-    (sum, order) => sum + order.total,
-    0,
-  );
 
   const totalClients = clients.length;
   const totalOrders =
@@ -404,16 +430,13 @@ export default function AdminClientsPage() {
     );
   }
 
-  if (selectedOrderDetails && selectedOrderSummary) {
-    const orderContextLabel = selectedClient
-      ? getClientFullName(selectedClient)
-      : "Compte supprimé";
-
+  if (selectedOrderDetails && selectedOrderSummary && selectedClient) {
     return (
       <>
         <Head>
           <title>
-            {selectedOrderSummary.id} - {orderContextLabel} | Administration
+            {selectedOrderSummary.id} - {getClientFullName(selectedClient)} |
+            Administration
           </title>
         </Head>
 
@@ -428,11 +451,7 @@ export default function AdminClientsPage() {
             >
               <FiArrowLeft aria-hidden="true" />
               <span>
-                {selectedClient
-                  ? `Retour aux commandes de ${getClientFullName(
-                      selectedClient,
-                    )}`
-                  : "Retour aux fiches clients et commandes de comptes supprimés"}
+                Retour aux commandes de {getClientFullName(selectedClient)}
               </span>
             </button>
 
@@ -445,7 +464,7 @@ export default function AdminClientsPage() {
                   <p className={styles.orderDetailSubtitle}>
                     {selectedOrderDetails.placedAtLabel}
                   </p>
-                  {!selectedClient ? (
+                  {selectedClient.isDeletedAccountGroup ? (
                     <p className={styles.orderDetailSubtitle}>
                       Compte supprimé — commande conservée sous forme
                       anonymisée.
@@ -577,7 +596,11 @@ export default function AdminClientsPage() {
 
                     <div className={styles.clientDetailMeta}>
                       <p>
-                        <FiMail aria-hidden="true" />{" "}
+                        {selectedClient.isDeletedAccountGroup ? (
+                          <FiUserX aria-hidden="true" />
+                        ) : (
+                          <FiMail aria-hidden="true" />
+                        )}{" "}
                         <span>{selectedClient.email}</span>
                       </p>
                       <p>
@@ -710,112 +733,119 @@ export default function AdminClientsPage() {
 
               {!isLoadingClients && !clientsError ? (
                 <div className={styles.clientsList}>
-                  {clients.length === 0 ? (
+                  {clients.length === 0 && !deletedAccountsVirtualClient ? (
                     <div className={styles.loadingContainer}>
                       <div className={styles.loadingBox}>
-                        Aucun client identifié dans les commandes non
-                        anonymisées pour le moment.
+                        Aucun client identifié pour le moment.
                       </div>
                     </div>
                   ) : (
-                    clients.map((client) => (
-                      <article
-                        key={client.id}
-                        className={styles.clientCard}
-                        onClick={() => {
-                          setSelectedOrderId("");
-                          setSelectedClientId(client.id);
-                        }}
-                      >
-                        <div className={styles.clientCardMain}>
-                          <div className={styles.avatar}>
-                            <span>{client.initials}</span>
+                    <>
+                      {clients.map((client) => (
+                        <article
+                          key={client.id}
+                          className={styles.clientCard}
+                          onClick={() => {
+                            setSelectedOrderId("");
+                            setSelectedClientId(client.id);
+                          }}
+                        >
+                          <div className={styles.clientCardMain}>
+                            <div className={styles.avatar}>
+                              <span>{client.initials}</span>
+                            </div>
+
+                            <div className={styles.clientInfo}>
+                              <p className={styles.clientName}>
+                                {getClientFullName(client)}
+                              </p>
+                              <p className={styles.clientContact}>
+                                <FiMail aria-hidden="true" />
+                                <span>{client.email}</span>
+                              </p>
+                              <p className={styles.clientContact}>
+                                <FiPhone aria-hidden="true" />
+                                <span>{client.phone || "—"}</span>
+                              </p>
+                            </div>
                           </div>
 
-                          <div className={styles.clientInfo}>
-                            <p className={styles.clientName}>
-                              {getClientFullName(client)}
+                          <div className={styles.clientStats}>
+                            <p className={styles.clientStat}>
+                              <span>Commandes</span>
+                              <span>{client.ordersCount}</span>
                             </p>
-                            <p className={styles.clientContact}>
-                              <FiMail aria-hidden="true" />
-                              <span>{client.email}</span>
-                            </p>
-                            <p className={styles.clientContact}>
-                              <FiPhone aria-hidden="true" />
-                              <span>{client.phone || "—"}</span>
+                            <p className={styles.clientStat}>
+                              <span>Total dépensé</span>
+                              <span className={styles.clientTotalSpent}>
+                                {formatPrice(client.totalSpent)}
+                              </span>
                             </p>
                           </div>
-                        </div>
+                        </article>
+                      ))}
 
-                        <div className={styles.clientStats}>
-                          <p className={styles.clientStat}>
-                            <span>Commandes</span>
-                            <span>{client.ordersCount}</span>
-                          </p>
-                          <p className={styles.clientStat}>
-                            <span>Total dépensé</span>
-                            <span className={styles.clientTotalSpent}>
-                              {formatPrice(client.totalSpent)}
-                            </span>
-                          </p>
-                        </div>
-                      </article>
-                    ))
+                      {deletedAccountsVirtualClient ? (
+                        <article
+                          className={styles.clientCard}
+                          onClick={() => {
+                            setSelectedOrderId("");
+                            setSelectedClientId(
+                              deletedAccountsVirtualClient.id,
+                            );
+                          }}
+                        >
+                          <div className={styles.clientCardMain}>
+                            <div className={styles.avatar}>
+                              <span>
+                                {deletedAccountsVirtualClient.initials}
+                              </span>
+                            </div>
+
+                            <div className={styles.clientInfo}>
+                              <p className={styles.clientName}>
+                                {getClientFullName(
+                                  deletedAccountsVirtualClient,
+                                )}
+                              </p>
+                              <p className={styles.clientContact}>
+                                <FiUserX aria-hidden="true" />
+                                <span>
+                                  {deletedAccountsVirtualClient.email}
+                                </span>
+                              </p>
+                              <p className={styles.clientContact}>
+                                <FiPhone aria-hidden="true" />
+                                <span>
+                                  {deletedAccountsVirtualClient.phone}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className={styles.clientStats}>
+                            <p className={styles.clientStat}>
+                              <span>Commandes</span>
+                              <span>
+                                {deletedAccountsVirtualClient.ordersCount}
+                              </span>
+                            </p>
+                            <p className={styles.clientStat}>
+                              <span>Total dépensé</span>
+                              <span className={styles.clientTotalSpent}>
+                                {formatPrice(
+                                  deletedAccountsVirtualClient.totalSpent,
+                                )}
+                              </span>
+                            </p>
+                          </div>
+                        </article>
+                      ) : null}
+                    </>
                   )}
                 </div>
               ) : null}
             </section>
-
-            {!isLoadingClients &&
-            !clientsError &&
-            anonymizedOrders.length > 0 ? (
-              <section
-                className={styles.clientDetail}
-                aria-labelledby="anonymized-orders-title"
-              >
-                <header className={styles.clientDetailHeader}>
-                  <div className={styles.clientDetailInfo}>
-                    <h2
-                      id="anonymized-orders-title"
-                      className={styles.clientDetailName}
-                    >
-                      Commandes de comptes supprimés
-                    </h2>
-                    <p className={styles.orderDetailSubtitle}>
-                      Ces commandes anonymisées restent incluses dans les totaux
-                      des commandes et des montants, mais pas dans le compteur
-                      clients.
-                    </p>
-                  </div>
-
-                  <div className={styles.clientDetailStats}>
-                    <div className={styles.clientDetailStat}>
-                      <span className={styles.clientDetailStatLabel}>
-                        Montant cumulé
-                      </span>
-                      <span className={styles.clientDetailStatValue}>
-                        {formatPrice(anonymizedTotal)}
-                      </span>
-                    </div>
-                    <div className={styles.clientDetailStat}>
-                      <span className={styles.clientDetailStatLabel}>
-                        Commandes
-                      </span>
-                      <span className={styles.clientDetailStatValue}>
-                        {anonymizedOrders.length}
-                      </span>
-                    </div>
-                  </div>
-                </header>
-
-                <div className={styles.clientHistorySection}>
-                  <OrderHistoryList
-                    orders={anonymizedOrders}
-                    onSelectOrder={setSelectedOrderId}
-                  />
-                </div>
-              </section>
-            ) : null}
           </section>
         </div>
       </main>
