@@ -1,10 +1,10 @@
 // pages/api/products/[slug]/restock-requests.js
-import { connectMongo } from '../../../../lib/mongodb';
-import Product from '../../../../models/Product';
-import RestockRequest from '../../../../models/RestockRequest';
+import { connectMongo } from "../../../../lib/mongodb";
+import Product from "../../../../models/Product";
+import RestockRequest from "../../../../models/RestockRequest";
 
 function isValidEmail(value) {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return false;
   }
 
@@ -18,8 +18,8 @@ function isValidEmail(value) {
 }
 
 function normalizeColor(value) {
-  if (typeof value !== 'string') {
-    return '';
+  if (typeof value !== "string") {
+    return "";
   }
 
   return value.trim();
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
   const { slug } = req.query;
 
-  if (req.method === 'POST') {
+  if (req.method === "POST") {
     try {
       const product = await Product.findOne({
         slug,
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
 
       if (!product) {
         return res.status(404).json({
-          message: 'Produit introuvable.',
+          message: "Produit introuvable.",
         });
       }
 
@@ -50,28 +50,28 @@ export default async function handler(req, res) {
 
       if (!isValidEmail(email)) {
         return res.status(400).json({
-          message: 'Merci de renseigner une adresse e-mail valide.',
+          message: "Merci de renseigner une adresse e-mail valide.",
         });
       }
 
-      let color = '';
+      let color = "";
 
       if (hasColorVariants) {
         if (!requestedColor) {
           return res.status(400).json({
-            message: 'Merci de sélectionner une couleur.',
+            message: "Merci de sélectionner une couleur.",
           });
         }
 
         const matchingColor = productColors.find(
           (entry) =>
-            typeof entry?.name === 'string' &&
-            entry.name.trim().toLowerCase() === requestedColor.toLowerCase()
+            typeof entry?.name === "string" &&
+            entry.name.trim().toLowerCase() === requestedColor.toLowerCase(),
         );
 
         if (!matchingColor) {
           return res.status(400).json({
-            message: 'Couleur invalide pour ce produit.',
+            message: "Couleur invalide pour ce produit.",
           });
         }
 
@@ -88,8 +88,8 @@ export default async function handler(req, res) {
       if (existingRequest) {
         return res.status(200).json({
           message: hasColorVariants
-            ? 'Une demande existe déjà pour cette couleur et cette adresse e-mail.'
-            : 'Une demande existe déjà pour cette adresse e-mail pour ce produit.',
+            ? "Une demande existe déjà pour cette couleur et cette adresse e-mail."
+            : "Une demande existe déjà pour cette adresse e-mail pour ce produit.",
           alreadyExists: true,
         });
       }
@@ -101,10 +101,17 @@ export default async function handler(req, res) {
       });
 
       return res.status(201).json({
-        message: 'Votre demande a bien été enregistrée.',
+        message: "Votre demande a bien été enregistrée.",
         alreadyExists: false,
       });
     } catch (error) {
+      console.error("RESTOCK_REQUEST_CREATE_ERROR:", {
+        name: error?.name || null,
+        message: error?.message || "Erreur inconnue.",
+        code: error?.code ?? null,
+        keyPattern: error?.keyPattern || null,
+      });
+
       return res.status(500).json({
         message: "Erreur lors de l'enregistrement de la demande.",
       });
@@ -112,6 +119,6 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).json({
-    message: 'Méthode non autorisée.',
+    message: "Méthode non autorisée.",
   });
 }
